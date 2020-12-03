@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'groovy'
+    id 'com.github.johnrengelman.shadow' version '6.0.0'
+    id 'io.freefair.lombok' version '5.0.0'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.slf4j:slf4j-api:1.7.30',
+            'ch.qos.logback:logback-classic:1.3.0-alpha5',
+            'info.picocli:picocli:4.5.1',
+            "io.grpc:grpc-protobuf:1.29.0",
+            "io.grpc:grpc-stub:1.29.0",
+            "javax.annotation:javax.annotation-api:1.3.2",
+            "com.google.protobuf:protobuf-java:3.11.4",
+            "com.google.protobuf:protobuf-java-util:3.11.4",
+            "org.apache.kafka:kafka-clients:2.4.0",
+            "com.fasterxml.jackson.core:jackson-core:2.11.2",
+            "com.fasterxml.jackson.core:jackson-databind:2.11.2",
+            "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.2"
+
+
+    testImplementation 'org.codehaus.groovy:groovy-all:2.5.8'
+    testImplementation 'org.spockframework:spock-core:1.3-groovy-2.5'
+    testImplementation 'junit:junit:4.12'
+}
+
+application {
+    mainClassName = 'io.github.s7i.doer'
+}
