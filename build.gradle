@@ -6,6 +6,9 @@ plugins {
     id 'io.freefair.lombok' version '5.0.0'
 }
 
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -32,5 +35,5 @@ dependencies {
 }
 
 application {
-    mainClassName = 'io.github.s7i.doer'
+    mainClassName = 'io.github.s7i.doer.Doer'
 }

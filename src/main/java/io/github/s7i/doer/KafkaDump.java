@@ -1,8 +1,6 @@
 package io.github.s7i.doer;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,26 +24,25 @@ import picocli.CommandLine.Option;
 
 @Command(name = "kdump")
 @Slf4j
-public class KafkaDump implements Runnable {
+public class KafkaDump implements Runnable, YamlParser {
 
-    @Option(names = {"-y", "-yaml"})
+    @Option(names = {"-y", "-yaml"}, defaultValue = "dump.yml")
     private File yaml;
 
 
-    private Dump parseYaml() {
-        var objectMapper = new ObjectMapper(new YAMLFactory());
-        try {
-            return objectMapper.readValue(yaml, Dump.class);
-        } catch (IOException e) {
-            log.error("", e);
-            throw new RuntimeException(e);
+    @Override
+    public File getYamlFile() {
+        if (!yaml.exists()) {
+            throw new IllegalStateException("missing file with definition of kafka-dump.yml");
         }
+        return yaml;
     }
 
     @Override
     public void run() {
-        var config = parseYaml();
-        var root = yaml.toPath().getParent();
+        var config = parseYaml(Dump.class);
+        var path = yaml.toPath().toAbsolutePath();
+        var root = path.getParent();
 
         var destPath = root.resolve(config.getDump().getOutput());
         try {

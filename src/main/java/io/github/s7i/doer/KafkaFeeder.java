@@ -2,8 +2,6 @@ package io.github.s7i.doer;
 
 import static java.util.Objects.nonNull;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.github.s7i.doer.Ingest.IngestLine;
 import java.io.File;
 import java.io.IOException;
@@ -21,16 +19,26 @@ import picocli.CommandLine.Option;
 
 @Command(name = "kfeed")
 @Slf4j
-public class KafkaFeeder implements Runnable {
+public class KafkaFeeder implements Runnable, YamlParser {
 
-    @Option(names = {"-y", "-yaml"})
+    @Option(names = {"-y", "-yaml"}, defaultValue = "ingest.yml")
     private File yaml;
     private KafkaProducer<String, byte[]> producer;
+    private Path root;
 
+    @Override
+    public File getYamlFile() {
+        if (!yaml.exists()) {
+            throw new IllegalStateException("ingestion file doesn't exists: " + yaml);
+        }
+        root = yaml.toPath().toAbsolutePath().getParent();
+        return yaml;
+    }
 
     @Override
     public void run() {
-        var ingest = parseYaml();
+        var ingest = parseYaml(Ingest.class);
+
         createProducer(ingest);
         try {
             ingest.getIngest().forEach(this::processIngest);
@@ -41,16 +49,6 @@ public class KafkaFeeder implements Runnable {
         System.out.println("kafka feeder ends");
     }
 
-    private Ingest parseYaml() {
-        var objectMapper = new ObjectMapper(new YAMLFactory());
-        try {
-            return objectMapper.readValue(yaml, Ingest.class);
-        } catch (IOException e) {
-            log.error("", e);
-            throw new RuntimeException(e);
-        }
-    }
-
     private void processIngest(IngestLine ingestLine) {
 
         byte[] message;
@@ -58,6 +56,9 @@ public class KafkaFeeder implements Runnable {
         if (nonNull(proto)) {
 
             var path = Paths.get(proto.getJson());
+            if (!path.isAbsolute()) {
+                path = root.resolve(path);
+            }
             var paths = Stream.of(proto.getDescriptorSet()).map(Paths::get).collect(Collectors.toList());
             var jsonText = asText(path);
 
@@ -71,7 +72,7 @@ public class KafkaFeeder implements Runnable {
 
     private String asText(Path path) {
         try {
-            var relative = yaml.toPath().getParent();
+            var relative = root;
             relative = relative.resolve(path);
             return Files.readString(relative);
         } catch (IOException e) {
