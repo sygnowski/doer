@@ -28,6 +28,7 @@ public class Dump {
         String topic;
         String output;
         ProtoEntry proto;
+        String range;
     }
 
     @FieldDefaults(level = AccessLevel.PRIVATE)
