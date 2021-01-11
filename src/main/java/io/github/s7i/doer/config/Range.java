@@ -1,5 +1,6 @@
-package io.github.s7i.doer;
+package io.github.s7i.doer.config;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import lombok.Getter;
@@ -21,6 +22,9 @@ public class Range {
                 from = Long.valueOf(parts[0]);
             }
             to = Long.valueOf(parts[1]);
+            if (nonNull(from) && to < from) {
+                throw new IllegalArgumentException(String.format("to (%d) less than from (%d)", to, from));
+            }
         } else {
             throw new IllegalArgumentException("bad syntax");
         }
@@ -32,5 +36,19 @@ public class Range {
 
     public boolean hasTo() {
         return nonNull(to);
+    }
+
+    public boolean in(long pos) {
+        if (hasFrom() && pos < from) {
+            return false;
+        }
+        if (hasTo() && pos > to) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean outOfTo(long pos) {
+        return isNull(to) ? false : pos >= to;
     }
 }

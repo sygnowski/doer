@@ -1,8 +1,9 @@
-package io.github.s7i.doer;
+package io.github.s7i.doer.command;
 
 import static java.util.Objects.nonNull;
 
-import io.github.s7i.doer.Ingest.IngestLine;
+import io.github.s7i.doer.config.Ingest;
+import io.github.s7i.doer.config.Ingest.IngestLine;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -1,7 +1,6 @@
-package io.github.s7i.doer;
+package io.github.s7i.doer.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -9,38 +8,38 @@ import lombok.experimental.FieldDefaults;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Ingest {
+public class Dump {
 
     String version;
     String type;
     Map<String, String> kafka;
-    List<IngestLine> ingest;
+    Specs dump;
 
     @Getter
     @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class IngestLine {
+    public static class Specs {
 
+        @JsonProperty("show_binary")
+        boolean showBinary;
+        @JsonProperty("show_proto")
+        boolean showProto;
+        @JsonProperty("pool_timeout_sec")
+        Integer poolTimeoutSec;
         String topic;
-        String key;
-        Value value;
+        String output;
+        ProtoSpec proto;
+        String range;
     }
 
-    @Getter
     @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class Value {
-
-        String text;
-        Proto proto;
-    }
-
     @Getter
-    @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class Proto {
+    public static class ProtoSpec {
 
         @JsonProperty("message_name")
         String messageName;
+
         @JsonProperty("descriptor_set")
         String[] descriptorSet;
-        String json;
     }
+
 }

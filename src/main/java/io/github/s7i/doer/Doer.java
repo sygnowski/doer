@@ -1,6 +1,9 @@
 package io.github.s7i.doer;
 
 import io.github.s7i.doer.Doer.Help;
+import io.github.s7i.doer.command.dump.KafkaDump;
+import io.github.s7i.doer.command.KafkaFeeder;
+import io.github.s7i.doer.command.ProtoProcessor;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.RunLast;
