@@ -22,7 +22,7 @@ class RangeTest extends Specification {
     def "expect pos #pos in range #exp"() {
         expect:
         def range = new Range(exp)
-        in_range == range.in(pos)
+        in_range == range.positionInRange(pos)
         where:
         exp     | pos | in_range
         "1..10" | 1   | true
@@ -34,6 +34,9 @@ class RangeTest extends Specification {
         "..15"  | 0   | true
         "5.."   | 4   | false
         "5.."   | 5   | true
+        "5..5"  | 5   | true
+        "5..5"  | 6   | false
+        "5..5"  | 4   | false
     }
 
     def "expect bad arg"() {

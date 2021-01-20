@@ -57,6 +57,7 @@ public class KafkaDump implements Runnable, YamlParser {
         } catch (IOException e) {
             log.error("{}", e);
         }
+        log.info("Start dumping from Kafka");
         new KafkaWorker(config, root).pool();
     }
 
@@ -67,6 +68,7 @@ public class KafkaDump implements Runnable, YamlParser {
         final Dump mainConfig;
         final Path root;
         long lastOffset;
+        long recordCounter;
         Range range;
         int poolSize;
         Decoder protoDecoder;
@@ -94,16 +96,19 @@ public class KafkaDump implements Runnable, YamlParser {
                     var timeout = Duration.ofSeconds(specs.getPoolTimeoutSec());
                     var records = consumer.poll(timeout);
                     poolSize = records.count();
+                    log.debug("Kafka pool size: {}", poolSize);
+
                     records.forEach(this::dumpRecord);
                 } while (notEnds());
             }
+            log.info("Stop dumping from Kafka, saved records: {}", recordCounter);
         }
 
         private void initRange(Specs specs) {
             var rangeExp = specs.getRange();
             if (nonNull(rangeExp) && !rangeExp.isBlank()) {
                 range = new Range(rangeExp);
-                log.info("range: {}", range);
+                log.info("With range: {}", range);
             }
         }
 
@@ -130,7 +135,7 @@ public class KafkaDump implements Runnable, YamlParser {
 
         private void dumpRecord(ConsumerRecord<String, byte[]> record) {
             lastOffset = record.offset();
-            if (nonNull(range) && range.in(lastOffset)) {
+            if (nonNull(range) && range.positionNotInRange(lastOffset)) {
                 return;
             }
 
@@ -144,7 +149,10 @@ public class KafkaDump implements Runnable, YamlParser {
 
             try {
                 var text = recordWriter.toJsonString(record);
+                log.debug("write to file: {}", location);
                 Files.writeString(location, text, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+
+                recordCounter++;
             } catch (IOException | RuntimeException e) {
                 log.error("{}", e);
             }

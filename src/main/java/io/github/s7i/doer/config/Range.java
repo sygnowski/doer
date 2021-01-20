@@ -38,7 +38,11 @@ public class Range {
         return nonNull(to);
     }
 
-    public boolean in(long pos) {
+    public boolean positionNotInRange(long pos) {
+        return !positionInRange(pos);
+    }
+
+    public boolean positionInRange(long pos) {
         if (hasFrom() && pos < from) {
             return false;
         }
