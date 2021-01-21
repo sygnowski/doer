@@ -26,7 +26,7 @@ public class Range {
                 throw new IllegalArgumentException(String.format("to (%d) less than from (%d)", to, from));
             }
         } else {
-            throw new IllegalArgumentException("bad syntax");
+            throw new IllegalArgumentException("bad syntax of range: " + rangeExp);
         }
     }
 
@@ -52,7 +52,7 @@ public class Range {
         return true;
     }
 
-    public boolean outOfTo(long pos) {
+    public boolean reachEnd(long pos) {
         return isNull(to) ? false : pos >= to;
     }
 }

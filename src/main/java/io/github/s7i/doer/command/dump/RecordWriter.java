@@ -1,6 +1,8 @@
 package io.github.s7i.doer.command.dump;
 
-import io.github.s7i.doer.config.Dump.Specs;
+import static io.github.s7i.doer.Utils.hasAnyValue;
+
+import io.github.s7i.doer.config.Dump.Topic;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +14,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 public class RecordWriter {
 
     public static final String NEWLINE = "\n";
-    final Specs specs;
+    final Topic specs;
     final ProtoJsonWriter protoJsonWriter;
 
     public String toJsonString(ConsumerRecord<String, byte[]> record) {
@@ -39,9 +41,9 @@ public class RecordWriter {
             text.append(NEWLINE).append("BINARY_END").append(NEWLINE);
         }
 
-        if (specs.isShowProto()) {
+        if (hasAnyValue(specs.getValue().getProtoMessage())) {
             text.append("PROTO_AS_JSON:").append(NEWLINE);
-            var json = protoJsonWriter.toJson(value);
+            var json = protoJsonWriter.toJson(record.topic(), value);
             text.append(json);
         }
         return text.toString();
