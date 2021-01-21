@@ -14,33 +14,71 @@ public class Ingest {
     String version;
     String type;
     Map<String, String> kafka;
-    List<IngestLine> ingest;
+    IngestSpec ingest;
 
     @Getter
-    @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class IngestLine {
+    public static class IngestSpec {
 
-        String topic;
-        String key;
-        Value value;
+        Proto proto;
+        Template template;
+        @JsonProperty("value_sets")
+        List<ValueSet> valueSets;
+        List<Topic> topics;
     }
 
     @Getter
-    @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class Value {
+    public static class Template {
 
-        String text;
-        Proto proto;
+        String name;
+        String content;
+    }
+
+    @Getter
+    public static class ValueSet {
+
+        String name;
+        List<String> attributes;
+        List<List<String>> values;
+    }
+
+    @Getter
+    public static class Topic {
+
+        String name;
+        @JsonProperty("value_set")
+        String valueSet;
+        List<Entry> entries;
+    }
+
+    @Getter
+    public static class Entry {
+
+        String key;
+        ValueTemplate valueTemplate;
+    }
+
+    @Getter
+    public static class ValueTemplate {
+
+        @JsonProperty("name")
+        String templateName;
+        @JsonProperty("proto_message")
+        String protoMessage;
+        List<TemplateProp> properties;
+    }
+
+    @Getter
+    public static class TemplateProp {
+
+        String name;
+        String value;
     }
 
     @Getter
     @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class Proto {
 
-        @JsonProperty("message_name")
-        String messageName;
         @JsonProperty("descriptor_set")
-        String[] descriptorSet;
-        String json;
+        List<String> descriptorSet;
     }
 }
