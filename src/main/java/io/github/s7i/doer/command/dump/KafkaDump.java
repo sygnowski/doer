@@ -1,13 +1,13 @@
 package io.github.s7i.doer.command.dump;
 
 
-import static java.util.Objects.isNull;
+import static io.github.s7i.doer.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.command.YamlParser;
 import io.github.s7i.doer.config.Dump;
-import io.github.s7i.doer.config.Dump.Specs;
+import io.github.s7i.doer.config.Dump.Topic;
 import io.github.s7i.doer.config.Range;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
@@ -17,12 +17,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -51,14 +54,27 @@ public class KafkaDump implements Runnable, YamlParser {
         var path = yaml.toPath().toAbsolutePath();
         var root = path.getParent();
 
-        var destPath = root.resolve(config.getDump().getOutput());
-        try {
-            Files.createDirectories(destPath);
-        } catch (IOException e) {
-            log.error("{}", e);
-        }
         log.info("Start dumping from Kafka");
         new KafkaWorker(config, root).pool();
+    }
+
+    @Data
+    @RequiredArgsConstructor
+    @ToString
+    public static class TopicContext {
+
+        @ToString.Include()
+        final String name;
+        Long lastOffset = 0L;
+        Range range;
+        Descriptor descriptor;
+        Path output;
+        RecordWriter recordWriter;
+
+        public boolean hasRecordsToCollect() {
+            return nonNull(range) && !range.reachEnd(lastOffset);
+        }
+
     }
 
     @RequiredArgsConstructor
@@ -67,33 +83,28 @@ public class KafkaDump implements Runnable, YamlParser {
 
         final Dump mainConfig;
         final Path root;
-        long lastOffset;
         long recordCounter;
-        Range range;
         int poolSize;
         Decoder protoDecoder;
-        Descriptor descriptor;
-        RecordWriter recordWriter;
+        Map<String, TopicContext> contexts = new HashMap<>();
 
         @Override
-        public String toJson(byte[] data) {
-            return protoDecoder.toJson(descriptor, data);
+        public String toJson(String topic, byte[] data) {
+            return protoDecoder.toJson(contexts.get(topic).getDescriptor(), data);
         }
 
         private void pool() {
-            final var specs = mainConfig.getDump();
-            initProto(specs);
-            initRange(specs);
-            recordWriter = new RecordWriter(specs, this);
+            var topics = mainConfig.getDump().getTopics()
+                  .stream()
+                  .map(t -> t.getName())
+                  .collect(Collectors.toList());
+            final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
+            initialize();
 
-            Properties properties = new Properties();
-            properties.putAll(mainConfig.getKafka());
-
-            try (KafkaConsumer<String, byte[]> consumer = new KafkaConsumer(properties)) {
-                var topic = specs.getTopic();
-                consumer.subscribe(List.of(topic));
+            try (KafkaConsumer<String, byte[]> consumer = connectToKafka()) {
+                consumer.subscribe(topics);
                 do {
-                    var timeout = Duration.ofSeconds(specs.getPoolTimeoutSec());
+
                     var records = consumer.poll(timeout);
                     poolSize = records.count();
                     log.debug("Kafka pool size: {}", poolSize);
@@ -104,57 +115,98 @@ public class KafkaDump implements Runnable, YamlParser {
             log.info("Stop dumping from Kafka, saved records: {}", recordCounter);
         }
 
-        private void initRange(Specs specs) {
-            var rangeExp = specs.getRange();
-            if (nonNull(rangeExp) && !rangeExp.isBlank()) {
-                range = new Range(rangeExp);
-                log.info("With range: {}", range);
+        private KafkaConsumer<String, byte[]> connectToKafka() {
+            Properties properties = new Properties();
+            properties.putAll(mainConfig.getKafka());
+            return new KafkaConsumer(properties);
+        }
+
+        private void initialize() {
+            var proto = initProto();
+            var ranges = initRange();
+
+            for (var topic : mainConfig.getDump().getTopics()) {
+                var name = topic.getName();
+                var context = contexts.computeIfAbsent(name, n -> new TopicContext(n));
+
+                context.setRecordWriter(new RecordWriter(topic, this));
+                var topicOutput = root.resolve(topic.getOutput());
+                try {
+                    Files.createDirectories(topicOutput);
+                } catch (IOException e) {
+                    log.error("{}", e);
+                }
+                context.setOutput(topicOutput);
+                context.setRange(ranges.get(name));
+                context.setDescriptor(proto.get(name));
             }
         }
 
-        private void initProto(Specs specs) {
-            if (specs.isShowProto()) {
+
+        private Map<String, Range> initRange() {
+            return mainConfig.getDump().getTopics()
+                  .stream()
+                  .filter(t -> hasAnyValue(t.getRange()))
+                  .collect(Collectors.toConcurrentMap(Topic::getName, topic -> {
+                      var range = new Range(topic.getRange());
+                      log.info("Topic {} with range: {}", topic.getName(), range);
+                      return range;
+                  }));
+        }
+
+        private Map<String, Descriptor> initProto() {
+            var protoSpec = mainConfig.getDump().getProto();
+            if (nonNull(protoSpec)) {
                 protoDecoder = new Decoder();
-                var descriptorPaths = Arrays.stream(specs.getProto().getDescriptorSet())
+                var descriptorPaths = protoSpec.getDescriptorSet()
+                      .stream()
                       .map(Paths::get)
                       .collect(Collectors.toList());
                 protoDecoder.loadDescriptors(descriptorPaths);
 
-                descriptor = protoDecoder.findMessageDescriptor(specs.getProto().getMessageName());
+                return mainConfig.getDump()
+                      .getTopics()
+                      .stream()
+                      .filter(t -> hasAnyValue(t.getValue().getProtoMessage()))
+                      .collect(Collectors.toMap(
+                            Topic::getName,
+                            t -> protoDecoder.findMessageDescriptor(t.getValue().getProtoMessage())
+                      ));
             }
+            return Collections.emptyMap();
         }
 
         private boolean notEnds() {
-            if (nonNull(range) && range.outOfTo(lastOffset)) {
-                return false;
-            } else if (isNull(range)) {
-                return poolSize > 0;
-            }
-            return true;
+            var collectingTopics = contexts.values()
+                  .stream()
+                  .filter(TopicContext::hasRecordsToCollect)
+                  .count();
+            return collectingTopics > 0;
         }
 
         private void dumpRecord(ConsumerRecord<String, byte[]> record) {
-            lastOffset = record.offset();
+            var ctx = contexts.get(record.topic());
+            var lastOffset = record.offset();
+            ctx.setLastOffset(lastOffset);
+
+            var range = ctx.getRange();
             if (nonNull(range) && range.positionNotInRange(lastOffset)) {
                 return;
             }
 
             final var fileName = lastOffset + ".txt";
-            final var specs = mainConfig.getDump();
-            final var location = root.resolve(specs.getOutput()).resolve(fileName);
+            final var location = ctx.getOutput().resolve(fileName);
 
-            if (Files.exists(location)) {
-                return;
-            }
+            if (!Files.exists(location)) {
+                try {
+                    var text = ctx.getRecordWriter().toJsonString(record);
+                    log.debug("write to file: {}", location);
+                    Files.writeString(location, text, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
-            try {
-                var text = recordWriter.toJsonString(record);
-                log.debug("write to file: {}", location);
-                Files.writeString(location, text, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-
-                recordCounter++;
-            } catch (IOException | RuntimeException e) {
-                log.error("{}", e);
+                    recordCounter++;
+                } catch (IOException | RuntimeException e) {
+                    log.error("{}", e);
+                }
             }
         }
     }

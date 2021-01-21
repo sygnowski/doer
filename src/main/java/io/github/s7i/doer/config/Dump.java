@@ -1,6 +1,7 @@
 package io.github.s7i.doer.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,27 +20,36 @@ public class Dump {
     @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class Specs {
 
-        @JsonProperty("show_binary")
-        boolean showBinary;
-        @JsonProperty("show_proto")
-        boolean showProto;
         @JsonProperty("pool_timeout_sec")
         Integer poolTimeoutSec;
-        String topic;
-        String output;
+        List<Topic> topics;
         ProtoSpec proto;
+    }
+
+    @Getter
+    public static class Topic {
+
+        @JsonProperty("show_binary")
+        boolean showBinary;
+        String name;
         String range;
+        Value value;
+        String output;
+    }
+
+    @Getter
+    public static class Value {
+
+        @JsonProperty("proto_message")
+        String protoMessage;
     }
 
     @FieldDefaults(level = AccessLevel.PRIVATE)
     @Getter
     public static class ProtoSpec {
 
-        @JsonProperty("message_name")
-        String messageName;
-
         @JsonProperty("descriptor_set")
-        String[] descriptorSet;
+        List<String> descriptorSet;
     }
 
 }

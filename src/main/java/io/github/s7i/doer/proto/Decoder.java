@@ -73,6 +73,7 @@ public class Decoder {
                 for (var fdp : set.getFileList()) {
                     var fd = FileDescriptor.buildFrom(fdp, descriptors.toArray(new FileDescriptor[0]));
                     descriptors.add(fd);
+                    log.debug("registered proto descriptor: {}", fd.getFullName());
                 }
             } catch (IOException | DescriptorValidationException e) {
                 log.error("{}", e);
