@@ -20,7 +20,7 @@ public class Ingest {
     public static class IngestSpec {
 
         Proto proto;
-        Template template;
+        List<Template> templates;
         @JsonProperty("value_sets")
         List<ValueSet> valueSets;
         List<Topic> topics;
@@ -54,6 +54,7 @@ public class Ingest {
     public static class Entry {
 
         String key;
+        @JsonProperty("value_template")
         ValueTemplate valueTemplate;
     }
 
@@ -76,7 +77,7 @@ public class Ingest {
 
     @Getter
     @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class Proto {
+    public static class Proto implements ProtoDescriptorContainer {
 
         @JsonProperty("descriptor_set")
         List<String> descriptorSet;

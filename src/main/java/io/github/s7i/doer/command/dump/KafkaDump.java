@@ -14,7 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Collections;
@@ -158,11 +157,7 @@ public class KafkaDump implements Runnable, YamlParser {
             var protoSpec = mainConfig.getDump().getProto();
             if (nonNull(protoSpec)) {
                 protoDecoder = new Decoder();
-                var descriptorPaths = protoSpec.getDescriptorSet()
-                      .stream()
-                      .map(Paths::get)
-                      .collect(Collectors.toList());
-                protoDecoder.loadDescriptors(descriptorPaths);
+                protoDecoder.loadDescriptors(protoSpec);
 
                 return mainConfig.getDump()
                       .getTopics()

@@ -46,7 +46,7 @@ public class Dump {
 
     @FieldDefaults(level = AccessLevel.PRIVATE)
     @Getter
-    public static class ProtoSpec {
+    public static class ProtoSpec implements ProtoDescriptorContainer {
 
         @JsonProperty("descriptor_set")
         List<String> descriptorSet;
