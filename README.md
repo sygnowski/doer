@@ -1,3 +1,5 @@
+![Gradle Build](https://github.com/sygnowski/doer/workflows/Gradle%20Build/badge.svg)
+
 # Doer
 Small tool for doing big things.
 
