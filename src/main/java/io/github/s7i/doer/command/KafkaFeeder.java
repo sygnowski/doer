@@ -30,6 +30,12 @@ import picocli.CommandLine.Option;
 @Slf4j
 public class KafkaFeeder implements Runnable, YamlParser {
 
+    public static KafkaFeeder createCommandInstance(File yaml) {
+        var cmd = new KafkaFeeder();
+        cmd.yaml = yaml;
+        return cmd;
+    }
+
     @Option(names = {"-y", "-yaml"}, defaultValue = "ingest.yml")
     private File yaml;
     private Path root;
@@ -48,9 +54,11 @@ public class KafkaFeeder implements Runnable, YamlParser {
     public void run() {
         var config = parseYaml(Ingest.class);
 
+        var records = produceRecords(config.getIngest());
+        log.info("feeding kafka, prepared records count: {}", records.size());
+
         try (var producer = createProducer(config)) {
-            produceRecords(config.getIngest())
-                  .stream()
+            records.stream()
                   .map(FeedRecord::toRecord)
                   .forEach(producer::send);
         }
@@ -102,8 +110,12 @@ public class KafkaFeeder implements Runnable, YamlParser {
             var stingValue = resolver.resolve(template.getContent());
             var filledKey = resolver.resolve(entry.getKey());
 
-            var data = decoder.toMessage(descriptor, stingValue).toByteArray();
-            result.add(new TopicEntry(filledKey, data));
+            try {
+                var data = decoder.toMessage(descriptor, stingValue).toByteArray();
+                result.add(new TopicEntry(filledKey, data));
+            } catch (RuntimeException e) {
+                //do nothing
+            }
         }
 
         return result;

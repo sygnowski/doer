@@ -9,10 +9,8 @@ import lombok.experimental.FieldDefaults;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Dump {
+public class Dump extends Base {
 
-    String version;
-    String type;
     Map<String, String> kafka;
     Specs dump;
 

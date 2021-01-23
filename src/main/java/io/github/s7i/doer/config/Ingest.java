@@ -9,10 +9,8 @@ import lombok.experimental.FieldDefaults;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Ingest {
+public class Ingest extends Base {
 
-    String version;
-    String type;
     Map<String, String> kafka;
     IngestSpec ingest;
 

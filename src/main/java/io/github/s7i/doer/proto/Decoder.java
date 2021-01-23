@@ -65,8 +65,8 @@ public class Decoder {
 
             return builder.build();
         } catch (InvalidProtocolBufferException e) {
-            log.error("{}", e);
-            throw new RuntimeException(e);
+            log.error("making proto message", e);
+            throw new RuntimeException("Cannot make proto message: " + descriptor.getName());
         }
     }
 

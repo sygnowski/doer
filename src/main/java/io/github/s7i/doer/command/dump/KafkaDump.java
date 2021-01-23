@@ -36,6 +36,12 @@ import picocli.CommandLine.Option;
 @Slf4j
 public class KafkaDump implements Runnable, YamlParser {
 
+    public static KafkaDump createCommandInstance(File yaml) {
+        var cmd = new KafkaDump();
+        cmd.yaml = yaml;
+        return cmd;
+    }
+
     @Option(names = {"-y", "-yaml"}, defaultValue = "dump.yml")
     private File yaml;
 
