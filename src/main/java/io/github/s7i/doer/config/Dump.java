@@ -9,10 +9,8 @@ import lombok.experimental.FieldDefaults;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Dump {
+public class Dump extends Base {
 
-    String version;
-    String type;
     Map<String, String> kafka;
     Specs dump;
 
@@ -46,7 +44,7 @@ public class Dump {
 
     @FieldDefaults(level = AccessLevel.PRIVATE)
     @Getter
-    public static class ProtoSpec {
+    public static class ProtoSpec implements ProtoDescriptorContainer {
 
         @JsonProperty("descriptor_set")
         List<String> descriptorSet;

@@ -9,6 +9,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import io.github.s7i.doer.config.ProtoDescriptorContainer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 public class Decoder {
 
     private List<Descriptor> descriptors;
+
+    public void loadDescriptors(ProtoDescriptorContainer container) {
+        loadDescriptors(container.getDescriptorsPaths());
+    }
 
     public void loadDescriptors(List<Path> paths) {
         descriptors = readDescSet(paths).stream()
@@ -60,8 +65,8 @@ public class Decoder {
 
             return builder.build();
         } catch (InvalidProtocolBufferException e) {
-            log.error("{}", e);
-            throw new RuntimeException(e);
+            log.error("making proto message", e);
+            throw new RuntimeException("Cannot make proto message: " + descriptor.getName());
         }
     }
 

@@ -1,17 +1,25 @@
 package io.github.s7i.doer.command;
 
+import static io.github.s7i.doer.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
+import io.github.s7i.doer.Utils.PropertyResolver;
 import io.github.s7i.doer.config.Ingest;
-import io.github.s7i.doer.config.Ingest.IngestLine;
+import io.github.s7i.doer.config.Ingest.Entry;
+import io.github.s7i.doer.config.Ingest.IngestSpec;
+import io.github.s7i.doer.config.Ingest.TemplateProp;
+import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -22,10 +30,16 @@ import picocli.CommandLine.Option;
 @Slf4j
 public class KafkaFeeder implements Runnable, YamlParser {
 
+    public static KafkaFeeder createCommandInstance(File yaml) {
+        var cmd = new KafkaFeeder();
+        cmd.yaml = yaml;
+        return cmd;
+    }
+
     @Option(names = {"-y", "-yaml"}, defaultValue = "ingest.yml")
     private File yaml;
-    private KafkaProducer<String, byte[]> producer;
     private Path root;
+    private Decoder decoder;
 
     @Override
     public File getYamlFile() {
@@ -38,38 +52,109 @@ public class KafkaFeeder implements Runnable, YamlParser {
 
     @Override
     public void run() {
-        var ingest = parseYaml(Ingest.class);
+        var config = parseYaml(Ingest.class);
 
-        createProducer(ingest);
-        try {
-            ingest.getIngest().forEach(this::processIngest);
-        } finally {
-            producer.close();
+        var records = produceRecords(config.getIngest());
+        log.info("feeding kafka, prepared records count: {}", records.size());
+
+        try (var producer = createProducer(config)) {
+            records.stream()
+                  .map(FeedRecord::toRecord)
+                  .forEach(producer::send);
         }
 
-        System.out.println("kafka feeder ends");
+        log.info("kafka feeder ends");
     }
 
-    private void processIngest(IngestLine ingestLine) {
+    private List<FeedRecord> produceRecords(IngestSpec spec) {
+        if (nonNull(spec.getProto())) {
+            decoder = new Decoder();
+            decoder.loadDescriptors(spec.getProto());
+        }
+        var result = new ArrayList<FeedRecord>();
+        for (var topic : spec.getTopics()) {
+            buildEntries(spec, result, topic);
+        }
+        return result;
+    }
 
-        byte[] message;
-        var proto = ingestLine.getValue().getProto();
-        if (nonNull(proto)) {
-
-            var path = Paths.get(proto.getJson());
-            if (!path.isAbsolute()) {
-                path = root.resolve(path);
+    private void buildEntries(IngestSpec spec, ArrayList<FeedRecord> result, Ingest.Topic topic) {
+        for (var entry : topic.getEntries()) {
+            if (hasAnyValue(topic.getValueSet()) && nonNull(entry.getValueTemplate())) {
+                fillTemplate(spec, entry, topic.getValueSet())
+                      .forEach(data -> result.add(new FeedRecord(topic.getName(), data)));
             }
-            var paths = Stream.of(proto.getDescriptorSet()).map(Paths::get).collect(Collectors.toList());
-            var jsonText = asText(path);
+        }
+    }
 
-            message = new ProtoProcessor().toMessage(paths, proto.getMessageName(), jsonText).toByteArray();
-        } else {
-            throw new UnsupportedOperationException();
+    private List<TopicEntry> fillTemplate(IngestSpec spec, Entry entry, String valueSetName) {
+        final var result = new ArrayList<TopicEntry>();
+        final var valueTemplate = entry.getValueTemplate();
+        final var descriptor = decoder.findMessageDescriptor(valueTemplate.getProtoMessage());
+
+        final var template = spec.getTemplates()
+              .stream()
+              .filter(t -> t.getName().equals(valueTemplate.getTemplateName()))
+              .findFirst()
+              .orElseThrow();
+
+        final var valueSet = spec.getValueSets()
+              .stream()
+              .filter(vs -> vs.getName().equals(valueSetName))
+              .findFirst().orElseThrow();
+
+        var attributes = valueSet.getAttributes();
+
+        for (var val : valueSet.getValues()) {
+            var resolver = propertyResolver(entry.getValueTemplate().getProperties(), attributes, val);
+            var stingValue = resolver.resolve(template.getContent());
+            var filledKey = resolver.resolve(entry.getKey());
+
+            try {
+                var data = decoder.toMessage(descriptor, stingValue).toByteArray();
+                result.add(new TopicEntry(filledKey, data));
+            } catch (RuntimeException e) {
+                //do nothing
+            }
         }
 
-        send(ingestLine.getTopic(), ingestLine.getKey(), message);
+        return result;
     }
+
+    private PropertyResolver propertyResolver(List<TemplateProp> properties, List<String> attributes, List<String> val) {
+        var propertyMap = new HashMap<String, String>(attributes.size());
+        for (int a = 0; a < attributes.size(); a++) {
+            propertyMap.put(attributes.get(a), val.get(a));
+        }
+        var resolver = new PropertyResolver(propertyMap);
+        for (var prop : properties) {
+            resolver.addProperty(prop.getName(), prop.getValue());
+        }
+
+        return resolver;
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class FeedRecord {
+
+        String topic;
+        @Delegate
+        TopicEntry entry;
+
+        public ProducerRecord<String, byte[]> toRecord() {
+            return new ProducerRecord(getTopic(), getKey(), getKey());
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class TopicEntry {
+
+        String key;
+        byte[] data;
+    }
+
 
     private String asText(Path path) {
         try {
@@ -77,18 +162,14 @@ public class KafkaFeeder implements Runnable, YamlParser {
             relative = relative.resolve(path);
             return Files.readString(relative);
         } catch (IOException e) {
-            log.error("", e);
+            KafkaFeeder.log.error("", e);
             throw new RuntimeException(e);
         }
     }
 
-    void createProducer(Ingest ingest) {
+    private KafkaProducer<String, byte[]> createProducer(Ingest ingest) {
         var props = new Properties();
         props.putAll(ingest.getKafka());
-        producer = new KafkaProducer<>(props);
-    }
-
-    void send(String topic, String key, byte[] value) {
-        producer.send(new ProducerRecord<>(topic, key, value));
+        return new KafkaProducer<>(props);
     }
 }
