@@ -6,6 +6,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.proto.Decoder;
+import io.github.s7i.doer.session.Input;
+import io.github.s7i.doer.session.InteractiveSession;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -75,7 +77,7 @@ public class ProtoProcessor implements Runnable {
         decoder.loadDescriptors(getPaths());
         var msgDescriptor = decoder.findMessageDescriptor(messageName);
 
-        boolean exitCommand = false;
+        var session = new InteractiveSession();
         var input = new Input();
 
         try (var br = new Scanner(new InputStreamReader(System.in))) {
@@ -83,8 +85,8 @@ public class ProtoProcessor implements Runnable {
                 System.out.print("doer > ");
                 while (br.hasNextLine()) {
                     var line = br.nextLine();
-                    if (":quit".equals(line.trim())) {
-                        exitCommand = true;
+                    if (line.startsWith(":")) {
+                        session.processCommand(line);
                         break;
                     } else if (text && "EOF".equals(line)) {
                         break;
@@ -106,7 +108,7 @@ public class ProtoProcessor implements Runnable {
                     printDecodedMessage(decoder, msgDescriptor, input);
                 }
                 input = new Input();
-            } while (!exitCommand);
+            } while (session.isActive());
         }
     }
 
@@ -144,15 +146,13 @@ public class ProtoProcessor implements Runnable {
             case "bin":
                 var bytes = proto.toByteArray();
                 if (nonNull(output)) {
-                    try {
-                        Files.write(output.toPath(), bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-                        log.info("proto exported to: {} bytes witted: {}", output.getAbsolutePath(), bytes.length);
-                    } catch (IOException e) {
-                        log.error("while exporting", e);
-                    }
+                    toOutputFile(bytes);
                 } else {
                     log.info("decoded proto in binary\nBINARY_BEGIN\n{}BINARY_END", new String(bytes, Charset.forName("UTF8")));
                 }
+                break;
+            case "bytestring":
+                log.info("decoded proto as bytestring\n{}", ByteString.copyFrom(proto.toByteArray()).toString());
                 break;
             case "text":
                 String textVal = decoder.toText(proto);
@@ -161,57 +161,12 @@ public class ProtoProcessor implements Runnable {
         }
     }
 
-    private static class Input {
-
-        boolean curlyBracketWasOpened;
-        int openCurlyBracketCount;
-        boolean markAsIsCompleted;
-        StringBuilder builder = new StringBuilder();
-
-        void process(String input) {
-            processCurlyBracket(input);
-            builder.append(input).append("\n");
-        }
-
-        void processSingleLine(String input) {
-            builder.append(input);
-            markAsIsCompleted = true;
-        }
-
-        void processCurlyBracket(String input) {
-            for (char chr : input.toCharArray()) {
-                switch (chr) {
-                    case '{':
-                        openCurlyBracketCount++;
-                        if (!curlyBracketWasOpened) {
-                            curlyBracketWasOpened = true;
-                        }
-                        break;
-                    case '}':
-                        if (openCurlyBracketCount > 0) {
-                            openCurlyBracketCount--;
-                        } else {
-                            throw new IllegalStateException("invalid input");
-                        }
-                        break;
-
-                }
-            }
-        }
-
-        boolean isComplete() {
-            if (markAsIsCompleted) {
-                return true;
-            }
-            return curlyBracketWasOpened && openCurlyBracketCount == 0;
-        }
-
-        boolean isOpen() {
-            return openCurlyBracketCount > 0;
-        }
-
-        public String getInputText() {
-            return builder.toString();
+    private void toOutputFile(byte[] bytes) {
+        try {
+            Files.write(output.toPath(), bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+            log.info("proto exported to: {} bytes witted: {} bytes", output.getAbsolutePath(), bytes.length);
+        } catch (IOException e) {
+            log.error("while exporting", e);
         }
     }
 
