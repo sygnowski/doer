@@ -18,4 +18,17 @@ class InteractiveSessionTest extends Specification {
         1 * storage.update("aaa", "bbb")
     }
 
+    def "test interactive session - empty params"() {
+        given:
+        def cmd = ":set"
+        def storage = Mock(ParamStorage)
+        when:
+        def session = new InteractiveSession()
+        session.setStorage(storage)
+        session.processCommand(cmd)
+
+        then:
+        0 * storage.update(_, _)
+    }
+
 }

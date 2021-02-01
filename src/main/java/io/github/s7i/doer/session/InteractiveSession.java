@@ -25,6 +25,13 @@ public class InteractiveSession {
                   .findFirst()
                   .orElse(UNDEFINED);
         }
+
+        String argPart(String rawCommand) {
+            if (rawCommand.length() > this.keyword.length()) {
+                return rawCommand.substring(this.keyword.length() + 1);
+            }
+            return "";
+        }
     }
 
     boolean active = true;
@@ -38,13 +45,19 @@ public class InteractiveSession {
                 active = false;
                 break;
             case SET:
-                command = command.substring(Cmd.SET.keyword.length() + 1);
-                var args = command.split("\\s");
-                Arrays.stream(args)
-                      .filter(s -> !s.isEmpty())
-                      .map(a -> new Arg(a))
-                      .forEach(this::onArg);
+                onSetCommand(command, cmd);
                 break;
+        }
+    }
+
+    private void onSetCommand(String command, Cmd cmd) {
+        var rawArgs = cmd.argPart(command);
+        if (!rawArgs.isBlank()) {
+            var args = command.split("\\s");
+            Arrays.stream(args)
+                  .filter(s -> !s.isEmpty())
+                  .map(a -> new Arg(a))
+                  .forEach(this::onArg);
         }
     }
 

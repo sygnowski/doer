@@ -8,6 +8,7 @@ import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.session.Input;
 import io.github.s7i.doer.session.InteractiveSession;
+import io.github.s7i.doer.session.ParamStorage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,6 +16,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -26,10 +28,26 @@ import picocli.CommandLine.Option;
 
 @Slf4j
 @Command(name = "proto")
-public class ProtoProcessor implements Runnable {
+public class ProtoProcessor implements Runnable, ParamStorage {
 
     enum InputType {
         TEXT, JSON, BYTESTRING;
+    }
+
+    enum ExportAs {
+        BIN, TEXT, JSON, BYTESTRING;
+
+        String keyword() {
+            return this.name().toLowerCase();
+        }
+
+        static ExportAs of(String value) {
+            return Arrays.stream(values())
+                  .filter(e -> e.keyword().equals(value))
+                  .findFirst()
+                  .orElseThrow();
+        }
+
     }
 
     @Option(names = "-d", arity = "1..*")
@@ -75,7 +93,6 @@ public class ProtoProcessor implements Runnable {
         final var text = inputType == InputType.TEXT;
         var decoder = new Decoder();
         decoder.loadDescriptors(getPaths());
-        var msgDescriptor = decoder.findMessageDescriptor(messageName);
 
         var session = new InteractiveSession();
         var input = new Input();
@@ -105,18 +122,19 @@ public class ProtoProcessor implements Runnable {
                     }
                 }
                 if (input.isComplete()) {
-                    printDecodedMessage(decoder, msgDescriptor, input);
+                    printDecodedMessage(decoder, input);
                 }
                 input = new Input();
             } while (session.isActive());
         }
     }
 
-    private void printDecodedMessage(Decoder decoder, com.google.protobuf.Descriptors.Descriptor msgDescriptor, Input input) {
+    private void printDecodedMessage(Decoder decoder, Input input) {
         final var json = inputType == InputType.JSON;
         final var text = inputType == InputType.TEXT;
         try {
             Message proto;
+            var msgDescriptor = decoder.findMessageDescriptor(messageName);
 
             if (inputType == InputType.BYTESTRING) {
                 var data = ByteString.copyFromUtf8(input.getInputText()).toByteArray();
@@ -185,5 +203,14 @@ public class ProtoProcessor implements Runnable {
         var decoder = new Decoder();
         decoder.loadDescriptors(descriptorPaths);
         return decoder.toMessage(decoder.findMessageDescriptor(messageName), json);
+    }
+
+    @Override
+    public void update(String paramName, String paramValue) {
+        switch (paramName) {
+            case "exportAs":
+                exportAs = ExportAs.of(paramValue).keyword();
+                break;
+        }
     }
 }

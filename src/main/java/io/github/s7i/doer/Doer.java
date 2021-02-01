@@ -93,6 +93,7 @@ public class Doer {
         boolean onlyFiles = Arrays.stream(args)
               .allMatch(a -> a.endsWith(".yml") || a.endsWith(".yaml"));
         new CommandLine(onlyFiles ? new FileParserCommand() : new Doer())
+              .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(args);
     }
 }
