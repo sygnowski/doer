@@ -1,10 +1,13 @@
 package io.github.s7i.doer.config;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,10 +43,17 @@ public class Ingest extends Base {
         String name;
         List<String> attributes;
         List<List<String>> values;
-        String repeat;
+        Long repeat;
 
         public Stream<List<String>> stream() {
             requireNonNull(values, "ValueSet::values");
+            if (nonNull(repeat) && repeat > 1) {
+                var r = LongStream.range(0, repeat)
+                      .mapToObj(step -> values.stream())
+                      .flatMap(Function.identity());
+                return r;
+
+            }
             return values.stream();
         }
     }

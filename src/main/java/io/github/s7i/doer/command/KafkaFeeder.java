@@ -127,7 +127,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
         final var rower = new RowProcessor(valueSet.getAttributes());
 
         var result = valueSet.stream()
-              .map(v -> rower.updateRowValues(v))
+              .map(v -> rower.nextRowValues(v))
               .map(r -> r.updateTemplateProperties(valueTemplate))
               .map(templater::apply)
               .filter(Optional::isPresent)
@@ -161,11 +161,13 @@ public class KafkaFeeder implements Runnable, YamlParser {
             resolver.addProperty(prop.getName(), prop.getValue());
         }
 
-        RowProcessor updateRowValues(List<String> values) {
+        RowProcessor nextRowValues(List<String> values) {
+            rowState.put("__#", String.valueOf(++rowNum));
             for (int pos = 0; pos < attributes.size(); pos++) {
-                rowState.put(attributes.get(pos), values.get(pos));
-                rowState.put("__#", String.valueOf(++rowNum));
+                var value = resolver.resolve(values.get(pos));
+                rowState.put(attributes.get(pos), value);
             }
+
             return this;
         }
     }
@@ -179,7 +181,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
         TopicEntry entry;
 
         public ProducerRecord<String, byte[]> toRecord() {
-            return new ProducerRecord(getTopic(), getKey(), getKey());
+            return new ProducerRecord(getTopic(), getKey(), getData());
         }
     }
 
