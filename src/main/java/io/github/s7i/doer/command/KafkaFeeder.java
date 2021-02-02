@@ -127,7 +127,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
         final var rower = new RowProcessor(valueSet.getAttributes());
 
         var result = valueSet.stream()
-              .map(v -> rower.nextRowValues(v))
+              .map(rower::nextRowValues)
               .map(r -> r.updateTemplateProperties(valueTemplate))
               .map(templater::apply)
               .filter(Optional::isPresent)
