@@ -65,7 +65,7 @@ public class Decoder {
 
             return builder.build();
         } catch (InvalidProtocolBufferException e) {
-            log.error("making proto message", e);
+            log.error("making proto message, form json:\n{} exception is:\n", json, e);
             throw new RuntimeException("Cannot make proto message: " + descriptor.getName());
         }
     }
