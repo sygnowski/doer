@@ -1,9 +1,11 @@
 package io.github.s7i.doer.config;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -83,6 +85,13 @@ public class Ingest extends Base {
         @JsonProperty("proto_message")
         String protoMessage;
         List<TemplateProp> properties;
+
+        public List<TemplateProp> getProperties() {
+            if (isNull(properties)) {
+                return Collections.emptyList();
+            }
+            return properties;
+        }
     }
 
     @Getter
