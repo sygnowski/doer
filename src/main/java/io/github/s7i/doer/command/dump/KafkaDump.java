@@ -9,6 +9,7 @@ import io.github.s7i.doer.command.YamlParser;
 import io.github.s7i.doer.config.Dump;
 import io.github.s7i.doer.config.Dump.Topic;
 import io.github.s7i.doer.config.Range;
+import io.github.s7i.doer.domain.Kafka;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +20,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -35,6 +35,8 @@ import picocli.CommandLine.Option;
 @Command(name = "kdump")
 @Slf4j
 public class KafkaDump implements Runnable, YamlParser {
+
+    public static Kafka kafka = new Kafka();
 
     public static KafkaDump createCommandInstance(File yaml) {
         var cmd = new KafkaDump();
@@ -106,7 +108,7 @@ public class KafkaDump implements Runnable, YamlParser {
             final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
             initialize();
 
-            try (KafkaConsumer<String, byte[]> consumer = connectToKafka()) {
+            try (KafkaConsumer<String, byte[]> consumer = kafka.createConsumer(mainConfig)) {
                 consumer.subscribe(topics);
                 do {
 
@@ -120,19 +122,13 @@ public class KafkaDump implements Runnable, YamlParser {
             log.info("Stop dumping from Kafka, saved records: {}", recordCounter);
         }
 
-        private KafkaConsumer<String, byte[]> connectToKafka() {
-            Properties properties = new Properties();
-            properties.putAll(mainConfig.getKafka());
-            return new KafkaConsumer(properties);
-        }
-
         private void initialize() {
             var proto = initProto();
             var ranges = initRange();
 
             for (var topic : mainConfig.getDump().getTopics()) {
                 var name = topic.getName();
-                var context = contexts.computeIfAbsent(name, n -> new TopicContext(n));
+                var context = contexts.computeIfAbsent(name, TopicContext::new);
 
                 context.setRecordWriter(new RecordWriter(topic, this));
                 var topicOutput = root.resolve(topic.getOutput());

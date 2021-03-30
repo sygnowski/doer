@@ -10,6 +10,7 @@ import io.github.s7i.doer.config.Ingest.Entry;
 import io.github.s7i.doer.config.Ingest.IngestSpec;
 import io.github.s7i.doer.config.Ingest.TemplateProp;
 import io.github.s7i.doer.config.Ingest.ValueTemplate;
+import io.github.s7i.doer.domain.Kafka;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +37,8 @@ import picocli.CommandLine.Option;
 @Command(name = "kfeed")
 @Slf4j
 public class KafkaFeeder implements Runnable, YamlParser {
+
+    public static Kafka kafka = new Kafka();
 
     public static KafkaFeeder createCommandInstance(File yaml) {
         var cmd = new KafkaFeeder();
@@ -64,7 +67,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
         var records = produceRecords(config.getIngest());
         log.info("feeding kafka, prepared records count: {}", records.size());
 
-        try (var producer = createProducer(config)) {
+        try (var producer = kafka.createProducer(config)) {
             records.stream()
                   .map(FeedRecord::toRecord)
                   .forEach(producer::send);
@@ -203,11 +206,5 @@ public class KafkaFeeder implements Runnable, YamlParser {
             KafkaFeeder.log.error("", e);
             throw new RuntimeException(e);
         }
-    }
-
-    private KafkaProducer<String, byte[]> createProducer(Ingest ingest) {
-        var props = new Properties();
-        props.putAll(ingest.getKafka());
-        return new KafkaProducer<>(props);
     }
 }
