@@ -3,6 +3,7 @@ package io.github.s7i.doer;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.dump.KafkaDump;
+import io.github.s7i.doer.command.serve.Serve;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,7 +18,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(subcommands = {KafkaFeeder.class, KafkaDump.class, ProtoProcessor.class})
+@Command(subcommands = {KafkaFeeder.class, KafkaDump.class, ProtoProcessor.class, Serve.class})
 public class Doer {
 
     @Command(name = "main")
