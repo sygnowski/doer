@@ -30,6 +30,22 @@ public class Ingest extends Base {
         @JsonProperty("value_sets")
         List<ValueSet> valueSets;
         List<Topic> topics;
+
+        public ValueSet findValueSet(String valueSetName) {
+            return getValueSets()
+                  .stream()
+                  .filter(vs -> vs.getName().equals(valueSetName))
+                  .findFirst().orElseThrow();
+        }
+
+        public String findTemplate(ValueTemplate valueTemplate) {
+            return getTemplates()
+                  .stream()
+                  .filter(t -> t.getName().equals(valueTemplate.getTemplateName()))
+                  .findFirst()
+                  .orElseThrow()
+                  .getContent();
+        }
     }
 
     @Getter
@@ -73,8 +89,20 @@ public class Ingest extends Base {
     public static class Entry {
 
         String key;
+        List<Header> headers;
         @JsonProperty("value_template")
         ValueTemplate valueTemplate;
+
+        public boolean hasHeaders() {
+            return nonNull(headers) && !headers.isEmpty();
+        }
+    }
+
+    @Getter
+    public static class Header {
+
+        String name;
+        String value;
     }
 
     @Getter
