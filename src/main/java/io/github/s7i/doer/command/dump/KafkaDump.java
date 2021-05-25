@@ -132,7 +132,7 @@ public class KafkaDump implements Runnable, YamlParser {
 
             for (var topic : mainConfig.getDump().getTopics()) {
                 var name = topic.getName();
-                var context = contexts.computeIfAbsent(name, n -> new TopicContext(n));
+                var context = contexts.computeIfAbsent(name, TopicContext::new);
 
                 context.setRecordWriter(new RecordWriter(topic, this));
                 var topicOutput = root.resolve(topic.getOutput());

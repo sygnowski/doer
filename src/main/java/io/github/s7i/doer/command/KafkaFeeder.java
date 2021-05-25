@@ -5,6 +5,7 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
+import io.github.s7i.doer.Tracing;
 import io.github.s7i.doer.Utils.PropertyResolver;
 import io.github.s7i.doer.config.Ingest;
 import io.github.s7i.doer.config.Ingest.Entry;
@@ -13,6 +14,7 @@ import io.github.s7i.doer.config.Ingest.TemplateProp;
 import io.github.s7i.doer.config.Ingest.ValueSet;
 import io.github.s7i.doer.config.Ingest.ValueTemplate;
 import io.github.s7i.doer.proto.Decoder;
+import io.opentracing.contrib.kafka.TracingKafkaProducer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -50,6 +54,8 @@ public class KafkaFeeder implements Runnable, YamlParser {
     private File yaml;
     private Path root;
     private Decoder decoder;
+    @Option(names = "-t", description = "Use Open Tracing")
+    private boolean useTracing;
 
     @Override
     public File getYamlFile() {
@@ -149,15 +155,14 @@ public class KafkaFeeder implements Runnable, YamlParser {
             return decoder.findMessageDescriptor(entry.getValueTemplate().getProtoMessage());
         }
 
-        public List<TopicEntry> topicEntries() {
+        public Stream<TopicEntry> topicEntries() {
             var rp = new RowProcessor(valueSet.getAttributes());
             return valueSet.stream()
                   .map(rp::nextRowValues)
                   .map(r -> r.updateTemplateProperties(entry.getValueTemplate()))
                   .map(this::makeTopicEntry)
                   .filter(Optional::isPresent)
-                  .map(Optional::get)
-                  .collect(Collectors.toList());
+                  .map(Optional::get);
         }
     }
 
@@ -247,9 +252,13 @@ public class KafkaFeeder implements Runnable, YamlParser {
         }
     }
 
-    private KafkaProducer<String, byte[]> createProducer(Ingest ingest) {
+    private Producer<String, byte[]> createProducer(Ingest ingest) {
         var props = new Properties();
         props.putAll(ingest.getKafka());
-        return new KafkaProducer<>(props);
+        var producer = new KafkaProducer<String, byte[]>(props);
+        if (useTracing) {
+            return new TracingKafkaProducer(producer, Tracing.INSTANCE.getTracer());
+        }
+        return producer;
     }
 }
