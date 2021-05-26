@@ -1,6 +1,5 @@
 package io.github.s7i.doer.command;
 
-import static io.github.s7i.doer.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
@@ -11,14 +10,13 @@ import io.github.s7i.doer.config.Ingest;
 import io.github.s7i.doer.config.Ingest.Entry;
 import io.github.s7i.doer.config.Ingest.IngestSpec;
 import io.github.s7i.doer.config.Ingest.TemplateProp;
+import io.github.s7i.doer.config.Ingest.Topic;
 import io.github.s7i.doer.config.Ingest.ValueSet;
 import io.github.s7i.doer.config.Ingest.ValueTemplate;
 import io.github.s7i.doer.proto.Decoder;
 import io.opentracing.contrib.kafka.TracingKafkaProducer;
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,6 +54,8 @@ public class KafkaFeeder implements Runnable, YamlParser {
     private Decoder decoder;
     @Option(names = "-t", description = "Use Open Tracing")
     private boolean useTracing;
+    @Option(names = "-l", description = "Allowed Labels")
+    private List<String> allowedLabels;
 
     @Override
     public File getYamlFile() {
@@ -89,9 +89,18 @@ public class KafkaFeeder implements Runnable, YamlParser {
         }
         var result = new ArrayList<FeedRecord>();
         for (var topic : spec.getTopics()) {
-            buildEntries(spec, result, topic);
+            if (isAllowed(topic)) {
+                buildEntries(spec, result, topic);
+            }
         }
         return result;
+    }
+
+    private boolean isAllowed(Topic topic) {
+        if (nonNull(allowedLabels)) {
+            return allowedLabels.contains(topic.getLabel());
+        }
+        return true;
     }
 
     private void buildEntries(IngestSpec spec, ArrayList<FeedRecord> result, Ingest.Topic topic) {
@@ -110,7 +119,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
     }
 
     private boolean isTemplateEntry(Ingest.Topic topic, Entry entry) {
-        return hasAnyValue(topic.getValueSet()) && nonNull(entry.getValueTemplate());
+        return nonNull(entry.getValueTemplate());
     }
 
     @Builder
@@ -156,8 +165,28 @@ public class KafkaFeeder implements Runnable, YamlParser {
         }
 
         public Stream<TopicEntry> topicEntries() {
-            var rp = new RowProcessor(valueSet.getAttributes());
-            return valueSet.stream()
+            List<String> attributes;
+            Stream<List<String>> stream;
+            if (ValueSet.EMPTY == valueSet) {
+                attributes = entry.getValueTemplate()
+                      .getProperties()
+                      .stream()
+                      .map(TemplateProp::getName)
+                      .collect(Collectors.toList());
+
+                var list = entry.getValueTemplate()
+                      .getProperties()
+                      .stream()
+                      .map(TemplateProp::getValue)
+                      .collect(Collectors.toList());
+
+                stream = Stream.of(list);
+            } else {
+                attributes = valueSet.getAttributes();
+                stream = valueSet.stream();
+            }
+            var rp = new RowProcessor(attributes);
+            return stream
                   .map(rp::nextRowValues)
                   .map(r -> r.updateTemplateProperties(entry.getValueTemplate()))
                   .map(this::makeTopicEntry)
@@ -238,18 +267,6 @@ public class KafkaFeeder implements Runnable, YamlParser {
 
         String name;
         byte[] value;
-    }
-
-
-    private String asText(Path path) {
-        try {
-            var relative = root;
-            relative = relative.resolve(path);
-            return Files.readString(relative);
-        } catch (IOException e) {
-            KafkaFeeder.log.error("", e);
-            throw new RuntimeException(e);
-        }
     }
 
     private Producer<String, byte[]> createProducer(Ingest ingest) {

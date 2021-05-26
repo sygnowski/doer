@@ -35,7 +35,7 @@ public class Ingest extends Base {
             return getValueSets()
                   .stream()
                   .filter(vs -> vs.getName().equals(valueSetName))
-                  .findFirst().orElseThrow();
+                  .findFirst().orElse(ValueSet.EMPTY);
         }
 
         public String findTemplate(ValueTemplate valueTemplate) {
@@ -57,6 +57,13 @@ public class Ingest extends Base {
 
     @Getter
     public static class ValueSet {
+
+        public static final ValueSet EMPTY = new ValueSet() {
+            @Override
+            public boolean equals(Object obj) {
+                return EMPTY == obj;
+            }
+        };
 
         String name;
         List<String> attributes;
@@ -80,6 +87,7 @@ public class Ingest extends Base {
     public static class Topic {
 
         String name;
+        String label;
         @JsonProperty("value_set")
         String valueSet;
         List<Entry> entries;
