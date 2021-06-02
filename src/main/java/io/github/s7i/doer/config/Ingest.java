@@ -1,5 +1,6 @@
 package io.github.s7i.doer.config;
 
+import static io.github.s7i.doer.Utils.hasAnyValue;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -103,6 +104,10 @@ public class Ingest extends Base {
 
         public boolean hasHeaders() {
             return nonNull(headers) && !headers.isEmpty();
+        }
+
+        public boolean isProto() {
+            return nonNull(valueTemplate) && hasAnyValue(valueTemplate.getProtoMessage());
         }
     }
 

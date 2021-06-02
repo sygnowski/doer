@@ -136,7 +136,12 @@ public class KafkaFeeder implements Runnable, YamlParser {
             var filledKey = rower.resolve(rowKey);
 
             try {
-                var data = asBinaryProto(payload);
+                byte[] data;
+                if (entry.isProto()) {
+                    data = asBinaryProto(payload);
+                } else {
+                    data = payload.getBytes(StandardCharsets.UTF_8);
+                }
                 var topicEntry = new TopicEntry(filledKey, data);
                 assignHeaders(topicEntry);
 
