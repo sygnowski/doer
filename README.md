@@ -46,13 +46,15 @@ A simple example of ingest manifest `simple-ingest.yml`
 ```yaml
 version: "1.0"
 kind: kafka-ingest
-kafka-properties: kafka.properties
+kafka:
+  bootstrap.servers: localhost:9092
 ingest:
-topics:
-  - name: topicName
-    entries:
-      - key: some-key-value
-        value: some-message-value
+  topics:
+    - name: topicName
+      entries:
+        - key: some-key-value
+          value: some-message-value
+        - value: no-key-value
 ```
 
 Run a command `doer kfeed -y simple-ingest.yml` or `doer ingest.yml`

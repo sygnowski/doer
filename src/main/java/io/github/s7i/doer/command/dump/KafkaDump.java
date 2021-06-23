@@ -1,7 +1,7 @@
 package io.github.s7i.doer.command.dump;
 
 
-import static io.github.s7i.doer.Utils.hasAnyValue;
+import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;

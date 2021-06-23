@@ -1,19 +1,22 @@
 package io.github.s7i.doer.command;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.Tracing;
-import io.github.s7i.doer.Utils.PropertyResolver;
-import io.github.s7i.doer.config.Ingest;
-import io.github.s7i.doer.config.Ingest.Entry;
-import io.github.s7i.doer.config.Ingest.IngestSpec;
-import io.github.s7i.doer.config.Ingest.TemplateProp;
-import io.github.s7i.doer.config.Ingest.Topic;
-import io.github.s7i.doer.config.Ingest.ValueSet;
-import io.github.s7i.doer.config.Ingest.ValueTemplate;
+import io.github.s7i.doer.kafka.KafkaProducerFactory;
+import io.github.s7i.doer.manifest.ingest.Entry;
+import io.github.s7i.doer.manifest.ingest.Ingest;
+import io.github.s7i.doer.manifest.ingest.IngestManifest;
+import io.github.s7i.doer.manifest.ingest.TemplateProp;
+import io.github.s7i.doer.manifest.ingest.Topic;
+import io.github.s7i.doer.manifest.ingest.ValueSet;
+import io.github.s7i.doer.manifest.ingest.ValueTemplate;
 import io.github.s7i.doer.proto.Decoder;
+import io.github.s7i.doer.util.PropertyResolver;
+import io.github.s7i.doer.util.SpecialExpression;
 import io.opentracing.contrib.kafka.TracingKafkaProducer;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -49,13 +52,14 @@ public class KafkaFeeder implements Runnable, YamlParser {
     }
 
     @Option(names = {"-y", "-yaml"}, defaultValue = "ingest.yml")
-    private File yaml;
-    private Path root;
-    private Decoder decoder;
+    protected File yaml;
+    protected Path root;
+    protected Decoder decoder;
     @Option(names = "-t", description = "Use Open Tracing")
-    private boolean useTracing;
+    protected boolean useTracing;
     @Option(names = "-l", description = "Allowed Labels")
-    private List<String> allowedLabels;
+    protected List<String> allowedLabels;
+    protected KafkaProducerFactory kafkaProducerFactory;
 
     @Override
     public File getYamlFile() {
@@ -68,6 +72,9 @@ public class KafkaFeeder implements Runnable, YamlParser {
 
     @Override
     public void run() {
+        if (isNull(kafkaProducerFactory)) {
+            kafkaProducerFactory = this::buildProducer;
+        }
         var config = parseYaml(Ingest.class);
 
         var records = produceRecords(config.getIngest());
@@ -82,7 +89,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
         log.info("kafka feeder ends");
     }
 
-    private List<FeedRecord> produceRecords(IngestSpec spec) {
+    private List<FeedRecord> produceRecords(IngestManifest spec) {
         if (nonNull(spec.getProto())) {
             decoder = new Decoder();
             decoder.loadDescriptors(spec.getProto());
@@ -103,9 +110,9 @@ public class KafkaFeeder implements Runnable, YamlParser {
         return true;
     }
 
-    private void buildEntries(IngestSpec spec, ArrayList<FeedRecord> result, Ingest.Topic topic) {
+    protected void buildEntries(IngestManifest spec, ArrayList<FeedRecord> result, Topic topic) {
         for (var entry : topic.getEntries()) {
-            if (isTemplateEntry(topic, entry)) {
+            if (entry.isTemplateEntry()) {
                 TemplateResolver.builder()
                       .entry(entry)
                       .valueSet(spec.findValueSet(topic.getValueSet()))
@@ -114,12 +121,19 @@ public class KafkaFeeder implements Runnable, YamlParser {
                       .build()
                       .topicEntries()
                       .forEach(data -> result.add(new FeedRecord(topic.getName(), data)));
+            } else if (entry.isSimpleValue()) {
+                result.add(FeedRecord.fromSimpleEntry(entry, topic));
             }
         }
     }
 
-    private boolean isTemplateEntry(Ingest.Topic topic, Entry entry) {
-        return nonNull(entry.getValueTemplate());
+    static void assignHeaders(Entry entry, TopicEntry topicEntry) {
+        if (entry.hasHeaders()) {
+            var headers = entry.getHeaders().stream()
+                  .map(h -> Header.from(h.getName(), h.getValue()))
+                  .collect(Collectors.toList());
+            topicEntry.setHeaders(headers);
+        }
     }
 
     @Builder
@@ -143,21 +157,12 @@ public class KafkaFeeder implements Runnable, YamlParser {
                     data = payload.getBytes(StandardCharsets.UTF_8);
                 }
                 var topicEntry = new TopicEntry(filledKey, data);
-                assignHeaders(topicEntry);
+                assignHeaders(entry, topicEntry);
 
                 return Optional.of(topicEntry);
             } catch (RuntimeException e) {
                 //do nothing
                 return Optional.empty();
-            }
-        }
-
-        private void assignHeaders(TopicEntry topicEntry) {
-            if (entry.hasHeaders()) {
-                var headers = entry.getHeaders().stream()
-                      .map(h -> Header.from(h.getName(), h.getValue()))
-                      .collect(Collectors.toList());
-                topicEntry.setHeaders(headers);
             }
         }
 
@@ -225,7 +230,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
         }
 
         RowProcessor nextRowValues(List<String> values) {
-            rowState.put("__#", String.valueOf(++rowNum));
+            rowState.put(SpecialExpression.ROW_ID, String.valueOf(++rowNum));
             for (int pos = 0; pos < attributes.size(); pos++) {
                 var value = resolver.resolve(values.get(pos));
                 rowState.put(attributes.get(pos), value);
@@ -242,6 +247,20 @@ public class KafkaFeeder implements Runnable, YamlParser {
         String topic;
         @Delegate
         TopicEntry entry;
+
+        public static FeedRecord fromSimpleEntry(Entry entry, Topic topic) {
+
+            var resolver = new PropertyResolver();
+            var topicName = topic.getName();
+            var key = entry.getKey() != null
+                  ? resolver.resolve(entry.getKey())
+                  : null;
+            var simpleValue = resolver.resolve(entry.getSimpleValue());
+            var data = simpleValue.getBytes(StandardCharsets.UTF_8);
+            var topicEntry = new TopicEntry(key, data);
+            assignHeaders(entry, topicEntry);
+            return new FeedRecord(topicName, topicEntry);
+        }
 
         public ProducerRecord<String, byte[]> toRecord() {
             var record = new ProducerRecord(getTopic(), getKey(), getData());
@@ -274,9 +293,13 @@ public class KafkaFeeder implements Runnable, YamlParser {
         byte[] value;
     }
 
-    private Producer<String, byte[]> createProducer(Ingest ingest) {
+    protected Producer<String, byte[]> createProducer(Ingest ingest) {
         var props = new Properties();
         props.putAll(ingest.getKafka());
+        return kafkaProducerFactory.build(props, useTracing);
+    }
+
+    protected Producer<String, byte[]> buildProducer(Properties props, boolean useTracing) {
         var producer = new KafkaProducer<String, byte[]>(props);
         if (useTracing) {
             return new TracingKafkaProducer(producer, Tracing.INSTANCE.getTracer());
