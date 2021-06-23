@@ -10,6 +10,7 @@ List of available commands:
 
 - kfeed - Kafka topics data populator
 - kdump - Kafka topic consumer with rich options
+- helix - Helix spectator
 
 ### Working with Kafka
 
