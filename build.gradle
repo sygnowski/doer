@@ -20,6 +20,8 @@ dependencies {
             'info.picocli:picocli:4.5.1',
             "io.grpc:grpc-protobuf:1.29.0",
             "io.grpc:grpc-stub:1.29.0",
+            'io.jaegertracing:jaeger-client:1.6.0',
+            'io.opentracing.contrib:opentracing-kafka-client:0.1.15',
             "javax.annotation:javax.annotation-api:1.3.2",
             "com.google.protobuf:protobuf-java:3.11.4",
             "com.google.protobuf:protobuf-java-util:3.11.4",

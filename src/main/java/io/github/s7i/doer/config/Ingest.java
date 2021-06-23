@@ -1,5 +1,6 @@
 package io.github.s7i.doer.config;
 
+import static io.github.s7i.doer.Utils.hasAnyValue;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -30,6 +31,22 @@ public class Ingest extends Base {
         @JsonProperty("value_sets")
         List<ValueSet> valueSets;
         List<Topic> topics;
+
+        public ValueSet findValueSet(String valueSetName) {
+            return getValueSets()
+                  .stream()
+                  .filter(vs -> vs.getName().equals(valueSetName))
+                  .findFirst().orElse(ValueSet.EMPTY);
+        }
+
+        public String findTemplate(ValueTemplate valueTemplate) {
+            return getTemplates()
+                  .stream()
+                  .filter(t -> t.getName().equals(valueTemplate.getTemplateName()))
+                  .findFirst()
+                  .orElseThrow()
+                  .getContent();
+        }
     }
 
     @Getter
@@ -41,6 +58,13 @@ public class Ingest extends Base {
 
     @Getter
     public static class ValueSet {
+
+        public static final ValueSet EMPTY = new ValueSet() {
+            @Override
+            public boolean equals(Object obj) {
+                return EMPTY == obj;
+            }
+        };
 
         String name;
         List<String> attributes;
@@ -64,6 +88,7 @@ public class Ingest extends Base {
     public static class Topic {
 
         String name;
+        String label;
         @JsonProperty("value_set")
         String valueSet;
         List<Entry> entries;
@@ -73,8 +98,24 @@ public class Ingest extends Base {
     public static class Entry {
 
         String key;
+        List<Header> headers;
         @JsonProperty("value_template")
         ValueTemplate valueTemplate;
+
+        public boolean hasHeaders() {
+            return nonNull(headers) && !headers.isEmpty();
+        }
+
+        public boolean isProto() {
+            return nonNull(valueTemplate) && hasAnyValue(valueTemplate.getProtoMessage());
+        }
+    }
+
+    @Getter
+    public static class Header {
+
+        String name;
+        String value;
     }
 
     @Getter

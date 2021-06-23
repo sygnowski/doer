@@ -1,19 +1,22 @@
 package io.github.s7i.doer.command;
 
-import static io.github.s7i.doer.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
+import com.google.protobuf.Descriptors.Descriptor;
+import io.github.s7i.doer.Tracing;
 import io.github.s7i.doer.Utils.PropertyResolver;
 import io.github.s7i.doer.config.Ingest;
 import io.github.s7i.doer.config.Ingest.Entry;
 import io.github.s7i.doer.config.Ingest.IngestSpec;
 import io.github.s7i.doer.config.Ingest.TemplateProp;
+import io.github.s7i.doer.config.Ingest.Topic;
+import io.github.s7i.doer.config.Ingest.ValueSet;
 import io.github.s7i.doer.config.Ingest.ValueTemplate;
 import io.github.s7i.doer.proto.Decoder;
+import io.opentracing.contrib.kafka.TracingKafkaProducer;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,14 +24,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -47,6 +52,10 @@ public class KafkaFeeder implements Runnable, YamlParser {
     private File yaml;
     private Path root;
     private Decoder decoder;
+    @Option(names = "-t", description = "Use Open Tracing")
+    private boolean useTracing;
+    @Option(names = "-l", description = "Allowed Labels")
+    private List<String> allowedLabels;
 
     @Override
     public File getYamlFile() {
@@ -80,61 +89,115 @@ public class KafkaFeeder implements Runnable, YamlParser {
         }
         var result = new ArrayList<FeedRecord>();
         for (var topic : spec.getTopics()) {
-            buildEntries(spec, result, topic);
+            if (isAllowed(topic)) {
+                buildEntries(spec, result, topic);
+            }
         }
         return result;
     }
 
+    private boolean isAllowed(Topic topic) {
+        if (nonNull(allowedLabels)) {
+            return allowedLabels.contains(topic.getLabel());
+        }
+        return true;
+    }
+
     private void buildEntries(IngestSpec spec, ArrayList<FeedRecord> result, Ingest.Topic topic) {
         for (var entry : topic.getEntries()) {
-            if (hasAnyValue(topic.getValueSet()) && nonNull(entry.getValueTemplate())) {
-                fillTemplate(spec, entry, topic.getValueSet())
+            if (isTemplateEntry(topic, entry)) {
+                TemplateResolver.builder()
+                      .entry(entry)
+                      .valueSet(spec.findValueSet(topic.getValueSet()))
+                      .template(spec.findTemplate(entry.getValueTemplate()))
+                      .decoder(decoder)
+                      .build()
+                      .topicEntries()
                       .forEach(data -> result.add(new FeedRecord(topic.getName(), data)));
             }
         }
     }
 
-    private List<TopicEntry> fillTemplate(IngestSpec spec, Entry entry, String valueSetName) {
-        final var valueTemplate = entry.getValueTemplate();
-        final var descriptor = decoder.findMessageDescriptor(valueTemplate.getProtoMessage());
+    private boolean isTemplateEntry(Ingest.Topic topic, Entry entry) {
+        return nonNull(entry.getValueTemplate());
+    }
 
-        final var template = spec.getTemplates()
-              .stream()
-              .filter(t -> t.getName().equals(valueTemplate.getTemplateName()))
-              .findFirst()
-              .orElseThrow()
-              .getContent();
+    @Builder
+    static class TemplateResolver {
 
-        final var valueSet = spec.getValueSets()
-              .stream()
-              .filter(vs -> vs.getName().equals(valueSetName))
-              .findFirst().orElseThrow();
+        Entry entry;
+        ValueSet valueSet;
+        String template;
+        Decoder decoder;
 
-        final Function<RowProcessor, Optional<TopicEntry>> templater = rower -> {
+        public Optional<TopicEntry> makeTopicEntry(RowProcessor rower) {
             var payload = rower.resolve(template);
             var rowKey = entry.getKey();
             var filledKey = rower.resolve(rowKey);
 
             try {
-                var data = decoder.toMessage(descriptor, payload).toByteArray();
-                return Optional.of(new TopicEntry(filledKey, data));
+                byte[] data;
+                if (entry.isProto()) {
+                    data = asBinaryProto(payload);
+                } else {
+                    data = payload.getBytes(StandardCharsets.UTF_8);
+                }
+                var topicEntry = new TopicEntry(filledKey, data);
+                assignHeaders(topicEntry);
+
+                return Optional.of(topicEntry);
             } catch (RuntimeException e) {
                 //do nothing
                 return Optional.empty();
             }
-        };
+        }
 
-        final var rower = new RowProcessor(valueSet.getAttributes());
+        private void assignHeaders(TopicEntry topicEntry) {
+            if (entry.hasHeaders()) {
+                var headers = entry.getHeaders().stream()
+                      .map(h -> Header.from(h.getName(), h.getValue()))
+                      .collect(Collectors.toList());
+                topicEntry.setHeaders(headers);
+            }
+        }
 
-        var result = valueSet.stream()
-              .map(rower::nextRowValues)
-              .map(r -> r.updateTemplateProperties(valueTemplate))
-              .map(templater::apply)
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .collect(Collectors.toList());
+        private byte[] asBinaryProto(String payload) {
+            return decoder.toMessage(findDescriptor(), payload).toByteArray();
+        }
 
-        return result;
+        private Descriptor findDescriptor() {
+            return decoder.findMessageDescriptor(entry.getValueTemplate().getProtoMessage());
+        }
+
+        public Stream<TopicEntry> topicEntries() {
+            List<String> attributes;
+            Stream<List<String>> stream;
+            if (ValueSet.EMPTY == valueSet) {
+                attributes = entry.getValueTemplate()
+                      .getProperties()
+                      .stream()
+                      .map(TemplateProp::getName)
+                      .collect(Collectors.toList());
+
+                var list = entry.getValueTemplate()
+                      .getProperties()
+                      .stream()
+                      .map(TemplateProp::getValue)
+                      .collect(Collectors.toList());
+
+                stream = Stream.of(list);
+            } else {
+                attributes = valueSet.getAttributes();
+                stream = valueSet.stream();
+            }
+            var rp = new RowProcessor(attributes);
+            return stream
+                  .map(rp::nextRowValues)
+                  .map(r -> r.updateTemplateProperties(entry.getValueTemplate()))
+                  .map(this::makeTopicEntry)
+                  .filter(Optional::isPresent)
+                  .map(Optional::get);
+        }
     }
 
     @RequiredArgsConstructor
@@ -181,33 +244,43 @@ public class KafkaFeeder implements Runnable, YamlParser {
         TopicEntry entry;
 
         public ProducerRecord<String, byte[]> toRecord() {
-            return new ProducerRecord(getTopic(), getKey(), getData());
+            var record = new ProducerRecord(getTopic(), getKey(), getData());
+            entry.getHeaders().forEach(h -> record.headers().add(h.getName(), h.getValue()));
+            return record;
         }
     }
 
     @Data
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     static class TopicEntry {
 
-        String key;
-        byte[] data;
+        List<Header> headers = new ArrayList<>(0);
+        final String key;
+        final byte[] data;
     }
 
 
-    private String asText(Path path) {
-        try {
-            var relative = root;
-            relative = relative.resolve(path);
-            return Files.readString(relative);
-        } catch (IOException e) {
-            KafkaFeeder.log.error("", e);
-            throw new RuntimeException(e);
+    @Data
+    @AllArgsConstructor
+    static class Header {
+
+        static Header from(String name, String value) {
+            requireNonNull(name, "name");
+            requireNonNull(value, "value");
+            return new Header(name, value.getBytes(StandardCharsets.UTF_8));
         }
+
+        String name;
+        byte[] value;
     }
 
-    private KafkaProducer<String, byte[]> createProducer(Ingest ingest) {
+    private Producer<String, byte[]> createProducer(Ingest ingest) {
         var props = new Properties();
         props.putAll(ingest.getKafka());
-        return new KafkaProducer<>(props);
+        var producer = new KafkaProducer<String, byte[]>(props);
+        if (useTracing) {
+            return new TracingKafkaProducer(producer, Tracing.INSTANCE.getTracer());
+        }
+        return producer;
     }
 }
