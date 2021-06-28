@@ -1,12 +1,10 @@
 package io.github.s7i.doer.command;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
-import io.github.s7i.doer.Tracing;
-import io.github.s7i.doer.kafka.KafkaProducerFactory;
+import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.manifest.ingest.Entry;
 import io.github.s7i.doer.manifest.ingest.Ingest;
 import io.github.s7i.doer.manifest.ingest.IngestManifest;
@@ -17,7 +15,6 @@ import io.github.s7i.doer.manifest.ingest.ValueTemplate;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.SpecialExpression;
-import io.opentracing.contrib.kafka.TracingKafkaProducer;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -26,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -35,8 +31,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -44,6 +38,8 @@ import picocli.CommandLine.Option;
 @Command(name = "kfeed")
 @Slf4j
 public class KafkaFeeder implements Runnable, YamlParser {
+
+    public static KafkaFactory kafka = new KafkaFactory();
 
     public static KafkaFeeder createCommandInstance(File yaml) {
         var cmd = new KafkaFeeder();
@@ -59,7 +55,6 @@ public class KafkaFeeder implements Runnable, YamlParser {
     protected boolean useTracing;
     @Option(names = "-l", description = "Allowed Labels")
     protected List<String> allowedLabels;
-    protected KafkaProducerFactory kafkaProducerFactory;
 
     @Override
     public File getYamlFile() {
@@ -72,15 +67,12 @@ public class KafkaFeeder implements Runnable, YamlParser {
 
     @Override
     public void run() {
-        if (isNull(kafkaProducerFactory)) {
-            kafkaProducerFactory = this::buildProducer;
-        }
         var config = parseYaml(Ingest.class);
 
         var records = produceRecords(config.getIngest());
         log.info("feeding kafka, prepared records count: {}", records.size());
 
-        try (var producer = createProducer(config)) {
+        try (var producer = kafka.getProducerFactory().createProducer(config, useTracing)) {
             records.stream()
                   .map(FeedRecord::toRecord)
                   .forEach(producer::send);
@@ -291,19 +283,5 @@ public class KafkaFeeder implements Runnable, YamlParser {
 
         String name;
         byte[] value;
-    }
-
-    protected Producer<String, byte[]> createProducer(Ingest ingest) {
-        var props = new Properties();
-        props.putAll(ingest.getKafka());
-        return kafkaProducerFactory.build(props, useTracing);
-    }
-
-    protected Producer<String, byte[]> buildProducer(Properties props, boolean useTracing) {
-        var producer = new KafkaProducer<String, byte[]>(props);
-        if (useTracing) {
-            return new TracingKafkaProducer(producer, Tracing.INSTANCE.getTracer());
-        }
-        return producer;
     }
 }

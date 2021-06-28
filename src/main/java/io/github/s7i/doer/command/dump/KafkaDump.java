@@ -9,6 +9,7 @@ import io.github.s7i.doer.command.YamlParser;
 import io.github.s7i.doer.config.Dump;
 import io.github.s7i.doer.config.Dump.Topic;
 import io.github.s7i.doer.config.Range;
+import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +20,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -35,6 +35,8 @@ import picocli.CommandLine.Option;
 @Command(name = "kdump")
 @Slf4j
 public class KafkaDump implements Runnable, YamlParser {
+
+    public static KafkaFactory kafka = new KafkaFactory();
 
     public static KafkaDump createCommandInstance(File yaml) {
         var cmd = new KafkaDump();
@@ -106,7 +108,7 @@ public class KafkaDump implements Runnable, YamlParser {
             final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
             initialize();
 
-            try (KafkaConsumer<String, byte[]> consumer = connectToKafka()) {
+            try (KafkaConsumer<String, byte[]> consumer = kafka.getConsumerFactory().createConsumer(mainConfig)) {
                 consumer.subscribe(topics);
                 do {
 
@@ -118,12 +120,6 @@ public class KafkaDump implements Runnable, YamlParser {
                 } while (notEnds());
             }
             log.info("Stop dumping from Kafka, saved records: {}", recordCounter);
-        }
-
-        private KafkaConsumer<String, byte[]> connectToKafka() {
-            Properties properties = new Properties();
-            properties.putAll(mainConfig.getKafka());
-            return new KafkaConsumer(properties);
         }
 
         private void initialize() {

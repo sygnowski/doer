@@ -2,16 +2,14 @@ package io.github.s7i.doer.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Dump extends Base {
+public class Dump extends KafkaConfig {
 
-    Map<String, String> kafka;
     Specs dump;
 
     @Getter
