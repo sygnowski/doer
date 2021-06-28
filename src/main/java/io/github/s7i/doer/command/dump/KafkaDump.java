@@ -10,12 +10,12 @@ import io.github.s7i.doer.config.Dump;
 import io.github.s7i.doer.config.Dump.Topic;
 import io.github.s7i.doer.config.Range;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
+import io.github.s7i.doer.domain.output.Output;
+import io.github.s7i.doer.domain.output.OutputFactory;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +37,7 @@ import picocli.CommandLine.Option;
 public class KafkaDump implements Runnable, YamlParser {
 
     public static KafkaFactory kafka = new KafkaFactory();
+    public static OutputFactory outputFactory = new OutputFactory();
 
     public static KafkaDump createCommandInstance(File yaml) {
         var cmd = new KafkaDump();
@@ -75,7 +76,7 @@ public class KafkaDump implements Runnable, YamlParser {
         Long lastOffset = 0L;
         Range range;
         Descriptor descriptor;
-        Path output;
+        Output output;
         RecordWriter recordWriter;
 
         public boolean hasRecordsToCollect() {
@@ -129,15 +130,11 @@ public class KafkaDump implements Runnable, YamlParser {
             for (var topic : mainConfig.getDump().getTopics()) {
                 var name = topic.getName();
                 var context = contexts.computeIfAbsent(name, TopicContext::new);
-
                 context.setRecordWriter(new RecordWriter(topic, this));
-                var topicOutput = root.resolve(topic.getOutput());
-                try {
-                    Files.createDirectories(topicOutput);
-                } catch (IOException e) {
-                    log.error("{}", e);
-                }
-                context.setOutput(topicOutput);
+
+                var output = outputFactory.getCreator().apply(root, topic.getOutput());
+                output.open();
+                context.setOutput(output);
                 context.setRange(ranges.get(name));
                 context.setDescriptor(proto.get(name));
             }
@@ -190,21 +187,11 @@ public class KafkaDump implements Runnable, YamlParser {
             if (nonNull(range) && range.positionNotInRange(lastOffset)) {
                 return;
             }
+            var txt = ctx.getRecordWriter().toJsonString(record);
 
-            final var fileName = lastOffset + ".txt";
-            final var location = ctx.getOutput().resolve(fileName);
+            ctx.getOutput().emit(String.valueOf(lastOffset), txt.getBytes(StandardCharsets.UTF_8));
 
-            if (!Files.exists(location)) {
-                try {
-                    var text = ctx.getRecordWriter().toJsonString(record);
-                    log.debug("write to file: {}", location);
-                    Files.writeString(location, text, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-
-                    recordCounter++;
-                } catch (IOException | RuntimeException e) {
-                    log.error("{}", e);
-                }
-            }
+            recordCounter++;
         }
     }
 }
