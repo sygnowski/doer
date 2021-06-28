@@ -38,7 +38,11 @@ public class Decoder {
         return descriptors.stream()
               .filter(d -> d.getName().equals(messageName))
               .findFirst()
-              .orElseThrow(() -> new NoSuchElementException("can't find message in descriptor set: " + messageName));
+              .orElseThrow(() -> {
+                  var msg = "can't find a message in descriptor set: " + messageName;
+                  log.warn(msg);
+                  return new NoSuchElementException(msg);
+              });
     }
 
     public String toJson(Descriptor descriptor, byte[] data) {
