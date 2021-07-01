@@ -12,6 +12,9 @@ import io.github.s7i.doer.config.Range;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputFactory;
+import io.github.s7i.doer.domain.output.OutputKind;
+import io.github.s7i.doer.domain.output.UriResolver;
+import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -27,8 +30,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -46,7 +49,7 @@ public class KafkaDump implements Runnable, YamlParser {
     }
 
     @Option(names = {"-y", "-yaml"}, defaultValue = "dump.yml")
-    private File yaml;
+    protected File yaml;
 
     @Override
     public File getYamlFile() {
@@ -109,7 +112,7 @@ public class KafkaDump implements Runnable, YamlParser {
             final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
             initialize();
 
-            try (KafkaConsumer<String, byte[]> consumer = kafka.getConsumerFactory().createConsumer(mainConfig)) {
+            try (Consumer<String, byte[]> consumer = kafka.getConsumerFactory().createConsumer(mainConfig)) {
                 consumer.subscribe(topics);
                 do {
 
@@ -132,7 +135,7 @@ public class KafkaDump implements Runnable, YamlParser {
                 var context = contexts.computeIfAbsent(name, TopicContext::new);
                 context.setRecordWriter(new RecordWriter(topic, this));
 
-                var output = outputFactory.getCreator().apply(root, topic.getOutput());
+                var output = createOutput(topic);
                 output.open();
                 context.setOutput(output);
                 context.setRange(ranges.get(name));
@@ -140,6 +143,13 @@ public class KafkaDump implements Runnable, YamlParser {
             }
         }
 
+        private Output createOutput(Topic topic) {
+            FileOutputCreator foc = () -> root.resolve(topic.getOutput());
+            outputFactory.register(OutputKind.FILE, foc);
+
+            return outputFactory.resolve(new UriResolver(topic.getOutput()))
+                  .orElseThrow();
+        }
 
         private Map<String, Range> initRange() {
             return mainConfig.getDump().getTopics()

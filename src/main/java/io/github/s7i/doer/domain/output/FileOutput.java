@@ -1,5 +1,7 @@
 package io.github.s7i.doer.domain.output;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,13 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FileOutput implements Output {
 
-    final Path root;
-    final String output;
-    Path dest;
+    final Path dest;
 
     @Override
     public void open() {
-        dest = root.resolve(output);
+        requireNonNull(dest);
         try {
             Files.createDirectories(dest);
         } catch (IOException e) {
@@ -31,7 +31,10 @@ public class FileOutput implements Output {
     }
 
     @Override
-    public void emit(String resource, byte[] data) {
+    public void emit(Load load) {
+        var resource = load.getResource();
+        var data = load.getData();
+
         final var location = dest.resolve(resource + ".txt");
         if (!Files.exists(location)) {
             try {
