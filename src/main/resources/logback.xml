@@ -24,6 +24,6 @@
         <appender-ref ref="FILE"/>
     </logger>
     <logger name="org.apache.helix" level="DEBUG">
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/>
     </logger>
 </configuration>
