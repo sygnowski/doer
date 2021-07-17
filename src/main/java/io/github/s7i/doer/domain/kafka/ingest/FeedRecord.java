@@ -1,0 +1,39 @@
+package io.github.s7i.doer.domain.kafka.ingest;
+
+import io.github.s7i.doer.manifest.ingest.Entry;
+import io.github.s7i.doer.manifest.ingest.Topic;
+import io.github.s7i.doer.util.PropertyResolver;
+import java.nio.charset.StandardCharsets;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.experimental.Delegate;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+@Data
+@AllArgsConstructor
+public class FeedRecord {
+
+    String topic;
+    @Delegate
+    TopicEntry entry;
+
+    public static FeedRecord fromSimpleEntry(Entry entry, Topic topic) {
+
+        var resolver = new PropertyResolver();
+        var topicName = topic.getName();
+        var key = entry.getKey() != null
+              ? resolver.resolve(entry.getKey())
+              : null;
+        var simpleValue = resolver.resolve(entry.getSimpleValue());
+        var data = simpleValue.getBytes(StandardCharsets.UTF_8);
+        var topicEntry = new TopicEntry(key, data);
+        Header.assignHeaders(entry, topicEntry);
+        return new FeedRecord(topicName, topicEntry);
+    }
+
+    public ProducerRecord<String, byte[]> toRecord() {
+        var record = new ProducerRecord(getTopic(), getKey(), getData());
+        entry.getHeaders().forEach(h -> record.headers().add(h.getName(), h.getValue()));
+        return record;
+    }
+}

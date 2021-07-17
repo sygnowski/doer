@@ -1,5 +1,6 @@
 package io.github.s7i.doer.command
 
+import io.github.s7i.doer.Globals
 import io.github.s7i.doer.domain.kafka.KafkaConsumerFactory
 import io.github.s7i.doer.domain.kafka.KafkaFactory
 import io.github.s7i.doer.domain.kafka.KafkaProducerFactory
@@ -24,7 +25,7 @@ class KafkaFeederTest extends Specification {
             createProducer(_, _) >> producer
         }
         def feeder = new KafkaFeeder()
-        feeder.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
         feeder.yaml = new File("src/test/resources/simple-ingest.yml")
         expect:
         feeder.run()

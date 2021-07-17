@@ -1,5 +1,6 @@
 package io.github.s7i.doer.command.dump
 
+import io.github.s7i.doer.Globals
 import io.github.s7i.doer.domain.kafka.KafkaConsumerFactory
 import io.github.s7i.doer.domain.kafka.KafkaFactory
 import io.github.s7i.doer.domain.kafka.KafkaProducerFactory
@@ -39,9 +40,10 @@ class KafkaDumpTest extends Specification {
         }
         def outputFactory = new OutputFactory().register(OutputKind.FILE, out)
 
+        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+        Globals.INSTANCE.outputFactory = outputFactory
+
         def dump = new KafkaDump()
-        dump.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        dump.outputFactory = outputFactory
         dump.yaml = new File("src/test/resources/simple-dump.yml")
 
         expect:
