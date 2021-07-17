@@ -1,0 +1,17 @@
+version: "1.0"
+type: "kafka-dump"
+kafka-properties: kafka.properties
+kafka:
+  group.id: "kafka-dump001" # will override kafka properties
+dump:
+  pool_timeout_sec: 5
+#  proto:
+#    descriptor_set:
+#      - "path/to/proto.desc"
+  topics:
+    - name: topicName
+      show_binary: true
+      range: ..9
+      value: # specification for proto-value type
+        proto_message:
+      output: doer://console

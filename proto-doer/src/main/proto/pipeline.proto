@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package io.github.s7i.doer.pipeline.proto;
+
+import "google/protobuf/any.proto";
+
+option java_multiple_files = true;
+
+service PipelineService {
+  rpc publish(PipelinePublishRequest) returns (PipelinePublishResponse);
+}
+
+message PipelinePublishRequest {
+  PipelineLoad pipelineLoad = 1;
+}
+
+message PipelinePublishResponse {
+  string status = 1;
+}
+
+message PipelineLoad {
+  map<string, string> headers = 1;
+  google.protobuf.Any load = 2;
+}
