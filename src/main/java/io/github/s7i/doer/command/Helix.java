@@ -3,8 +3,10 @@ package io.github.s7i.doer.command;
 import static java.util.Objects.requireNonNull;
 
 import io.github.s7i.doer.domain.helix.Controller;
+import io.github.s7i.doer.domain.helix.IdealStateUpdater;
 import io.github.s7i.doer.domain.helix.Participant;
 import io.github.s7i.doer.domain.helix.Spectator;
+import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Command;
@@ -26,11 +28,21 @@ public class Helix implements Runnable {
     @Option(names = "-t", defaultValue = "spectator")
     String type;
 
+    @Option(names = "-r")
+    String resource;
+
+    @Option(names = "-sf")
+    Map<String, String> simpleFields;
+
     @SneakyThrows
     @Override
     public void run() {
         requireNonNull(type, "type");
         switch (type) {
+            case "isu":
+                log.info("update ideal state");
+                updateIdealState();
+                break;
             case "s":
             case "spectator":
                 log.info("running a helix spectator...");
@@ -47,6 +59,13 @@ public class Helix implements Runnable {
                 runController();
                 break;
         }
+    }
+
+    private void updateIdealState() {
+        var updater = new IdealStateUpdater(instanceName, clusterName, server);
+        updater.setResource(resource);
+        updater.setSimpleFields(simpleFields);
+        updater.update();
     }
 
     private void runController() throws Exception {
