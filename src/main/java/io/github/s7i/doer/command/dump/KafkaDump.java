@@ -29,6 +29,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -36,6 +37,7 @@ import picocli.CommandLine.Option;
 @Slf4j
 public class KafkaDump implements Runnable, YamlParser {
 
+    private static final int DEFAULT_PARTITION = 0;
     public static KafkaFactory kafka = new KafkaFactory();
 
     public static KafkaDump createCommandInstance(File yaml) {
@@ -106,10 +108,13 @@ public class KafkaDump implements Runnable, YamlParser {
                   .map(t -> t.getName())
                   .collect(Collectors.toList());
             final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
-            initialize();
 
             try (KafkaConsumer<String, byte[]> consumer = kafka.getConsumerFactory().createConsumer(mainConfig)) {
                 consumer.subscribe(topics);
+                contexts.entrySet().stream()
+                      .filter(e -> nonNull(e.getValue().getRange()) && e.getValue().getRange().hasFrom())
+                      .forEach(e -> consumer.seek(new TopicPartition(e.getKey(), DEFAULT_PARTITION), e.getValue().getRange().getFrom()));
+
                 do {
 
                     var records = consumer.poll(timeout);
