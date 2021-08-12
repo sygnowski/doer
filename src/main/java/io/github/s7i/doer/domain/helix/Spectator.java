@@ -16,7 +16,7 @@ public class Spectator extends HelixMember implements ExternalViewChangeListener
         super(instanceName, clusterName, server);
 
         var helix = connect(InstanceType.SPECTATOR);
-        helix.addExternalViewChangeListener(this);
+        //helix.addExternalViewChangeListener(this);
         helix.addIdealStateChangeListener(this);
     }
 

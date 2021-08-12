@@ -13,17 +13,15 @@
         </encoder>
     </appender>
 
-    <root level="debug">
-        <appender-ref ref="FILE"/>
-    </root>
     <logger name="io.github.s7i.doer" level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
-    <logger name="org.apache.kafka" level="DEBUG">
+
+    <logger name="org.apache.kafka" level="DEBUG"/>
+    <logger name="org.apache.helix" level="DEBUG"/>
+
+    <root level="DEBUG">
         <appender-ref ref="FILE"/>
-    </logger>
-    <logger name="org.apache.helix" level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    </root>
 </configuration>
