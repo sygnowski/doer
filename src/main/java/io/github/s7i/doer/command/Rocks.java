@@ -1,5 +1,6 @@
 package io.github.s7i.doer.command;
 
+import io.github.s7i.doer.domain.rocksdb.RocksDb;
 import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.*;
 import picocli.CommandLine.Command;
@@ -44,6 +45,12 @@ public class Rocks implements Runnable {
                 case "get":
                     get();
                     break;
+                case "list":
+                    log.info("columns families: {}", new RocksDb(dbPath).listColumns());
+                    break;
+                default:
+                    log.info("bad action");
+                    break;
             }
         } catch (RocksDBException rex) {
             log.error("rocksdb", rex);
@@ -74,21 +81,7 @@ public class Rocks implements Runnable {
     }
 
     private void put() throws RocksDBException {
-        var handlers = new ArrayList<ColumnFamilyHandle>();
-        try (var option = new DBOptions()) {
-            var descriptors = new ArrayList<ColumnFamilyDescriptor>();
-            descriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, new ColumnFamilyOptions()));
-            descriptors.add(new ColumnFamilyDescriptor(colFamilyName.getBytes(), new ColumnFamilyOptions()));
-
-            var db = RocksDB.open(option, dbPath, descriptors, handlers);
-
-            try {
-                db.put(handlers.get(1), new WriteOptions(), key.getBytes(), value.getBytes());
-
-            } finally {
-                handlers.forEach(ColumnFamilyHandle::close);
-            }
-        }
+        new RocksDb(dbPath).put(colFamilyName, key, value);
     }
 
     private void init() throws RocksDBException {
