@@ -8,6 +8,8 @@ import picocli.CommandLine.Option;
 
 import java.util.ArrayList;
 
+import static java.util.Objects.nonNull;
+
 @Command(name = "rocks")
 @Slf4j
 public class Rocks implements Runnable {
@@ -46,7 +48,13 @@ public class Rocks implements Runnable {
                     get();
                     break;
                 case "list":
-                    log.info("columns families: {}", new RocksDb(dbPath).listColumns());
+                    if (nonNull(colFamilyName)) {
+                        new RocksDb(dbPath)
+                                .readAsString(colFamilyName)
+                                .forEach(e -> log.info("entry {}", e));
+                    } else {
+                        log.info("columns families: {}", new RocksDb(dbPath).listColumns());
+                    }
                     break;
                 default:
                     log.info("bad action");

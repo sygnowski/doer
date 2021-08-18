@@ -34,19 +34,47 @@ public class RocksDb {
             columns.add(name);
         }
 
-        open(columns, (db, hnds) -> RocksDbUtil.put(db, hnds.get(1), key, value));
+        open(columns, (db, hnds) -> RocksDbUtil.put(
+                db,
+                hnds.get(columns.indexOf(name)),
+                key,
+                value
+        ));
     }
 
-    public void open(List<String> columnFamilyNames, OnRocksDbOpen onOpen) {
+    public List<KeyValue<String, String>> readAsString(String column) {
+
+        var fetched = new ArrayList<KeyValue<String, String>>();
+        open(listColumns(), (db, h) -> {
+            try {
+                var hnd = h.stream()
+                        .filter(a -> RocksDbUtil.getName(a).equals(column))
+                        .findFirst().orElseThrow();
+
+                try (var it = db.newIterator(hnd)) {
+                    for (it.seekToFirst(); it.isValid(); it.next()) {
+                        it.status();
+                        var key = new String(it.key());
+                        var val = new String(it.value());
+
+                        var kv = new KeyValue<String, String>();
+                        kv.setKey(key);
+                        kv.setValue(val);
+                        fetched.add(kv);
+                    }
+                }
+
+            } catch (RocksDBException rex) {
+                throw new RocksDbRuntimeException(rex);
+            }
+        });
+        return fetched;
+    }
+
+    protected void open(List<String> columnFamilyNames, OnRocksDbOpen onOpen) {
         var handlers = new ArrayList<ColumnFamilyHandle>();
         try (var option = new DBOptions()) {
-            var descriptors = new ArrayList<ColumnFamilyDescriptor>();
-            descriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, new ColumnFamilyOptions()));
-
-            for (var cf : columnFamilyNames) {
-                descriptors.add(new ColumnFamilyDescriptor(cf.getBytes(), new ColumnFamilyOptions()));
-            }
-
+            var descriptors = doDescriptors(columnFamilyNames);
             var db = RocksDB.open(option, dbPath, descriptors, handlers);
 
             try {
@@ -54,6 +82,7 @@ public class RocksDb {
 
             } finally {
                 handlers.forEach(ColumnFamilyHandle::close);
+                db.close();
             }
         } catch (RocksDBException rex) {
             throw new RocksDbRuntimeException(rex);
@@ -62,9 +91,7 @@ public class RocksDb {
 
 
     public void initColumnFamilies(List<String> existing, List<String> names) {
-        var descriptors = existing.stream()
-                .map(c -> new ColumnFamilyDescriptor(c.getBytes(), new ColumnFamilyOptions()))
-                .collect(Collectors.toList());
+        var descriptors = doDescriptors(existing);
 
         var handles = new ArrayList<ColumnFamilyHandle>();
         try (var options = new DBOptions().setCreateIfMissing(true)) {
@@ -82,6 +109,13 @@ public class RocksDb {
         } finally {
             handles.forEach(ColumnFamilyHandle::close);
         }
+    }
+
+    private List<ColumnFamilyDescriptor> doDescriptors(List<String> names) {
+        var descriptors = names.stream()
+                .map(c -> new ColumnFamilyDescriptor(c.getBytes(), new ColumnFamilyOptions()))
+                .collect(Collectors.toList());
+        return descriptors;
     }
 
 }

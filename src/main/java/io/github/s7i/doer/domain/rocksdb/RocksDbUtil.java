@@ -7,6 +7,14 @@ import org.rocksdb.WriteOptions;
 
 public class RocksDbUtil {
 
+    public static String getName(ColumnFamilyHandle handle) {
+        try {
+            return new String(handle.getName());
+        } catch (RocksDBException e) {
+            throw new RocksDbRuntimeException(e);
+        }
+    }
+
     public static void put(RocksDB rocks, ColumnFamilyHandle columnFamilyHandle, String key, String value) {
         put(rocks, columnFamilyHandle, new WriteOptions(), key.getBytes(), value.getBytes());
     }
