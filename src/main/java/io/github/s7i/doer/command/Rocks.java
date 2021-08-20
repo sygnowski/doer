@@ -4,19 +4,12 @@ import static java.util.Objects.nonNull;
 
 import io.github.s7i.doer.domain.rocksdb.RocksDb;
 import lombok.extern.slf4j.Slf4j;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "rocks")
 @Slf4j
 public class Rocks implements Runnable {
-
-    static {
-        RocksDB.loadLibrary();
-    }
-
 
     @Option(names = "-db", required = true)
     String dbPath;
@@ -33,41 +26,46 @@ public class Rocks implements Runnable {
     @Option(names = "-v")
     String value;
 
+    RocksDb rocksdb;
+
     @Override
     public void run() {
-        var rocksdb = new RocksDb(dbPath);
-        try {
-            switch (action) {
-                case "put":
-                    put(rocksdb);
-                    break;
-                case "get":
-                    get(rocksdb);
-                    break;
-                case "list":
-                    if (nonNull(colFamilyName)) {
-                        rocksdb.readAsString(colFamilyName)
-                              .forEach(e -> log.info("k: {}, v: {}", e.getKey(), e.getValue()));
-                    } else {
-                        log.info("columns families: {}", new RocksDb(dbPath).listColumns());
-                    }
-                    break;
-                default:
-                    log.info("bad action");
-                    break;
-            }
-        } catch (RocksDBException rex) {
-            log.error("rocksdb", rex);
+        rocksdb = new RocksDb(dbPath);
+        switch (action) {
+            case "put":
+                put();
+                break;
+            case "get":
+                get();
+                break;
+            case "list":
+                list();
+                break;
+            default:
+                log.info("bad action");
+                break;
         }
-
     }
 
-    private void get(RocksDb rocksDb) throws RocksDBException {
-        String value = rocksDb.getAsString(colFamilyName, key);
+    private void list() {
+        if (nonNull(colFamilyName)) {
+            rocksdb.readAsString(colFamilyName)
+                  .forEach(e -> log.info("k: {}, v: {}", e.getKey(), e.getValue()));
+        } else {
+            log.info("columns families: {}", rocksdb.listColumns());
+        }
+    }
+
+    private void get() {
+        String value = rocksdb.getAsString(name(), key);
         log.info("v: {}", value);
     }
 
-    private void put(RocksDb rocksDb) throws RocksDBException {
-        rocksDb.put(colFamilyName, key, value);
+    private void put() {
+        rocksdb.put(name(), key, value);
+    }
+
+    private String name() {
+        return nonNull(colFamilyName) ? colFamilyName : RocksDb.DEFAULT_COLUMN_FAMILY;
     }
 }

@@ -1,8 +1,13 @@
 package io.github.s7i.doer.domain.rocksdb;
 
+import static java.util.Objects.nonNull;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -17,16 +22,27 @@ import org.rocksdb.RocksIterator;
 @RequiredArgsConstructor
 public class RocksDb {
 
+    public static final String DEFAULT_COLUMN_FAMILY = new String(RocksDB.DEFAULT_COLUMN_FAMILY);
+    public static final ColumnFamilyDescriptor DEFAULT = new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY);
+
     static {
         RocksDB.loadLibrary();
     }
 
     private final String dbPath;
+    private final Map<String, ColumnFamilyOptions> cfOptions = Collections.emptyMap();
 
     public List<String> listColumns() {
+        return listColumns(false);
+    }
+
+    protected List<String> listColumns(boolean addDefaultIfMissing) {
         var options = new Options();
         try {
             var list = RocksDB.listColumnFamilies(options, dbPath);
+            if (list.isEmpty() && addDefaultIfMissing) {
+                return List.of(DEFAULT_COLUMN_FAMILY);
+            }
             return list.stream().map(String::new).collect(Collectors.toUnmodifiableList());
 
         } catch (RocksDBException e) {
@@ -35,12 +51,7 @@ public class RocksDb {
     }
 
     public void put(String name, String key, String value) {
-        final var columns = new ArrayList<String>();
-        columns.addAll(listColumns());
-        if (!columns.contains(name)) {
-            initColumnFamilies(columns, List.of(name));
-            columns.add(name);
-        }
+        var columns = initColumnFamilies(name);
 
         open(columns, (db, hnds) -> RocksDbUtil.put(
               db,
@@ -128,11 +139,8 @@ public class RocksDb {
         var fetched = new ArrayList<KeyValue<String, String>>();
         open(listColumns(), (db, h) -> {
             try {
-                var hnd = h.stream()
-                      .filter(a -> RocksDbUtil.getName(a).equals(column))
-                      .findFirst().orElseThrow();
-
-                try (var it = db.newIterator()) {
+                var hnd = RocksDbUtil.findHandler(h, column);
+                try (var it = db.newIterator(hnd)) {
                     for (it.seekToFirst(); it.isValid(); it.next()) {
                         it.status();
                         var key = new String(it.key());
@@ -158,7 +166,7 @@ public class RocksDb {
 
     protected void open(List<String> columnFamilyNames, OnRocksDbOpen onOpen) {
         var handlers = new ArrayList<ColumnFamilyHandle>();
-        try (var option = new DBOptions().setCreateIfMissing(true)) {
+        try (var option = newOptions()) {
             var descriptors = doDescriptors(columnFamilyNames);
             var db = RocksDB.open(option, dbPath, descriptors, handlers);
 
@@ -176,7 +184,7 @@ public class RocksDb {
 
     protected void open(List<String> columnFamilyNames, OnRocksDbOpenComplete onOpenComplete) {
         var handlers = new ArrayList<ColumnFamilyHandle>();
-        try (var option = new DBOptions().setCreateIfMissing(true)) {
+        try (var option = newOptions()) {
             var descriptors = doDescriptors(columnFamilyNames);
             var db = RocksDB.open(option, dbPath, descriptors, handlers);
             onOpenComplete.onOpen(db, handlers, () -> {
@@ -188,26 +196,48 @@ public class RocksDb {
         }
     }
 
-    public void initColumnFamilies(List<String> existing, List<String> names) {
-        var descriptors = doDescriptors(existing);
-
-        var handles = new ArrayList<ColumnFamilyHandle>();
-        try (var options = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true)) {
-            try (var db = RocksDB.open(options, dbPath, descriptors, handles)) {
-                for (var name : names) {
-                    var handle = db.createColumnFamily(newDescriptor(name));
-                    handle.close();
+    public List<String> initColumnFamilies(String... names) {
+        if (nonNull(names) && names.length > 0) {
+            var existing = listColumns(true);
+            var descriptors = doDescriptors(existing);
+            var handles = new ArrayList<ColumnFamilyHandle>();
+            try (var options = newOptions()) {
+                try (var db = RocksDB.open(options, dbPath, descriptors, handles)) {
+                    Arrays.stream(names)
+                          .filter(n -> !existing.contains(n))
+                          .forEach(n -> create(db, n));
                 }
+            } catch (RocksDBException rex) {
+                throw new RocksDbRuntimeException(rex);
+            } finally {
+                handles.forEach(ColumnFamilyHandle::close);
             }
+        }
+        return listColumns();
+    }
+
+    private void create(RocksDB db, String name) {
+        try {
+            var handle = db.createColumnFamily(newDescriptor(name));
+            handle.close();
         } catch (RocksDBException rex) {
             throw new RocksDbRuntimeException(rex);
-        } finally {
-            handles.forEach(ColumnFamilyHandle::close);
         }
     }
 
+    private DBOptions newOptions() {
+        return new DBOptions()
+              .setCreateIfMissing(true)
+              .setCreateMissingColumnFamilies(true);
+    }
+
     private ColumnFamilyDescriptor newDescriptor(String name) {
-        return new ColumnFamilyDescriptor(name.getBytes(), new ColumnFamilyOptions());
+        return name.equals(DEFAULT_COLUMN_FAMILY)
+              ? DEFAULT
+              : new ColumnFamilyDescriptor(
+                    name.getBytes(),
+                    cfOptions.getOrDefault(name, new ColumnFamilyOptions())
+              );
     }
 
     private List<ColumnFamilyDescriptor> doDescriptors(List<String> names) {
