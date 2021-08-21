@@ -14,3 +14,7 @@ doer rocks -db ./my-db -a put -cf column-name -k KeyName -v SomeValue
 # listing column family key-value pairs
 doer rocks -db ./my-db -cf column-name -a get
 ```
+
+Notes
+
+docs:[Rocks Java](https://github.com/facebook/rocksdb/wiki/RocksJava-Basics)
