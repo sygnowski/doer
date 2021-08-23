@@ -1,18 +1,27 @@
 package io.github.s7i.doer.util;
 
+import static java.util.Objects.nonNull;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 
 @RequiredArgsConstructor
+@Slf4j
 public class PropertyResolver implements StringLookup {
 
+    public static final String DOER_CALL = "doer:";
     private final Map<String, String> propertyMap;
-    private final StringSubstitutor sysSubstitutor = StringSubstitutor.createInterpolator();
-    private final StringSubstitutor substitutor = new StringSubstitutor(this);
+    private final StringSubstitutor sysSubstitutor = StringSubstitutor.createInterpolator().setEnableSubstitutionInVariables(true);
+    private final StringSubstitutor substitutor = new StringSubstitutor(this).setEnableSubstitutionInVariables(true);
+    @Setter
+    private Function<String, String> handle;
 
     public PropertyResolver() {
         propertyMap = new HashMap<>();
@@ -24,6 +33,9 @@ public class PropertyResolver implements StringLookup {
 
     @Override
     public String lookup(String key) {
+        if (nonNull(handle) && key.startsWith(DOER_CALL)) {
+            return handle.apply(key);
+        }
         switch (key) {
             case SpecialExpression.UUID:
                 return UUID.randomUUID().toString();
