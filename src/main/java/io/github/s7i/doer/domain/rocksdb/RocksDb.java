@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -31,6 +32,12 @@ public class RocksDb {
 
     private final String dbPath;
     private final Map<String, ColumnFamilyOptions> cfOptions = Collections.emptyMap();
+    @Setter
+    private boolean createIfMissing = true;
+    @Setter
+    private boolean createMissingColumnFamilies = true;
+    @Setter
+    private boolean readOnly;
 
     public List<String> listColumns() {
         return listColumns(false);
@@ -168,7 +175,7 @@ public class RocksDb {
         var handlers = new ArrayList<ColumnFamilyHandle>();
         try (var option = newOptions()) {
             var descriptors = doDescriptors(columnFamilyNames);
-            var db = RocksDB.open(option, dbPath, descriptors, handlers);
+            var db = open(option, descriptors, handlers);
 
             try {
                 onOpen.onOpen(db, handlers);
@@ -182,11 +189,18 @@ public class RocksDb {
         }
     }
 
+    private RocksDB open(DBOptions option, List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handlers) throws RocksDBException {
+        var db = readOnly
+              ? RocksDB.openReadOnly(option, dbPath, descriptors, handlers)
+              : RocksDB.open(option, dbPath, descriptors, handlers);
+        return db;
+    }
+
     protected void open(List<String> columnFamilyNames, OnRocksDbOpenComplete onOpenComplete) {
         var handlers = new ArrayList<ColumnFamilyHandle>();
         try (var option = newOptions()) {
             var descriptors = doDescriptors(columnFamilyNames);
-            var db = RocksDB.open(option, dbPath, descriptors, handlers);
+            var db = open(option, descriptors, handlers);
             onOpenComplete.onOpen(db, handlers, () -> {
                 handlers.forEach(ColumnFamilyHandle::close);
                 db.close();
@@ -227,8 +241,8 @@ public class RocksDb {
 
     private DBOptions newOptions() {
         return new DBOptions()
-              .setCreateIfMissing(true)
-              .setCreateMissingColumnFamilies(true);
+              .setCreateIfMissing(createIfMissing)
+              .setCreateMissingColumnFamilies(createMissingColumnFamilies);
     }
 
     private ColumnFamilyDescriptor newDescriptor(String name) {

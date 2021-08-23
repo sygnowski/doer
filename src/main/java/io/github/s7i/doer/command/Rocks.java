@@ -48,6 +48,7 @@ public class Rocks implements Runnable {
     }
 
     private void list() {
+        readOnly();
         if (nonNull(colFamilyName)) {
             rocksdb.readAsString(colFamilyName)
                   .forEach(e -> log.info("k: {}, v: {}", e.getKey(), e.getValue()));
@@ -57,8 +58,15 @@ public class Rocks implements Runnable {
     }
 
     private void get() {
+        readOnly();
         String value = rocksdb.getAsString(name(), key);
         log.info("v: {}", value);
+    }
+
+    private void readOnly() {
+        rocksdb.setReadOnly(true);
+        rocksdb.setCreateIfMissing(false);
+        rocksdb.setCreateMissingColumnFamilies(false);
     }
 
     private void put() {
