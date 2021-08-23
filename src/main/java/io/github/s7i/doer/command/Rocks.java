@@ -1,5 +1,6 @@
 package io.github.s7i.doer.command;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import io.github.s7i.doer.domain.rocksdb.RocksDb;
@@ -58,9 +59,13 @@ public class Rocks implements Runnable {
     }
 
     private void get() {
-        readOnly();
-        String value = rocksdb.getAsString(name(), key);
-        log.info("v: {}", value);
+        if (isNull(key)) {
+            list();
+        } else {
+            readOnly();
+            String value = rocksdb.getAsString(name(), key);
+            log.info("v: {}", value);
+        }
     }
 
     private void readOnly() {
