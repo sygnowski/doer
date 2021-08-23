@@ -1,6 +1,20 @@
+#!/bin/bash
+
 TAG=s7i/doer
 VERSION=0.1.1
 VCS_REF=$(git rev-parse HEAD)
+
+main() {
+    info
+
+    case $1 in
+        slim)
+            slim_build
+            ;;         
+        *)
+        with_builder        
+    esac
+}
 
 info() {
     echo
@@ -42,16 +56,9 @@ runBuild () {
     fi
     local tag=$TAG:$(versionTag)
     echo "Docker Tag: $tag"
+
     docker build -t $tag --build-arg VERSION=$VERSION --build-arg VCS_REF=$VCS_REF $dockerFile .
 }
 
-info
-
-case $1 in
-    slim)
-        slim_build
-        ;;         
-    *)
-    with_builder        
-esac
-
+# call the main function
+main
