@@ -171,29 +171,8 @@ public class RocksDb {
         open(listColumns(), onRocksDbOpen);
     }
 
-    protected void open(List<String> columnFamilyNames, OnRocksDbOpen onOpen) {
-        var handlers = new ArrayList<ColumnFamilyHandle>();
-        try (var option = newOptions()) {
-            var descriptors = doDescriptors(columnFamilyNames);
-            var db = open(option, descriptors, handlers);
-
-            try {
-                onOpen.onOpen(db, handlers);
-
-            } finally {
-                handlers.forEach(ColumnFamilyHandle::close);
-                db.close();
-            }
-        } catch (RocksDBException rex) {
-            throw new RocksDbRuntimeException(rex);
-        }
-    }
-
-    private RocksDB open(DBOptions option, List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handlers) throws RocksDBException {
-        var db = readOnly
-              ? RocksDB.openReadOnly(option, dbPath, descriptors, handlers)
-              : RocksDB.open(option, dbPath, descriptors, handlers);
-        return db;
+    protected void open(List<String> columnFamilyNames, OnRocksDbOpen onOpenComplete) {
+        open(columnFamilyNames, (OnRocksDbOpenComplete) onOpenComplete);
     }
 
     protected void open(List<String> columnFamilyNames, OnRocksDbOpenComplete onOpenComplete) {
@@ -210,22 +189,21 @@ public class RocksDb {
         }
     }
 
+    private RocksDB open(DBOptions option, List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handlers) throws RocksDBException {
+        var db = readOnly
+              ? RocksDB.openReadOnly(option, dbPath, descriptors, handlers)
+              : RocksDB.open(option, dbPath, descriptors, handlers);
+        return db;
+    }
+
     public List<String> initColumnFamilies(String... names) {
         if (nonNull(names) && names.length > 0) {
             var existing = listColumns(true);
-            var descriptors = doDescriptors(existing);
-            var handles = new ArrayList<ColumnFamilyHandle>();
-            try (var options = newOptions()) {
-                try (var db = RocksDB.open(options, dbPath, descriptors, handles)) {
-                    Arrays.stream(names)
-                          .filter(n -> !existing.contains(n))
-                          .forEach(n -> create(db, n));
-                }
-            } catch (RocksDBException rex) {
-                throw new RocksDbRuntimeException(rex);
-            } finally {
-                handles.forEach(ColumnFamilyHandle::close);
-            }
+
+            open(existing, (db, handles) -> Arrays.stream(names)
+                  .filter(n -> !existing.contains(n))
+                  .forEach(n -> create(db, n))
+            );
         }
         return listColumns();
     }
