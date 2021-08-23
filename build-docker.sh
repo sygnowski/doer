@@ -9,6 +9,17 @@ info() {
     echo
 }
 
+versionTag() {
+  local mains=("master", "main")
+  local branch=$(git rev-parse --abbrev-ref HEAD)
+
+  if [[ ! " ${mains[*]} " =~ " ${branch} " ]]; then
+    echo "$VERSION-$branch"
+  else
+    echo $VERSION
+  fi
+}
+
 with_builder () {
     runBuild
 }
@@ -29,8 +40,9 @@ runBuild () {
     else
         echo "Using default dockerfile"
     fi
-    
-    docker build -t $TAG:$VERSION --build-arg VERSION=$VERSION --build-arg VCS_REF=$VCS_REF $dockerFile .
+    local tag=$TAG:$(versionTag)
+    echo "Docker Tag: $tag"
+    docker build -t $tag --build-arg VERSION=$VERSION --build-arg VCS_REF=$VCS_REF $dockerFile .
 }
 
 info
