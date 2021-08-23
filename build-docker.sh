@@ -10,9 +10,9 @@ main() {
     case $1 in
         slim)
             slim_build
-            ;;         
+            ;;
         *)
-        with_builder        
+        with_builder
     esac
 }
 
@@ -61,4 +61,4 @@ runBuild () {
 }
 
 # call the main function
-main
+main $@
