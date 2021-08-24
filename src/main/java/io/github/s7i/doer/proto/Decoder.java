@@ -74,6 +74,11 @@ public class Decoder {
         }
     }
 
+    public byte[] toBinaryProto(String json, String message) {
+        var md = findMessageDescriptor(message);
+        return toMessage(md, json).toByteArray();
+    }
+
     private List<FileDescriptor> readDescSet(List<Path> descriptorPaths) {
         List<FileDescriptor> descriptors = new ArrayList<>();
         for (var descriptor : descriptorPaths) {

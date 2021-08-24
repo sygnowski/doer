@@ -5,6 +5,7 @@ import static java.util.Objects.nonNull;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 
 @Getter
@@ -16,6 +17,8 @@ public class Entry {
     ValueTemplate valueTemplate;
     @JsonProperty("value")
     String simpleValue;
+    @JsonProperty("proto_message")
+    String protoMessage;
 
     public boolean hasHeaders() {
         return nonNull(headers) && !headers.isEmpty();
@@ -32,5 +35,9 @@ public class Entry {
 
     public boolean isTemplateEntry() {
         return nonNull(valueTemplate);
+    }
+
+    public Optional<String> lookupForProto() {
+        return Optional.ofNullable(protoMessage);
     }
 }
