@@ -1,7 +1,7 @@
 package io.github.s7i.doer.command.dump;
 
 
-import static io.github.s7i.doer.Utils.hasAnyValue;
+import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
@@ -9,6 +9,7 @@ import io.github.s7i.doer.command.YamlParser;
 import io.github.s7i.doer.config.Dump;
 import io.github.s7i.doer.config.Dump.Topic;
 import io.github.s7i.doer.config.Range;
+import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
 import java.io.IOException;
@@ -16,10 +17,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -27,14 +29,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "kdump")
 @Slf4j
 public class KafkaDump implements Runnable, YamlParser {
+
+    public static KafkaFactory kafka = new KafkaFactory();
 
     public static KafkaDump createCommandInstance(File yaml) {
         var cmd = new KafkaDump();
@@ -99,15 +105,36 @@ public class KafkaDump implements Runnable, YamlParser {
         }
 
         private void pool() {
+            initialize();
+
             var topics = mainConfig.getDump().getTopics()
                   .stream()
                   .map(t -> t.getName())
                   .collect(Collectors.toList());
             final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
-            initialize();
 
-            try (KafkaConsumer<String, byte[]> consumer = connectToKafka()) {
-                consumer.subscribe(topics);
+            try (KafkaConsumer<String, byte[]> consumer = kafka.getConsumerFactory().createConsumer(mainConfig)) {
+
+                consumer.subscribe(topics, new ConsumerRebalanceListener() {
+                    @Override
+                    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+
+                    }
+
+                    @Override
+                    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                        consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> log.info("current offset {} for {}", tp, offset));
+                        for (var tp : partitions) {
+                            var ctx = contexts.get(tp.topic());
+                            if (nonNull(ctx) && nonNull(ctx.getRange()) && ctx.getRange().hasFrom()) {
+                                var offset = ctx.getRange().getFrom();
+                                log.info("seeking to offset {} on partition {}", offset, tp);
+                                consumer.seek(tp, offset);
+                            }
+                        }
+                    }
+                });
+
                 do {
 
                     var records = consumer.poll(timeout);
@@ -120,19 +147,13 @@ public class KafkaDump implements Runnable, YamlParser {
             log.info("Stop dumping from Kafka, saved records: {}", recordCounter);
         }
 
-        private KafkaConsumer<String, byte[]> connectToKafka() {
-            Properties properties = new Properties();
-            properties.putAll(mainConfig.getKafka());
-            return new KafkaConsumer(properties);
-        }
-
         private void initialize() {
             var proto = initProto();
             var ranges = initRange();
 
             for (var topic : mainConfig.getDump().getTopics()) {
                 var name = topic.getName();
-                var context = contexts.computeIfAbsent(name, n -> new TopicContext(n));
+                var context = contexts.computeIfAbsent(name, TopicContext::new);
 
                 context.setRecordWriter(new RecordWriter(topic, this));
                 var topicOutput = root.resolve(topic.getOutput());

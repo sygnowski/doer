@@ -1,6 +1,6 @@
 package io.github.s7i.doer.command.dump;
 
-import static io.github.s7i.doer.Utils.hasAnyValue;
+import static io.github.s7i.doer.util.Utils.hasAnyValue;
 
 import io.github.s7i.doer.config.Dump.Topic;
 import java.time.Instant;
