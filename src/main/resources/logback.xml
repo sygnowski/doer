@@ -7,20 +7,18 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>logs/doer-${time}.log</file>
+        <file>${DOER_HOME:-.}/logs/doer-${time}.log</file>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="debug">
-        <appender-ref ref="FILE"/>
-    </root>
     <logger name="io.github.s7i.doer" level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
-    <logger name="org.apache.kafka" level="DEBUG">
+    <logger name="org.apache.kafka" level="DEBUG" />
+    <root level="DEBUG">
         <appender-ref ref="FILE"/>
-    </logger>
+    </root>
 </configuration>

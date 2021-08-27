@@ -17,8 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -27,8 +29,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -101,15 +105,36 @@ public class KafkaDump implements Runnable, YamlParser {
         }
 
         private void pool() {
+            initialize();
+
             var topics = mainConfig.getDump().getTopics()
                   .stream()
                   .map(t -> t.getName())
                   .collect(Collectors.toList());
             final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
-            initialize();
 
             try (KafkaConsumer<String, byte[]> consumer = kafka.getConsumerFactory().createConsumer(mainConfig)) {
-                consumer.subscribe(topics);
+
+                consumer.subscribe(topics, new ConsumerRebalanceListener() {
+                    @Override
+                    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+
+                    }
+
+                    @Override
+                    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                        consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> log.info("current offset {} for {}", tp, offset));
+                        for (var tp : partitions) {
+                            var ctx = contexts.get(tp.topic());
+                            if (nonNull(ctx) && nonNull(ctx.getRange()) && ctx.getRange().hasFrom()) {
+                                var offset = ctx.getRange().getFrom();
+                                log.info("seeking to offset {} on partition {}", offset, tp);
+                                consumer.seek(tp, offset);
+                            }
+                        }
+                    }
+                });
+
                 do {
 
                     var records = consumer.poll(timeout);

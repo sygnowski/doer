@@ -3,7 +3,6 @@ package io.github.s7i.doer.command;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.manifest.ingest.Entry;
 import io.github.s7i.doer.manifest.ingest.Ingest;
@@ -23,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -114,9 +114,17 @@ public class KafkaFeeder implements Runnable, YamlParser {
                       .topicEntries()
                       .forEach(data -> result.add(new FeedRecord(topic.getName(), data)));
             } else if (entry.isSimpleValue()) {
-                result.add(FeedRecord.fromSimpleEntry(entry, topic));
+                var r = FeedRecord.fromSimpleEntry(entry, topic, raw -> entry.lookupForProto()
+                      .map(message -> decoder.toBinaryProto(raw, message))
+                      .orElseGet(() -> toBinary(raw))
+                );
+                result.add(r);
             }
         }
+    }
+
+    private byte[] toBinary(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
     }
 
     static void assignHeaders(Entry entry, TopicEntry topicEntry) {
@@ -159,11 +167,8 @@ public class KafkaFeeder implements Runnable, YamlParser {
         }
 
         private byte[] asBinaryProto(String payload) {
-            return decoder.toMessage(findDescriptor(), payload).toByteArray();
-        }
-
-        private Descriptor findDescriptor() {
-            return decoder.findMessageDescriptor(entry.getValueTemplate().getProtoMessage());
+            var messageName = entry.getValueTemplate().getProtoMessage();
+            return decoder.toBinaryProto(payload, messageName);
         }
 
         public Stream<TopicEntry> topicEntries() {
@@ -240,7 +245,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
         @Delegate
         TopicEntry entry;
 
-        public static FeedRecord fromSimpleEntry(Entry entry, Topic topic) {
+        public static FeedRecord fromSimpleEntry(Entry entry, Topic topic, Function<String, byte[]> binaryEncoder) {
 
             var resolver = new PropertyResolver();
             var topicName = topic.getName();
@@ -248,7 +253,7 @@ public class KafkaFeeder implements Runnable, YamlParser {
                   ? resolver.resolve(entry.getKey())
                   : null;
             var simpleValue = resolver.resolve(entry.getSimpleValue());
-            var data = simpleValue.getBytes(StandardCharsets.UTF_8);
+            var data = binaryEncoder.apply(simpleValue);
             var topicEntry = new TopicEntry(key, data);
             assignHeaders(entry, topicEntry);
             return new FeedRecord(topicName, topicEntry);

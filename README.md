@@ -1,4 +1,4 @@
-![Gradle Build](https://github.com/sygnowski/doer/workflows/Gradle%20Build/badge.svg)
+![Gradle Build](https://github.com/sygnowski/doer/workflows/Gradle%20Build/badge.svg) [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/sygnowski/doer.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/sygnowski/doer/context:java)
 
 # Doer
 
@@ -10,7 +10,7 @@ List of available commands:
 
 - kfeed - Kafka topics data populator
 - kdump - Kafka topic consumer with rich options
-- rocks - RocksDB support
+- rocks - RocksDB support, [more info](docs/rocksdb.md)
 
 ### Working with Kafka
 
@@ -120,11 +120,4 @@ ingest:
           value_template:
             proto_message: MessageContentProtoMessageType
             name: my-template.tpl
-```
-### RocksDB
-
-```bash
-doer rocks -db ./rocksdb -a init -cf mycf
-doer rocks -db ./rocksdb -a put -cf mycf -k k123 -v v123
-doer rocks -db ./rocksdb -a get -cf mycf -k k123
 ```
