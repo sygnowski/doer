@@ -1,5 +1,6 @@
 package io.github.s7i.doer;
 
+import io.github.s7i.doer.command.Bar;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.Rocks;
@@ -19,7 +20,7 @@ import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-@Command(subcommands = {KafkaFeeder.class, KafkaDump.class, ProtoProcessor.class, Rocks.class})
+@Command(subcommands = {KafkaFeeder.class, KafkaDump.class, ProtoProcessor.class, Rocks.class, Bar.class})
 public class Doer {
 
     @Command(name = "main")
