@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TAG=s7i/doer
-VERSION=0.1.1-theia
+VERSION=0.1.1
 VCS_REF=$(git rev-parse HEAD)
 
 main() {
@@ -10,6 +10,9 @@ main() {
     case $1 in
         slim)
             slim_build
+            ;;
+        theia)
+            runBuild "Dockerfile-theia"
             ;;
         *)
         with_builder
