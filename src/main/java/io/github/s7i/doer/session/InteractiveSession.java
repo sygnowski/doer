@@ -51,9 +51,9 @@ public class InteractiveSession {
     }
 
     private void onSetCommand(String command, Cmd cmd) {
-        var rawArgs = cmd.argPart(command);
-        if (!rawArgs.isBlank()) {
-            var args = command.split("\\s");
+        var argsPart = cmd.argPart(command);
+        if (!argsPart.isBlank()) {
+            var args = argsPart.split("\\s");
             Arrays.stream(args)
                   .filter(s -> !s.isEmpty())
                   .map(a -> new Arg(a))
