@@ -12,6 +12,7 @@ import io.github.s7i.doer.session.ParamStorage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +30,9 @@ import picocli.CommandLine.Option;
 @Slf4j
 @Command(name = "proto")
 public class ProtoProcessor implements Runnable, ParamStorage {
+
+    public static final String EOF = "EOF";
+    public static final String DOER_PROMPT = "doer > ";
 
     enum InputType {
         TEXT, JSON, BYTESTRING;
@@ -99,16 +103,17 @@ public class ProtoProcessor implements Runnable, ParamStorage {
 
         try (var br = new Scanner(new InputStreamReader(System.in))) {
             do {
-                System.out.print("doer > ");
+                printBanner();
+
                 while (br.hasNextLine()) {
                     var line = br.nextLine();
                     if (line.startsWith(":")) {
                         session.processCommand(line);
                         break;
-                    } else if (text && "EOF".equals(line)) {
+                    } else if (text && EOF.equals(line)) {
                         break;
-                    } else if (text && line.endsWith("EOF")) {
-                        var lastLine = line.substring(0, line.indexOf("EOF"));
+                    } else if (text && line.endsWith(EOF)) {
+                        var lastLine = line.substring(0, line.indexOf(EOF));
                         input.process(lastLine);
                         break;
                     } else if (InputType.BYTESTRING == inputType) {
@@ -129,24 +134,37 @@ public class ProtoProcessor implements Runnable, ParamStorage {
         }
     }
 
+    private void printBanner() {
+        var pw = new PrintWriter(System.out, true);
+
+        pw.printf("\nPlease provide '%s' input.\n", inputType);
+        pw.printf("Input will be transformed to '%s' of '%s' proto type\n\n", exportAs, messageName);
+
+        pw.print(DOER_PROMPT);
+        pw.flush();
+
+    }
+
     private void printDecodedMessage(Decoder decoder, Input input) {
-        final var json = inputType == InputType.JSON;
-        final var text = inputType == InputType.TEXT;
         try {
             Message proto;
             var msgDescriptor = decoder.findMessageDescriptor(messageName);
 
-            if (inputType == InputType.BYTESTRING) {
-                var data = ByteString.copyFromUtf8(input.getInputText()).toByteArray();
-                var jsonString = decoder.toJson(msgDescriptor, data);
-                log.info("json string {}", jsonString);
-                return;
-            } else if (text) {
-                proto = decoder.toMessageFromText(msgDescriptor, input.getInputText());
-            } else if (json) {
-                proto = decoder.toMessage(msgDescriptor, input.getInputText());
-            } else {
-                throw new IllegalStateException();
+            switch (inputType) {
+                case BYTESTRING:
+                    var data = ByteString.copyFromUtf8(input.getInputText()).toByteArray();
+                    var jsonString = decoder.toJson(msgDescriptor, data);
+                    log.info("Result \n{}", jsonString);
+                    return;
+                case TEXT:
+                    proto = decoder.toMessageFromText(msgDescriptor, input.getInputText());
+                    break;
+                case JSON:
+                    proto = decoder.toMessage(msgDescriptor, input.getInputText());
+                    break;
+                default:
+                    throw new IllegalStateException();
+
             }
             export(decoder, proto);
 
