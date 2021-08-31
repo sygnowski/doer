@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -99,6 +100,7 @@ public class ProtoProcessor implements Runnable, ParamStorage {
         decoder.loadDescriptors(getPaths());
 
         var session = new InteractiveSession();
+        session.setStorage(this);
         var input = new Input();
 
         try (var br = new Scanner(new InputStreamReader(System.in))) {
@@ -226,8 +228,21 @@ public class ProtoProcessor implements Runnable, ParamStorage {
     @Override
     public void update(String paramName, String paramValue) {
         switch (paramName) {
+            case "ea":
             case "exportAs":
                 exportAs = ExportAs.of(paramValue).keyword();
+                break;
+            case "mt":
+            case "messageType":
+                messageName = paramValue;
+                break;
+            case "it":
+            case "inputType":
+                try {
+                    inputType = InputType.valueOf(paramValue.toUpperCase());
+                } catch (Exception e) {
+                    log.warn("can't change input type to: {}", paramValue);
+                }
                 break;
         }
     }
