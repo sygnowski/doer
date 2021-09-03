@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -110,7 +109,7 @@ public class ProtoProcessor implements Runnable, ParamStorage {
                 while (br.hasNextLine()) {
                     var line = br.nextLine();
                     if (line.startsWith(":")) {
-                        session.processCommand(line);
+                        session.processCommand(line, input);
                         break;
                     } else if (text && EOF.equals(line)) {
                         break;
@@ -119,7 +118,7 @@ public class ProtoProcessor implements Runnable, ParamStorage {
                         input.process(lastLine);
                         break;
                     } else if (InputType.BYTESTRING == inputType) {
-                        input.processSingleLine(line);
+                        input.processOnce(line);
                         break;
                     } else {
                         input.process(line);

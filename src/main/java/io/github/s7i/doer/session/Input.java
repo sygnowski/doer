@@ -1,9 +1,10 @@
 package io.github.s7i.doer.session;
 
 import io.github.s7i.doer.session.input.CurlyBracketSampleAnalyser;
+import io.github.s7i.doer.session.input.InputHandler;
 import org.apache.commons.text.StringEscapeUtils;
 
-public class Input {
+public class Input implements InputHandler {
 
     boolean markAsIsCompleted;
     CurlyBracketSampleAnalyser sampleAnalyser = new CurlyBracketSampleAnalyser();
@@ -14,11 +15,11 @@ public class Input {
         builder.append(input).append("\n");
     }
 
-    public void processSingleLine(String input) {
+    @Override
+    public void processOnce(String input) {
         builder.append(input);
         markAsIsCompleted = true;
     }
-
 
     public boolean isComplete() {
         if (markAsIsCompleted) {

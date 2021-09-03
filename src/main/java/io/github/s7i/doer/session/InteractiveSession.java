@@ -2,21 +2,29 @@ package io.github.s7i.doer.session;
 
 import static java.util.Objects.nonNull;
 
+import io.github.s7i.doer.session.input.InputHandler;
+import io.github.s7i.doer.util.Clipboard;
 import java.util.Arrays;
 import lombok.Setter;
 
 public class InteractiveSession {
 
-    enum Cmd {
+    enum Cmd implements Command {
         UNDEFINED(""),
         QUIT(":quit"),
-        SET(":set");
+        SET(":set"),
+        CLIPBOARD(":clipboard");
 
         Cmd(String keyword) {
             this.keyword = keyword;
         }
 
         final String keyword;
+
+        @Override
+        public String keyword() {
+            return keyword;
+        }
 
         static Cmd getFrom(String input) {
             return Arrays.stream(values())
@@ -25,20 +33,13 @@ public class InteractiveSession {
                   .findFirst()
                   .orElse(UNDEFINED);
         }
-
-        String argPart(String rawCommand) {
-            if (rawCommand.length() > this.keyword.length()) {
-                return rawCommand.substring(this.keyword.length() + 1);
-            }
-            return "";
-        }
     }
 
     boolean active = true;
     @Setter
     ParamStorage storage;
 
-    public void processCommand(String command) {
+    public void processCommand(String command, InputHandler inputHandler) {
         var cmd = Cmd.getFrom(command);
         switch (cmd) {
             case QUIT:
@@ -46,6 +47,9 @@ public class InteractiveSession {
                 break;
             case SET:
                 onSetCommand(command, cmd);
+                break;
+            case CLIPBOARD:
+                inputHandler.processOnce(Clipboard.getString());
                 break;
         }
     }
