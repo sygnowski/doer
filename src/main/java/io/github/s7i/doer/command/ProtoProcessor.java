@@ -8,7 +8,6 @@ import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.session.Input;
 import io.github.s7i.doer.session.InteractiveSession;
-import io.github.s7i.doer.session.ParamStorage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,7 +28,7 @@ import picocli.CommandLine.Option;
 
 @Slf4j
 @Command(name = "proto")
-public class ProtoProcessor implements Runnable, ParamStorage {
+public class ProtoProcessor implements Runnable {
 
     public static final String EOF = "EOF";
     public static final String DOER_PROMPT = "doer > ";
@@ -98,9 +97,11 @@ public class ProtoProcessor implements Runnable, ParamStorage {
         var decoder = new Decoder();
         decoder.loadDescriptors(getPaths());
 
-        var session = new InteractiveSession();
-        session.setStorage(this);
         var input = new Input();
+
+        var session = new InteractiveSession();
+        session.setStorage(this::updateParameters);
+        session.setInputHandler(input);
 
         try (var br = new Scanner(new InputStreamReader(System.in))) {
             do {
@@ -109,7 +110,7 @@ public class ProtoProcessor implements Runnable, ParamStorage {
                 while (br.hasNextLine()) {
                     var line = br.nextLine();
                     if (line.startsWith(":")) {
-                        session.processCommand(line, input);
+                        session.processCommand(line);
                         break;
                     } else if (text && EOF.equals(line)) {
                         break;
@@ -224,8 +225,7 @@ public class ProtoProcessor implements Runnable, ParamStorage {
         return decoder.toMessage(decoder.findMessageDescriptor(messageName), json);
     }
 
-    @Override
-    public void update(String paramName, String paramValue) {
+    public void updateParameters(String paramName, String paramValue) {
         switch (paramName) {
             case "ea":
             case "exportAs":

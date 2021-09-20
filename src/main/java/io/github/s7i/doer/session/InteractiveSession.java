@@ -38,8 +38,10 @@ public class InteractiveSession {
     boolean active = true;
     @Setter
     ParamStorage storage;
+    @Setter
+    InputHandler inputHandler;
 
-    public void processCommand(String command, InputHandler inputHandler) {
+    public void processCommand(String command) {
         var cmd = Cmd.getFrom(command);
         switch (cmd) {
             case QUIT:
