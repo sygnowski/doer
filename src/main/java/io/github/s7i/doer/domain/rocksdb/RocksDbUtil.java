@@ -1,11 +1,18 @@
 package io.github.s7i.doer.domain.rocksdb;
 
+import java.util.List;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
 
 public class RocksDbUtil {
+
+    public static ColumnFamilyHandle findHandler(List<ColumnFamilyHandle> handles, String columnName) {
+        return handles.stream()
+              .filter(a -> RocksDbUtil.getName(a).equals(columnName))
+              .findFirst().orElseThrow();
+    }
 
     public static String getName(ColumnFamilyHandle handle) {
         try {

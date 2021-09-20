@@ -10,6 +10,7 @@ import io.github.s7i.doer.manifest.ingest.IngestManifest;
 import io.github.s7i.doer.manifest.ingest.Topic;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -91,8 +92,16 @@ public class KafkaFeeder implements Context, Runnable, YamlParser {
                       .topicEntries()
                       .forEach(data -> result.add(new FeedRecord(topic.getName(), data)));
             } else if (entry.isSimpleValue()) {
-                result.add(FeedRecord.fromSimpleEntry(entry, topic));
+                var r = FeedRecord.fromSimpleEntry(entry, topic, raw -> entry.lookupForProto()
+                      .map(message -> decoder.toBinaryProto(raw, message))
+                      .orElseGet(() -> toBinary(raw))
+                );
+                result.add(r);
             }
         }
+    }
+
+    private byte[] toBinary(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
     }
 }

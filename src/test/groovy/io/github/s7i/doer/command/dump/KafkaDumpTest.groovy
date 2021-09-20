@@ -28,7 +28,7 @@ class KafkaDumpTest extends Specification {
             }
         }
         def consumer = Mock(Consumer) {
-            1 * subscribe(["topicName"])
+            1 * subscribe(["topicName"], _)
             1 * poll(_) >> records
 
         }

@@ -4,6 +4,7 @@ import io.github.s7i.doer.manifest.ingest.Entry;
 import io.github.s7i.doer.manifest.ingest.Topic;
 import io.github.s7i.doer.util.PropertyResolver;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Delegate;
@@ -17,7 +18,7 @@ public class FeedRecord {
     @Delegate
     TopicEntry entry;
 
-    public static FeedRecord fromSimpleEntry(Entry entry, Topic topic) {
+    public static FeedRecord fromSimpleEntry(Entry entry, Topic topic, Function<String, byte[]> binaryEncoder) {
 
         var resolver = new PropertyResolver();
         var topicName = topic.getName();
@@ -25,7 +26,7 @@ public class FeedRecord {
               ? resolver.resolve(entry.getKey())
               : null;
         var simpleValue = resolver.resolve(entry.getSimpleValue());
-        var data = simpleValue.getBytes(StandardCharsets.UTF_8);
+        var data = binaryEncoder.apply(simpleValue);
         var topicEntry = new TopicEntry(key, data);
         Header.assignHeaders(entry, topicEntry);
         return new FeedRecord(topicName, topicEntry);

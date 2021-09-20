@@ -35,14 +35,16 @@ public class Decoder {
     }
 
     public Descriptor findMessageDescriptor(String messageName) {
-        return descriptors.stream()
-              .filter(d -> d.getName().equals(messageName))
+        var descriptor = descriptors.stream()
+              .filter(d -> d.getName().equals(messageName) || d.getFullName().equals(messageName))
               .findFirst()
               .orElseThrow(() -> {
                   var msg = "can't find a message in descriptor set: " + messageName;
                   log.warn(msg);
                   return new NoSuchElementException(msg);
               });
+        log.info("got descriptor: name: {}, fullName: {}", descriptor.getName(), descriptor.getFullName());
+        return descriptor;
     }
 
     public String toJson(Descriptor descriptor, byte[] data) {
@@ -72,6 +74,11 @@ public class Decoder {
             log.error("making proto message, form json:\n{} exception is:\n", json, e);
             throw new RuntimeException("Cannot make proto message: " + descriptor.getName());
         }
+    }
+
+    public byte[] toBinaryProto(String json, String message) {
+        var md = findMessageDescriptor(message);
+        return toMessage(md, json).toByteArray();
     }
 
     private List<FileDescriptor> readDescSet(List<Path> descriptorPaths) {
