@@ -3,7 +3,7 @@ plugins {
     id 'application'
     id 'groovy'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
-    id 'io.freefair.lombok' version '5.0.0'
+    id 'io.freefair.lombok' version '6.2.0'
 }
 
 sourceCompatibility = JavaVersion.VERSION_11
@@ -33,9 +33,23 @@ dependencies {
             "com.data-artisans:frocksdbjni:5.17.2-artisans-2.0"
 
 
-    testImplementation 'org.codehaus.groovy:groovy-all:2.5.8'
-    testImplementation 'org.spockframework:spock-core:1.3-groovy-2.5'
-    testImplementation 'junit:junit:4.12'
+    // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle
+    testImplementation "org.codehaus.groovy:groovy:3.0.8"
+    testImplementation platform("org.spockframework:spock-bom:2.0-groovy-3.0")
+    testImplementation "org.spockframework:spock-core"
+    testImplementation "org.spockframework:spock-junit4"
+
+    testImplementation "org.hamcrest:hamcrest-core:2.2"
+    testRuntimeOnly "net.bytebuddy:byte-buddy:1.11.0"
+    testRuntimeOnly "org.objenesis:objenesis:3.2"
+    testImplementation 'net.bytebuddy:byte-buddy:1.11.5'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
 
 application {
