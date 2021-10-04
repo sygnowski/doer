@@ -23,8 +23,12 @@ public class TopicContext {
     Output output;
     RecordWriter recordWriter;
 
+    public boolean hasRange() {
+        return nonNull(range);
+    }
+
     public boolean hasRecordsToCollect() {
-        return nonNull(range) && !range.reachEnd(lastOffset);
+        return hasRange() && !range.reachEnd(lastOffset);
     }
 
 }

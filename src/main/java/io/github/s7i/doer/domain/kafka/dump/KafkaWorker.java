@@ -143,11 +143,14 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
     }
 
     private boolean notEnds() {
-        var collectingTopics = contexts.values()
-              .stream()
-              .filter(TopicContext::hasRecordsToCollect)
-              .count();
-        return collectingTopics > 0;
+        var hasRange = contexts.values().stream().anyMatch(TopicContext::hasRange);
+        var unExhaustedRanges = !hasRange
+              ? 0
+              : contexts.values()
+                    .stream()
+                    .filter(TopicContext::hasRecordsToCollect)
+                    .count();
+        return !hasRange || unExhaustedRanges > 0;
     }
 
     private void dumpRecord(ConsumerRecord<String, byte[]> record) {
