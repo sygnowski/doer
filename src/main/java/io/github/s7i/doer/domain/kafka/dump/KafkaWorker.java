@@ -64,7 +64,6 @@ public class KafkaWorker implements Context {
                 log.debug("run wakeup");
                 keepRunning = false;
                 consumer.wakeup();
-                consumer.close();
             });
             consumer.subscribe(topics, new ConsumerRebalanceListener() {
                 @Override
