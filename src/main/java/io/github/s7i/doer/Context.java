@@ -11,9 +11,18 @@ public interface Context {
 
         public Initializer(Path workDir) {
             Globals.INSTANCE.root = () -> workDir;
-            Runnable onShutdown = () -> Globals.INSTANCE.stopHooks.stream().forEach(Runnable::run);
-            Runtime.getRuntime().addShutdownHook(new Thread(onShutdown, "shutdown"));
+            Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "shutdown"));
         }
+
+        private void shutdown() {
+            Doer.CONSOLE.info("Init shutdown procedure...");
+            Globals.INSTANCE.stopHooks.stream().forEach(Runnable::run);
+            Doer.CONSOLE.info("Shutdown completed.");
+        }
+    }
+
+    default void addStopHook(Runnable runnable) {
+        Globals.INSTANCE.stopHooks.add(runnable);
     }
 
     default OutputFactory getOutputFactory() {

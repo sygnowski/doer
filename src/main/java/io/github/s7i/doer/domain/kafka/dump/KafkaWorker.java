@@ -4,6 +4,7 @@ import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.dump.ProtoJsonWriter;
 import io.github.s7i.doer.command.dump.RecordWriter;
 import io.github.s7i.doer.config.Dump;
@@ -14,6 +15,7 @@ import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputKind;
 import io.github.s7i.doer.domain.output.UriResolver;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
+import io.github.s7i.doer.domain.rule.Rule;
 import io.github.s7i.doer.proto.Decoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -31,11 +33,12 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Slf4j
-public class KafkaWorker implements ProtoJsonWriter, Context {
+public class KafkaWorker implements Context {
 
     final Dump mainConfig;
     long recordCounter;
@@ -43,10 +46,9 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
     Decoder protoDecoder;
     Map<String, TopicContext> contexts = new HashMap<>();
 
-    @Override
-    public String toJson(String topic, byte[] data) {
-        return protoDecoder.toJson(contexts.get(topic).getDescriptor(), data);
-    }
+    ProtoJsonWriter jsonWriter = (topic, data) -> protoDecoder.toJson(contexts.get(topic).getDescriptor(), data, true);
+
+    boolean keepRunning;
 
     public void pool() {
         var topics = mainConfig.getDump().getTopics()
@@ -56,7 +58,14 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
         final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
         initialize();
 
+        keepRunning = true;
         try (Consumer<String, byte[]> consumer = getKafkaFactory().getConsumerFactory().createConsumer(mainConfig)) {
+            addStopHook(() -> {
+                log.debug("run wakeup");
+                keepRunning = false;
+                consumer.wakeup();
+                consumer.close();
+            });
             consumer.subscribe(topics, new ConsumerRebalanceListener() {
                 @Override
                 public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
@@ -65,12 +74,12 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
 
                 @Override
                 public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                    consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> log.info("current offset {} for {}", tp, offset));
+                    consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> Doer.CONSOLE.info("Offset {} : {}", tp, offset));
                     for (var tp : partitions) {
                         var ctx = contexts.get(tp.topic());
                         if (nonNull(ctx) && nonNull(ctx.getRange()) && ctx.getRange().hasFrom()) {
                             var offset = ctx.getRange().getFrom();
-                            log.info("seeking to offset {} on partition {}", offset, tp);
+                            Doer.CONSOLE.info("seeking to offset {} on partition {}", offset, tp);
                             consumer.seek(tp, offset);
                         }
                     }
@@ -84,8 +93,10 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
 
                 records.forEach(this::dumpRecord);
             } while (notEnds());
+        } catch (WakeupException w) {
+            log.debug("wakeup", w);
         }
-        log.info("Stop dumping from Kafka, saved records: {}", recordCounter);
+        Doer.CONSOLE.info("Stop dumping from Kafka, saved records: {}", recordCounter);
     }
 
     private void initialize() {
@@ -95,7 +106,11 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
         for (var topic : mainConfig.getDump().getTopics()) {
             var name = topic.getName();
             var context = contexts.computeIfAbsent(name, TopicContext::new);
-            context.setRecordWriter(new RecordWriter(topic, this));
+            context.setRecordWriter(new RecordWriter(topic, jsonWriter));
+
+            if (nonNull(topic.getRule())) {
+                context.setRule(new Rule(topic.getRule()));
+            }
 
             var output = createOutput(topic);
             output.open();
@@ -119,7 +134,7 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
               .filter(t -> hasAnyValue(t.getRange()))
               .collect(Collectors.toConcurrentMap(Topic::getName, topic -> {
                   var range = new Range(topic.getRange());
-                  log.info("Topic {} with range: {}", topic.getName(), range);
+                  log.debug("Topic {} with range: {}", topic.getName(), range);
                   return range;
               }));
     }
@@ -150,7 +165,7 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
                     .stream()
                     .filter(TopicContext::hasRecordsToCollect)
                     .count();
-        return !hasRange || unExhaustedRanges > 0;
+        return keepRunning && (!hasRange || unExhaustedRanges > 0);
     }
 
     private void dumpRecord(ConsumerRecord<String, byte[]> record) {
@@ -161,6 +176,12 @@ public class KafkaWorker implements ProtoJsonWriter, Context {
         var range = ctx.getRange();
         if (nonNull(range) && range.positionNotInRange(lastOffset)) {
             return;
+        }
+        if (ctx.hasRule()) {
+            var pass = ctx.getRule().testRule(jsonWriter.toJson(record.topic(), record.value()));
+            if (!pass) {
+                return;
+            }
         }
         var txt = ctx.getRecordWriter().toJsonString(record);
 

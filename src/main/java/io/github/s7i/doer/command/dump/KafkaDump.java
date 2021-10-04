@@ -2,6 +2,7 @@ package io.github.s7i.doer.command.dump;
 
 
 import io.github.s7i.doer.Context;
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.YamlParser;
 import io.github.s7i.doer.config.Dump;
 import io.github.s7i.doer.domain.kafka.dump.KafkaWorker;
@@ -37,7 +38,7 @@ public class KafkaDump implements Runnable, YamlParser {
         var path = yaml.toPath().toAbsolutePath();
         new Context.Initializer(path.getParent());
 
-        log.info("Start dumping from Kafka");
+        Doer.CONSOLE.info("Start dumping from Kafka");
         new KafkaWorker(config).pool();
     }
 

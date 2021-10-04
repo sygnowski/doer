@@ -5,6 +5,7 @@ import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import io.github.s7i.doer.config.Dump.Topic;
 import java.time.Instant;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -15,6 +16,7 @@ public class RecordWriter {
 
     public static final String NEWLINE = "\n";
     final Topic specs;
+    @Getter
     final ProtoJsonWriter protoJsonWriter;
 
     public String toJsonString(ConsumerRecord<String, byte[]> record) {

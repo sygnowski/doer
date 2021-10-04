@@ -29,6 +29,7 @@ public class Dump extends KafkaConfig {
         boolean showBinary;
         String name;
         String range;
+        String rule;
         Value value;
         String output;
     }

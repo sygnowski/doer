@@ -48,6 +48,10 @@ public class Decoder {
     }
 
     public String toJson(Descriptor descriptor, byte[] data) {
+        return toJson(descriptor, data, false);
+    }
+
+    public String toJson(Descriptor descriptor, byte[] data, boolean safe) {
         try {
             var message = DynamicMessage.parseFrom(descriptor, data);
             var registry = TypeRegistry.newBuilder().add(descriptors).build();
@@ -56,7 +60,11 @@ public class Decoder {
             return printer.print(message);
         } catch (InvalidProtocolBufferException ipe) {
             log.error("toJson", ipe);
-            throw new RuntimeException(ipe);
+            if (!safe) {
+                throw new RuntimeException(ipe);
+            } else {
+                return "{}";
+            }
         }
     }
 

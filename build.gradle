@@ -32,7 +32,8 @@ dependencies {
             "com.fasterxml.jackson.core:jackson-core:2.11.2",
             "com.fasterxml.jackson.core:jackson-databind:2.11.2",
             "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.2",
-            "com.data-artisans:frocksdbjni:5.17.2-artisans-2.0"
+            "com.data-artisans:frocksdbjni:5.17.2-artisans-2.0",
+            "org.jeasy:easy-rules-mvel:4.1.0"
 
 
     // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle
