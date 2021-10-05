@@ -88,9 +88,10 @@ public class KafkaWorker implements Context {
 
                 var records = consumer.poll(timeout);
                 poolSize = records.count();
-                log.debug("Kafka pool size: {}", poolSize);
-
-                records.forEach(this::dumpRecord);
+                if (poolSize > 0) {
+                    log.debug("Pool size: {}", poolSize);
+                    records.forEach(this::dumpRecord);
+                }
             } while (notEnds());
         } catch (WakeupException w) {
             log.debug("wakeup", w);
