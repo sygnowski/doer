@@ -1,0 +1,52 @@
+package io.github.s7i.doer.domain.output;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequiredArgsConstructor
+public class HttpOutput implements Output {
+
+    private HttpClient httpClient;
+    final String uri;
+
+    @Override
+    public void open() {
+        httpClient = HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(15))
+              .build();
+        log.debug("http client opened");
+    }
+
+    @Override
+    public void emit(Load load) {
+        var request = HttpRequest.newBuilder()
+              .uri(URI.create(uri))
+              .header("Content-Type", "application/json")
+              .POST(BodyPublishers.ofString(load.dataAsString()))
+              .build();
+        try {
+            var hnd = httpClient.send(request, BodyHandlers.ofString());
+            int statusCode = hnd.statusCode();
+            if (statusCode < 200 || statusCode > 206) {
+                log.debug("http response, @status: {}, @body: {}", statusCode, hnd.body());
+            }
+        } catch (IOException e) {
+            log.error("", e);
+        } catch (InterruptedException e) {
+            log.warn("", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+    }
+}

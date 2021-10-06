@@ -15,6 +15,7 @@ import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputKind;
 import io.github.s7i.doer.domain.output.UriResolver;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
+import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
 import io.github.s7i.doer.domain.rule.Rule;
 import io.github.s7i.doer.proto.Decoder;
 import java.nio.charset.StandardCharsets;
@@ -122,7 +123,10 @@ public class KafkaWorker implements Context {
 
     private Output createOutput(Topic topic) {
         FileOutputCreator foc = () -> getBaseDir().resolve(topic.getOutput());
+        HttpOutputCreator http = topic::getOutput;
+
         getOutputFactory().register(OutputKind.FILE, foc);
+        getOutputFactory().register(OutputKind.HTTP, http);
 
         return getOutputFactory().resolve(new UriResolver(topic.getOutput()))
               .orElseThrow();

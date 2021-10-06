@@ -19,10 +19,15 @@ public class UriResolver implements OutputKindResolver {
     @Override
     public OutputKind resolveOutputKind() {
         var schema = uri.getScheme();
-        if (!"doer".equals(schema)) {
-            return OutputKind.FILE;
+
+        switch (schema) {
+            case "http":
+                return OutputKind.HTTP;
+            case "doer":
+                var authority = uri.getAuthority();
+                return OutputKind.valueOf(authority.toUpperCase());
+            default:
+                return OutputKind.FILE;
         }
-        var authority = uri.getAuthority();
-        return OutputKind.valueOf(authority.toUpperCase());
     }
 }
