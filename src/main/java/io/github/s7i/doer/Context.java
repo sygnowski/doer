@@ -9,12 +9,16 @@ public interface Context {
 
     class Initializer {
 
-        public Initializer(Path workDir) {
-            Globals.INSTANCE.root = () -> workDir;
-            Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "shutdown"));
+        static {
+            Runtime.getRuntime().addShutdownHook(new Thread(Initializer::shutdown, "shutdown"));
         }
 
-        private void shutdown() {
+        public Initializer(Path workDir) {
+            Globals.INSTANCE.getScope().root = () -> workDir;
+
+        }
+
+        private static void shutdown() {
             Doer.CONSOLE.info("Init shutdown procedure...");
             Globals.INSTANCE.stopHooks.stream().forEach(Runnable::run);
             Doer.CONSOLE.info("Shutdown completed.");
@@ -26,11 +30,12 @@ public interface Context {
     }
 
     default OutputFactory getOutputFactory() {
-        return Globals.INSTANCE.outputFactory;
+        return Globals.INSTANCE.getScope().outputFactory;
     }
 
     default Path getBaseDir() {
-        requireNonNull(Globals.INSTANCE.root);
-        return Globals.INSTANCE.root.get();
+        Path baseDir = Globals.INSTANCE.getScope().root.get();
+        requireNonNull(baseDir);
+        return baseDir;
     }
 }

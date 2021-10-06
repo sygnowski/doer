@@ -41,7 +41,7 @@ class KafkaDumpTest extends Specification {
         def outputFactory = new OutputFactory().register(OutputKind.FILE, out)
 
         Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        Globals.INSTANCE.outputFactory = outputFactory
+        Globals.INSTANCE.getScope().outputFactory = outputFactory
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/simple-dump.yml")
