@@ -3,7 +3,6 @@ package io.github.s7i.doer.domain.kafka.ingest;
 import io.github.s7i.doer.manifest.ingest.Entry;
 import io.github.s7i.doer.manifest.ingest.Topic;
 import io.github.s7i.doer.util.PropertyResolver;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.Data;

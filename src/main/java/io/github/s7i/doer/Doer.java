@@ -20,7 +20,11 @@ import picocli.CommandLine.Command;
       ReplaceInFile.class})
 public class Doer {
 
-    public static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
+    private static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
+
+    public static Logger console() {
+        return CONSOLE;
+    }
 
     public static void main(String[] args) {
         boolean onlyCommandManifests = args.length > 0 && Arrays.stream(args)

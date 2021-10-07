@@ -1,8 +1,15 @@
 package io.github.s7i.doer;
 
+import static io.github.s7i.doer.Doer.console;
 import static java.util.Objects.requireNonNull;
 
+import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputFactory;
+import io.github.s7i.doer.domain.output.OutputKind;
+import io.github.s7i.doer.domain.output.OutputProvider;
+import io.github.s7i.doer.domain.output.UriResolver;
+import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
+import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
 import java.nio.file.Path;
 
 public interface Context {
@@ -19,9 +26,9 @@ public interface Context {
         }
 
         private static void shutdown() {
-            Doer.CONSOLE.info("Init shutdown procedure...");
+            console().info("Init shutdown procedure...");
             Globals.INSTANCE.stopHooks.stream().forEach(Runnable::run);
-            Doer.CONSOLE.info("Shutdown completed.");
+            console().info("Shutdown completed.");
         }
     }
 
@@ -37,5 +44,16 @@ public interface Context {
         Path baseDir = Globals.INSTANCE.getScope().root.get();
         requireNonNull(baseDir);
         return baseDir;
+    }
+
+    default Output buildOutput(OutputProvider outputProvider) {
+        FileOutputCreator foc = () -> getBaseDir().resolve(outputProvider.getOutput());
+        HttpOutputCreator http = outputProvider::getOutput;
+
+        getOutputFactory().register(OutputKind.FILE, foc);
+        getOutputFactory().register(OutputKind.HTTP, http);
+
+        return getOutputFactory().resolve(new UriResolver(outputProvider.getOutput()))
+              .orElseThrow();
     }
 }

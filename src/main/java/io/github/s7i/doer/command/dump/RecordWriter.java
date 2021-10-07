@@ -4,7 +4,7 @@ import static io.github.s7i.doer.util.Utils.hasAnyValue;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import io.github.s7i.doer.config.Dump.Topic;
+import io.github.s7i.doer.manifest.dump.Topic;
 import java.time.Instant;
 import java.util.Base64;
 import lombok.AccessLevel;

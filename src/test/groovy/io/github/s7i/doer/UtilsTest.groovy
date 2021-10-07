@@ -1,11 +1,10 @@
 package io.github.s7i.doer
 
+import io.github.s7i.doer.domain.output.ConsoleOutput
 import spock.lang.Specification
-import spock.lang.Unroll
 
 class UtilsTest extends Specification {
 
-    @Unroll
     def "URI test"() {
         expect:
         def uri = new URI(str)
@@ -22,7 +21,7 @@ class UtilsTest extends Specification {
         "/test/123"            | null    | null      | "/test/123" | null      | "/test/123"
         "kafka:topic"          | "kafka" | null      | null        | null      | "topic"
         "kafka://topic"        | "kafka" | "topic"   | ""          | "topic"   | "//topic"
-        "doer://console"       | "doer"  | "console" | ""          | "console" | "//console"
+        ConsoleOutput.CONSOLE  | "doer"  | "console" | ""          | "console" | "//console"
 
     }
 

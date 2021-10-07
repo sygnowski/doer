@@ -1,22 +1,19 @@
 package io.github.s7i.doer.domain.kafka.dump;
 
+import static io.github.s7i.doer.Doer.console;
 import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
-import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.dump.ProtoJsonWriter;
 import io.github.s7i.doer.command.dump.RecordWriter;
-import io.github.s7i.doer.config.Dump;
-import io.github.s7i.doer.config.Dump.Topic;
 import io.github.s7i.doer.config.Range;
 import io.github.s7i.doer.domain.kafka.Context;
+import io.github.s7i.doer.domain.output.ConsoleOutput;
 import io.github.s7i.doer.domain.output.Output;
-import io.github.s7i.doer.domain.output.OutputKind;
-import io.github.s7i.doer.domain.output.UriResolver;
-import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
-import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
 import io.github.s7i.doer.domain.rule.Rule;
+import io.github.s7i.doer.manifest.dump.Dump;
+import io.github.s7i.doer.manifest.dump.Topic;
 import io.github.s7i.doer.proto.Decoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -74,12 +71,12 @@ public class KafkaWorker implements Context {
 
                 @Override
                 public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                    consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> Doer.CONSOLE.info("Offset {} : {}", tp, offset));
+                    consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> console().info("Offset {} : {}", tp, offset));
                     for (var tp : partitions) {
                         var ctx = contexts.get(tp.topic());
                         if (nonNull(ctx) && nonNull(ctx.getRange()) && ctx.getRange().hasFrom()) {
                             var offset = ctx.getRange().getFrom();
-                            Doer.CONSOLE.info("seeking to offset {} on partition {}", offset, tp);
+                            console().info("seeking to offset {} on partition {}", offset, tp);
                             consumer.seek(tp, offset);
                         }
                     }
@@ -97,7 +94,7 @@ public class KafkaWorker implements Context {
         } catch (WakeupException w) {
             log.debug("wakeup", w);
         }
-        Doer.CONSOLE.info("Stop dumping from Kafka, saved records: {}", recordCounter);
+        console().info("Stop dumping from Kafka, saved records: {}", recordCounter);
     }
 
     private void initialize() {
@@ -122,14 +119,7 @@ public class KafkaWorker implements Context {
     }
 
     private Output createOutput(Topic topic) {
-        FileOutputCreator foc = () -> getBaseDir().resolve(topic.getOutput());
-        HttpOutputCreator http = topic::getOutput;
-
-        getOutputFactory().register(OutputKind.FILE, foc);
-        getOutputFactory().register(OutputKind.HTTP, http);
-
-        return getOutputFactory().resolve(new UriResolver(topic.getOutput()))
-              .orElseThrow();
+        return buildOutput(() -> topic.getOutput().orElse(ConsoleOutput.CONSOLE));
     }
 
     private Map<String, Range> initRange() {
