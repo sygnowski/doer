@@ -11,8 +11,22 @@ import io.github.s7i.doer.domain.output.UriResolver;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
 
 public interface Context {
+
+    @Builder
+    @Getter
+    class InitialParameters {
+
+        Path workDir;
+        @Default
+        Map<String, String> params = Collections.emptyMap();
+    }
 
     class Initializer {
 
@@ -20,9 +34,10 @@ public interface Context {
             Runtime.getRuntime().addShutdownHook(new Thread(Initializer::shutdown, "shutdown"));
         }
 
-        public Initializer(Path workDir) {
-            Globals.INSTANCE.getScope().root = () -> workDir;
-
+        public Initializer(InitialParameters parameters) {
+            var scope = Globals.INSTANCE.getScope();
+            scope.root = parameters::getWorkDir;
+            scope.params = parameters::getParams;
         }
 
         private static void shutdown() {
@@ -55,5 +70,9 @@ public interface Context {
 
         return getOutputFactory().resolve(new UriResolver(outputProvider.getOutput()))
               .orElseThrow();
+    }
+
+    default Map<String, String> getParams() {
+        return Globals.INSTANCE.getScope().getParams().get();
     }
 }

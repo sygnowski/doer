@@ -4,11 +4,12 @@ import static java.util.Objects.nonNull;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.s7i.doer.util.PropertyResolver;
+import io.github.s7i.doer.util.TopicWithResolvableName;
 import java.util.Optional;
 import lombok.Getter;
 
 @Getter
-public class Topic {
+public class Topic implements TopicWithResolvableName {
 
     @JsonProperty("show_binary")
     boolean showBinary;
@@ -23,5 +24,10 @@ public class Topic {
             return Optional.of(new PropertyResolver().resolve(output));
         }
         return Optional.empty();
+    }
+
+    @Override
+    public void resolveName(String name) {
+        this.name = name;
     }
 }

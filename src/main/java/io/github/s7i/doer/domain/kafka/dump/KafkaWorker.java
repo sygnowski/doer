@@ -15,12 +15,15 @@ import io.github.s7i.doer.domain.rule.Rule;
 import io.github.s7i.doer.manifest.dump.Dump;
 import io.github.s7i.doer.manifest.dump.Topic;
 import io.github.s7i.doer.proto.Decoder;
+import io.github.s7i.doer.util.TopicNameResolver;
+import io.github.s7i.doer.util.TopicWithResolvableName;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -49,10 +52,7 @@ public class KafkaWorker implements Context {
     boolean keepRunning;
 
     public void pool() {
-        var topics = mainConfig.getDump().getTopics()
-              .stream()
-              .map(t -> t.getName())
-              .collect(Collectors.toList());
+        final var topics = resolveTopicNames();
         final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
         initialize();
 
@@ -95,6 +95,16 @@ public class KafkaWorker implements Context {
             log.debug("wakeup", w);
         }
         console().info("Stop dumping from Kafka, saved records: {}", recordCounter);
+    }
+
+    private List<String> resolveTopicNames() {
+        var tnr = new TopicNameResolver();
+        var topics = mainConfig.getDump().getTopics()
+              .stream()
+              .map(tnr::resolve)
+              .map(TopicWithResolvableName::getName)
+              .collect(Collectors.toList());
+        return topics;
     }
 
     private void initialize() {

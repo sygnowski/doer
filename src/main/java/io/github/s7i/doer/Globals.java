@@ -37,6 +37,7 @@ public enum Globals {
     public class Scope {
 
         Supplier<Path> root;
+        Supplier<Map<String, String>> params;
 
         OutputFactory outputFactory = new OutputFactory();
 
