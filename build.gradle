@@ -16,9 +16,10 @@ repositories {
 
 dependencies {
     implementation project(":proto-doer")
-    implementation 'org.slf4j:slf4j-api:1.7.30',
+    implementation 'org.slf4j:slf4j-api:1.7.32',
             'ch.qos.logback:logback-classic:1.3.0-alpha5',
-            'info.picocli:picocli:4.5.1',
+            'net.logstash.logback:logstash-logback-encoder:6.6',
+            'info.picocli:picocli:4.6.1',
             "io.grpc:grpc-protobuf:1.29.0",
             "io.grpc:grpc-stub:1.29.0",
             'io.grpc:grpc-netty-shaded:1.38.1',
