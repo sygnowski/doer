@@ -27,16 +27,17 @@ public class HttpOutput implements Output {
 
     @Override
     public void emit(Load load) {
+        String payload = load.dataAsString();
         var request = HttpRequest.newBuilder()
               .uri(URI.create(uri))
               .header("Content-Type", "application/json")
-              .POST(BodyPublishers.ofString(load.dataAsString()))
+              .POST(BodyPublishers.ofString(payload))
               .build();
         try {
             var hnd = httpClient.send(request, BodyHandlers.ofString());
             int statusCode = hnd.statusCode();
             if (statusCode < 200 || statusCode > 206) {
-                log.debug("http response, @status: {}, @body: {}", statusCode, hnd.body());
+                log.debug("http response, @uri: {}, @status: {}, @body: {}\n @payload{}", uri, statusCode, hnd.body(), payload);
             }
         } catch (IOException e) {
             log.error("", e);
