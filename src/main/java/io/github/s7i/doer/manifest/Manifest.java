@@ -1,5 +1,10 @@
 package io.github.s7i.doer.manifest;
 
-public interface Manifest {
+import java.util.Map;
 
+public interface Manifest<T extends Specification> {
+
+    T getSpecification();
+
+    Map<String, String> getParams();
 }

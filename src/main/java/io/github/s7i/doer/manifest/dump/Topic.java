@@ -7,8 +7,10 @@ import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.TopicWithResolvableName;
 import java.util.Optional;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
+@ToString
 public class Topic implements TopicWithResolvableName {
 
     @JsonProperty("show_binary")

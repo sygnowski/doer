@@ -7,12 +7,13 @@ import static java.util.Objects.nonNull;
 import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.command.dump.ProtoJsonWriter;
 import io.github.s7i.doer.command.dump.RecordWriter;
+import io.github.s7i.doer.config.KafkaConfig;
 import io.github.s7i.doer.config.Range;
 import io.github.s7i.doer.domain.kafka.Context;
 import io.github.s7i.doer.domain.output.ConsoleOutput;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.rule.Rule;
-import io.github.s7i.doer.manifest.dump.Dump;
+import io.github.s7i.doer.manifest.dump.DumpManifest;
 import io.github.s7i.doer.manifest.dump.Topic;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.util.TopicNameResolver;
@@ -39,9 +40,10 @@ import org.apache.kafka.common.errors.WakeupException;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Slf4j
-public class KafkaWorker implements Context {
+class KafkaWorker implements Context {
 
-    final Dump mainConfig;
+    final DumpManifest specification;
+    final KafkaConfig kafkaConfig;
     long recordCounter;
     int poolSize;
     Decoder protoDecoder;
@@ -53,11 +55,11 @@ public class KafkaWorker implements Context {
 
     public void pool() {
         final var topics = resolveTopicNames();
-        final var timeout = Duration.ofSeconds(mainConfig.getDump().getPoolTimeoutSec());
+        final var timeout = Duration.ofSeconds(specification.getPoolTimeoutSec());
         initialize();
 
         keepRunning = true;
-        try (Consumer<String, byte[]> consumer = getKafkaFactory().getConsumerFactory().createConsumer(mainConfig)) {
+        try (Consumer<String, byte[]> consumer = getKafkaFactory().getConsumerFactory().createConsumer(kafkaConfig)) {
             addStopHook(() -> {
                 log.debug("run wakeup");
                 keepRunning = false;
@@ -99,7 +101,7 @@ public class KafkaWorker implements Context {
 
     private List<String> resolveTopicNames() {
         var tnr = new TopicNameResolver();
-        var topics = mainConfig.getDump().getTopics()
+        var topics = specification.getTopics()
               .stream()
               .map(tnr::resolve)
               .map(TopicWithResolvableName::getName)
@@ -111,7 +113,7 @@ public class KafkaWorker implements Context {
         var proto = initProto();
         var ranges = initRange();
 
-        for (var topic : mainConfig.getDump().getTopics()) {
+        for (var topic : specification.getTopics()) {
             var name = topic.getName();
             var context = contexts.computeIfAbsent(name, TopicContext::new);
             context.setRecordWriter(new RecordWriter(topic, jsonWriter));
@@ -133,7 +135,7 @@ public class KafkaWorker implements Context {
     }
 
     private Map<String, Range> initRange() {
-        return mainConfig.getDump().getTopics()
+        return specification.getTopics()
               .stream()
               .filter(t -> hasAnyValue(t.getRange()))
               .collect(Collectors.toConcurrentMap(Topic::getName, topic -> {
@@ -144,13 +146,12 @@ public class KafkaWorker implements Context {
     }
 
     private Map<String, Descriptor> initProto() {
-        var protoSpec = mainConfig.getDump().getProto();
+        var protoSpec = specification.getProto();
         if (nonNull(protoSpec)) {
             protoDecoder = new Decoder();
             protoDecoder.loadDescriptors(protoSpec);
 
-            return mainConfig.getDump()
-                  .getTopics()
+            return specification.getTopics()
                   .stream()
                   .filter(t -> hasAnyValue(t.getValue().getProtoMessage()))
                   .collect(Collectors.toMap(

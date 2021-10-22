@@ -1,12 +1,9 @@
 package io.github.s7i.doer.command.dump;
 
 
-import static io.github.s7i.doer.Doer.console;
-
-import io.github.s7i.doer.Context;
-import io.github.s7i.doer.Context.InitialParameters;
 import io.github.s7i.doer.command.YamlParser;
-import io.github.s7i.doer.domain.kafka.dump.KafkaWorker;
+import io.github.s7i.doer.domain.kafka.dump.DumpBuilder;
+import io.github.s7i.doer.flow.Task;
 import io.github.s7i.doer.manifest.dump.Dump;
 import java.io.File;
 import lombok.extern.slf4j.Slf4j;
@@ -36,16 +33,13 @@ public class KafkaDump implements Runnable, YamlParser {
 
     @Override
     public void run() {
-        var config = parseYaml(Dump.class);
         var workDir = yaml.toPath().toAbsolutePath().getParent();
-        
-        new Context.Initializer(InitialParameters.builder()
-              .workDir(workDir)
-              .params(config.getParams())
-              .build());
-
-        console().info("Start dumping from Kafka");
-        new KafkaWorker(config).pool();
+        new DumpBuilder()
+              .setManifest(parseYaml(Dump.class))
+              .setWorkDir(workDir)
+              .build()
+              .getTasks()
+              .forEach(Task::execute);
     }
 
 }
