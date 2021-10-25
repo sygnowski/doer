@@ -10,8 +10,8 @@ import lombok.ToString;
 public class KafkaConfig extends Base {
 
     @JsonProperty("kafka-properties")
-    String kafkaPropFile;
+    protected String kafkaPropFile;
 
-    Map<String, String> kafka;
+    protected Map<String, String> kafka;
 
 }

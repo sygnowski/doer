@@ -1,11 +1,8 @@
 package io.github.s7i.doer.manifest.dump;
 
-import io.github.s7i.doer.config.KafkaConfig;
-import io.github.s7i.doer.manifest.Manifest;
-import io.github.s7i.doer.util.Mutable;
+import io.github.s7i.doer.manifest.AbstractManifest;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -16,8 +13,7 @@ import lombok.experimental.FieldDefaults;
 @ToString(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder(toBuilder = true)
-public class Dump extends KafkaConfig implements Manifest<DumpManifest>, Mutable<Dump> {
+public class Dump extends AbstractManifest<DumpManifest> {
 
     DumpManifest dump;
 
@@ -27,9 +23,9 @@ public class Dump extends KafkaConfig implements Manifest<DumpManifest>, Mutable
     }
 
     @Override
-    public Dump mutate() {
-        final var inst = toBuilder().build();
-        inst.getParams().putAll(getParams());
+    public Dump clone() throws CloneNotSupportedException {
+        final var inst = new Dump(dump.clone());
+        copyDependencies(inst);
         return inst;
     }
 }

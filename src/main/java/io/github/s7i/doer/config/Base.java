@@ -11,13 +11,13 @@ import lombok.ToString;
 @ToString
 public abstract class Base {
 
-    String version;
+    protected String version;
 
     @JsonProperty("type")
     @JsonAlias("kind")
-    String kind;
+    protected String kind;
 
     @JsonProperty("param")
     @JsonAlias({"parameters", "params"})
-    Map<String, String> params = new HashMap<>();
+    protected Map<String, String> params = new HashMap<>();
 }

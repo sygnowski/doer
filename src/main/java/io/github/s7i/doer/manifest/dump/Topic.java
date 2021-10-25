@@ -6,11 +6,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.TopicWithResolvableName;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Getter
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder(toBuilder = true)
 public class Topic implements TopicWithResolvableName {
 
     @JsonProperty("show_binary")

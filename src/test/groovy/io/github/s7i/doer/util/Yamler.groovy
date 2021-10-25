@@ -7,7 +7,7 @@ import java.nio.file.Path
 
 trait Yamler {
 
-    def asDump(String resName) {
+    Dump asDump(String resName) {
         YamlParser yml = { Path.of("src/test/resources/", resName).toFile() }
         def manifest = yml.parseYaml(Dump.class)
         println(manifest)
