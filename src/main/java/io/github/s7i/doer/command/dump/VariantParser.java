@@ -18,7 +18,9 @@ public class VariantParser implements ITypeConverter<Variant> {
             for (var p : parts) {
                 parsePropertyVariant(p, storage);
             }
-            return new Variant(storage);
+            if (!storage.isEmpty()) {
+                return new Variant(storage);
+            }
         }
         return null;
     }
@@ -26,9 +28,11 @@ public class VariantParser implements ITypeConverter<Variant> {
     private void parsePropertyVariant(String raw, Map<String, Iterable<String>> storage) {
         if (hasValue(raw)) {
             var parts = raw.split("\\=");
-            var values = parts[1].split("\\,");
             if (parts.length == 2) {
-                storage.put(parts[0], Arrays.asList(values));
+                var values = parts[1].split("\\,");
+                if (values.length >= 1) {
+                    storage.put(parts[0], Arrays.asList(values));
+                }
             }
         }
     }

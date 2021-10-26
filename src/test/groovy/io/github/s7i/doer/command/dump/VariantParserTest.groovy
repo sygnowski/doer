@@ -14,6 +14,7 @@ class VariantParserTest extends Specification {
         input                   | expected
         "optA=1,2,3"            | ["optA": ["1", "2", "3"]]
         "optA=1,2,3|optB=4,5,6" | ["optA": ["1", "2", "3"], "optB": ["4", "5", "6"]]
+        "optA"                  | null
         null                    | null
         ""                      | null
 
