@@ -21,6 +21,7 @@ import picocli.CommandLine.Command;
 public class Doer {
 
     private static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
+    public static final String FLAGS = "doer.flags";
 
     public static Logger console() {
         return CONSOLE;

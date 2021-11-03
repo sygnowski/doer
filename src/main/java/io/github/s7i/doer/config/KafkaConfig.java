@@ -7,7 +7,7 @@ import lombok.ToString;
 
 @Getter
 @ToString(callSuper = true)
-public class KafkaConfig extends Base {
+public class KafkaConfig extends Base implements io.github.s7i.doer.domain.kafka.KafkaConfig {
 
     @JsonProperty("kafka-properties")
     protected String kafkaPropFile;

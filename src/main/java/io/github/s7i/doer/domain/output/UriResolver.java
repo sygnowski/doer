@@ -26,6 +26,8 @@ public class UriResolver implements OutputKindResolver {
             case "doer":
                 var authority = uri.getAuthority();
                 return OutputKind.valueOf(authority.toUpperCase());
+            case "kafka":
+                return OutputKind.KAFKA;
             default:
                 return OutputKind.FILE;
         }

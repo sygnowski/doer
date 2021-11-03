@@ -10,6 +10,7 @@ import io.github.s7i.doer.domain.output.creator.OutputCreator
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
+import org.apache.kafka.clients.producer.Producer
 import spock.lang.Specification
 
 class KafkaDumpTest extends Specification {
@@ -45,6 +46,45 @@ class KafkaDumpTest extends Specification {
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/simple-dump.yml")
+
+        expect:
+        dump.run()
+    }
+
+
+    def "Dump Kafka to Kafka"() {
+        setup:
+        def recordList = []
+        10.times {
+            def cr = new ConsumerRecord<>("topicName", 0, it, "key$it".toString(), "value$it".getBytes())
+            recordList << cr
+        }
+        def records = Mock(ConsumerRecords) {
+            count() >> recordList.size()
+            forEach(_) >> { args ->
+                recordList.forEach(args[0])
+            }
+        }
+        def consumer = Mock(Consumer) {
+            1 * subscribe(["topicName"], _)
+            1 * poll(_) >> records
+
+        }
+        def consumerFactory = Mock(KafkaConsumerFactory) {
+            1 * createConsumer(_) >> consumer
+        }
+
+        def prodFactory = Mock(KafkaProducerFactory) {
+            1 * createProducer(_, _) >> Mock(Producer) {
+                10 * send(_)
+            }
+        }
+
+        Globals.INSTANCE.kafka = new KafkaFactory(prodFactory, consumerFactory)
+
+
+        def dump = new KafkaDump()
+        dump.yaml = new File("src/test/resources/dump-to-kafka.yml")
 
         expect:
         dump.run()

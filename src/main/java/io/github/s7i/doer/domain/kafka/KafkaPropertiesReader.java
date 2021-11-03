@@ -2,7 +2,6 @@ package io.github.s7i.doer.domain.kafka;
 
 import static java.util.Objects.nonNull;
 
-import io.github.s7i.doer.config.KafkaConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -1,7 +1,6 @@
 package io.github.s7i.doer.domain.kafka;
 
 import io.github.s7i.doer.Tracing;
-import io.github.s7i.doer.config.KafkaConfig;
 import io.opentracing.contrib.kafka.TracingKafkaProducer;
 import java.util.Properties;
 import lombok.Getter;

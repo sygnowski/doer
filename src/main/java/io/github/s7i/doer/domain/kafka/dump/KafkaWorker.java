@@ -43,12 +43,15 @@ import org.apache.kafka.common.errors.WakeupException;
 @Slf4j
 class KafkaWorker implements Context {
 
+    public static final String FLAG_RAW_DATA = "raw-data";
+
     final DumpManifest specification;
     final KafkaConfig kafkaConfig;
     long recordCounter;
     int poolSize;
     Decoder protoDecoder;
     Map<String, TopicContext> contexts = new HashMap<>();
+    boolean useRawData;
 
     ProtoJsonWriter jsonWriter = (topic, data) -> protoDecoder.toJson(contexts.get(topic).getDescriptor(), data, true);
 
@@ -111,6 +114,8 @@ class KafkaWorker implements Context {
     }
 
     private void initialize() {
+        useRawData = hasFlag(FLAG_RAW_DATA);
+
         var proto = initProto();
         var ranges = initRange();
 
@@ -192,9 +197,17 @@ class KafkaWorker implements Context {
                 return;
             }
         }
-        var txt = ctx.getRecordWriter().toJsonString(record);
 
-        ctx.getOutput().emit(String.valueOf(lastOffset), txt.getBytes(StandardCharsets.UTF_8));
+        final byte[] data;
+        if (useRawData) {
+            data = record.value();
+        } else {
+            var txt = ctx.getRecordWriter().toJsonString(record);
+            data = txt.getBytes(StandardCharsets.UTF_8);
+        }
+
+        var resource = record.topic() + "-" + record.partition() + "-" + lastOffset;
+        ctx.getOutput().emit(resource, data);
 
         recordCounter++;
     }
