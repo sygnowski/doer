@@ -34,7 +34,7 @@ class KafkaDumpTest extends Specification {
 
         }
         def consumerFactory = Mock(KafkaConsumerFactory) {
-            1 * createConsumer(_) >> consumer
+            1 * createConsumer(_, _) >> consumer
         }
         def out = Mock(OutputCreator) {
 
@@ -71,7 +71,7 @@ class KafkaDumpTest extends Specification {
 
         }
         def consumerFactory = Mock(KafkaConsumerFactory) {
-            1 * createConsumer(_) >> consumer
+            1 * createConsumer(_, _) >> consumer
         }
 
         def prodFactory = Mock(KafkaProducerFactory) {

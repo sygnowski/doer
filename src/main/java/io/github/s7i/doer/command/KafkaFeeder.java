@@ -2,6 +2,7 @@ package io.github.s7i.doer.command;
 
 import static java.util.Objects.nonNull;
 
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.domain.kafka.Context;
 import io.github.s7i.doer.domain.kafka.ingest.FeedRecord;
 import io.github.s7i.doer.domain.kafka.ingest.TemplateResolver;
@@ -50,7 +51,9 @@ public class KafkaFeeder implements Context, Runnable, YamlParser {
         var records = produceRecords(config.getIngest());
         log.info("feeding kafka, prepared records count: {}", records.size());
 
-        try (var producer = getKafkaFactory().getProducerFactory().createProducer(config, useTracing)) {
+        try (var producer = getKafkaFactory()
+              .getProducerFactory()
+              .createProducer(config, useTracing || hasFlag(Doer.FLAG_USE_TRACING))) {
             records.stream()
                   .map(FeedRecord::toRecord)
                   .forEach(producer::send);

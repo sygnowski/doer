@@ -6,6 +6,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.dump.ProtoJsonWriter;
 import io.github.s7i.doer.command.dump.RecordWriter;
 import io.github.s7i.doer.config.KafkaConfig;
@@ -63,7 +64,7 @@ class KafkaWorker implements Context {
         initialize();
 
         keepRunning = true;
-        try (Consumer<String, byte[]> consumer = getKafkaFactory().getConsumerFactory().createConsumer(kafkaConfig)) {
+        try (Consumer<String, byte[]> consumer = getKafkaFactory().getConsumerFactory().createConsumer(kafkaConfig, hasFlag(Doer.FLAG_USE_TRACING))) {
             addStopHook(() -> {
                 log.debug("run wakeup");
                 keepRunning = false;

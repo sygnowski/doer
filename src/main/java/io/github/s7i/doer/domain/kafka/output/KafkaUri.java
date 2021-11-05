@@ -28,9 +28,11 @@ public class KafkaUri implements KafkaOutputCreator {
 
     protected final OutputProvider provider;
     protected final Context context;
+    private boolean useTrace;
 
     @Override
     public Output create() {
+        useTrace = context.hasFlag("trace");
         try {
             var uri = new URI(provider.getOutput());
             var configPropertyName = uri.getAuthority();
@@ -76,7 +78,7 @@ public class KafkaUri implements KafkaOutputCreator {
 
     @Override
     public boolean getUseTracing() {
-        return false;
+        return useTrace;
     }
 
     @Override
