@@ -8,9 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.experimental.FieldDefaults;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -32,14 +31,16 @@ public enum Globals {
         });
     }
 
-    @FieldDefaults(level = AccessLevel.PUBLIC)
+
     @Getter
-    public class Scope {
+    public static class Scope {
 
-        Supplier<Path> root;
-        Supplier<Map<String, String>> params;
+        @Setter
+        private Supplier<Path> root = () -> Path.of(".");
+        @Setter
+        private Supplier<Map<String, String>> params = Map::of;
 
-        OutputFactory outputFactory = new OutputFactory();
+        private OutputFactory outputFactory = new OutputFactory();
 
     }
 

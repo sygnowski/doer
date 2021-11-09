@@ -42,8 +42,8 @@ public interface Context {
 
         public Initializer(InitialParameters parameters) {
             var scope = Globals.INSTANCE.getScope();
-            scope.root = parameters::getWorkDir;
-            scope.params = parameters::getParams;
+            scope.setRoot(parameters::getWorkDir);
+            scope.setParams(parameters::getParams);
         }
 
         private static void shutdown() {
@@ -58,11 +58,11 @@ public interface Context {
     }
 
     default OutputFactory getOutputFactory() {
-        return Globals.INSTANCE.getScope().outputFactory;
+        return Globals.INSTANCE.getScope().getOutputFactory();
     }
 
     default Path getBaseDir() {
-        Path baseDir = Globals.INSTANCE.getScope().root.get();
+        Path baseDir = Globals.INSTANCE.getScope().getRoot().get();
         requireNonNull(baseDir);
         return baseDir;
     }
