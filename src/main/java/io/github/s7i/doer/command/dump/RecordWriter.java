@@ -1,7 +1,5 @@
 package io.github.s7i.doer.command.dump;
 
-import static io.github.s7i.doer.util.Utils.hasAnyValue;
-
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.github.s7i.doer.manifest.dump.Topic;
@@ -32,6 +30,7 @@ public class RecordWriter {
         kafka.addProperty("offset", record.offset());
         kafka.addProperty("key", record.key());
         kafka.addProperty("topic", record.topic());
+        kafka.addProperty("partition", record.partition());
         kafka.addProperty("timestamp", Instant.ofEpochMilli(record.timestamp()).toString());
 
         for (var header : record.headers()) {
@@ -45,7 +44,7 @@ public class RecordWriter {
               .setPrettyPrinting()
               .create();
 
-        if (hasAnyValue(specs.getValue().getProtoMessage())) {
+        if (specs.hasProto()) {
             var proto = protoJsonWriter.toJson(record.topic(), record.value());
             var jsProto = gson.fromJson(proto, JsonObject.class);
             jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));

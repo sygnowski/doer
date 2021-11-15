@@ -1,5 +1,6 @@
 package io.github.s7i.doer.manifest.dump;
 
+import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,6 +24,8 @@ public class Topic implements TopicWithResolvableName {
     boolean showBinary;
     String name;
     String range;
+    @JsonProperty("from_time")
+    String fromTime;
     String rule;
     Value value;
     String output;
@@ -37,5 +40,9 @@ public class Topic implements TopicWithResolvableName {
     @Override
     public void resolveName(String name) {
         this.name = name;
+    }
+
+    public boolean hasProto() {
+        return nonNull(value) && hasAnyValue(value.getProtoMessage());
     }
 }

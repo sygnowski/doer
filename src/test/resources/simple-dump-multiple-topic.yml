@@ -1,5 +1,5 @@
 version: "1.0"
-type: ókafka-dump
+type: kafka-dump
 kafka-properties: kafka.properties
 params:
   paramA: valueParamA
