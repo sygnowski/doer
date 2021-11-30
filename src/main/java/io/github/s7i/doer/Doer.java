@@ -1,6 +1,5 @@
 package io.github.s7i.doer;
 
-import io.github.s7i.doer.command.Helix;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.Rocks;
@@ -18,7 +17,6 @@ import picocli.CommandLine.Command;
       KafkaDump.class,
       ProtoProcessor.class,
       Rocks.class,
-      Helix.class,
       ReplaceInFile.class})
 public class Doer {
 
