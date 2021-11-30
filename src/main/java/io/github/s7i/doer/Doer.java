@@ -1,5 +1,6 @@
 package io.github.s7i.doer;
 
+import io.github.s7i.doer.command.Helix;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.Rocks;
@@ -17,10 +18,11 @@ import picocli.CommandLine.Command;
       KafkaDump.class,
       ProtoProcessor.class,
       Rocks.class,
+      Helix.class,
       ReplaceInFile.class})
 public class Doer {
 
-    private static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
+    static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
 
