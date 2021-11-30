@@ -1,5 +1,7 @@
 package io.github.s7i.doer.proto;
 
+import static java.util.Objects.nonNull;
+
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -53,11 +55,14 @@ public class Decoder {
 
     public String toJson(Descriptor descriptor, byte[] data, boolean safe) {
         try {
-            var message = DynamicMessage.parseFrom(descriptor, data);
-            var registry = TypeRegistry.newBuilder().add(descriptors).build();
+            if (nonNull(data) && data.length > 0) {
+                var message = DynamicMessage.parseFrom(descriptor, data);
+                var registry = TypeRegistry.newBuilder().add(descriptors).build();
 
-            JsonFormat.Printer printer = JsonFormat.printer().usingTypeRegistry(registry);
-            return printer.print(message);
+                var printer = JsonFormat.printer().usingTypeRegistry(registry);
+                return printer.print(message);
+            }
+            return "{}";
         } catch (InvalidProtocolBufferException ipe) {
             log.error("toJson", ipe);
             if (!safe) {
