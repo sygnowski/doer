@@ -13,6 +13,7 @@ import io.github.s7i.doer.domain.output.OutputProvider;
 import io.github.s7i.doer.domain.output.UriResolver;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
+import io.github.s7i.doer.util.QuitWatcher;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +45,8 @@ public interface Context {
             var scope = Globals.INSTANCE.getScope();
             scope.setRoot(parameters::getWorkDir);
             scope.setParams(parameters::getParams);
+
+            new QuitWatcher().watchForQuit(() -> System.exit(Doer.EC_QUIT));
         }
 
         private static void shutdown() {

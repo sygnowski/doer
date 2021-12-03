@@ -23,6 +23,7 @@ public class Doer {
     static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
+    public static final int EC_QUIT = 7;
 
     public static Logger console() {
         return CONSOLE;
