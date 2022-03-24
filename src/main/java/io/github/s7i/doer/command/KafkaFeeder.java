@@ -14,6 +14,8 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -21,6 +23,8 @@ import picocli.CommandLine.Option;
 @Command(name = "kfeed")
 @Slf4j
 public class KafkaFeeder implements Context, Runnable, YamlParser {
+
+    public static final int SEND_TIMEOUT = 10;
 
     public static KafkaFeeder createCommandInstance(File yaml) {
         var cmd = new KafkaFeeder();
@@ -48,18 +52,32 @@ public class KafkaFeeder implements Context, Runnable, YamlParser {
     public void run() {
         var config = parseYaml(Ingest.class);
 
-        var records = produceRecords(config.getIngest());
-        log.info("feeding kafka, prepared records count: {}", records.size());
+        final var records = produceRecords(config.getIngest())
+              .stream()
+              .map(FeedRecord::toRecord)
+              .collect(Collectors.toList());
+
+        final var toSend = records.size();
+        int sentCount = 0;
+        Doer.console().info("feeding kafka, prepared records count: {}", toSend);
 
         try (var producer = getKafkaFactory()
               .getProducerFactory()
               .createProducer(config, useTracing || hasFlag(Doer.FLAG_USE_TRACING))) {
-            records.stream()
-                  .map(FeedRecord::toRecord)
-                  .forEach(producer::send);
+
+            try {
+                for (var r : records) {
+                    var rm = producer.send(r).get(SEND_TIMEOUT, TimeUnit.SECONDS);
+                    Doer.console().info("record sent {}", rm);
+                    sentCount++;
+                }
+            } catch (Exception e) {
+                log.error("async send", e);
+            }
+
         }
 
-        log.info("kafka feeder ends");
+        Doer.console().info("kafka feeder ends, records sent {} of {}", sentCount, toSend);
     }
 
     private List<FeedRecord> produceRecords(IngestManifest spec) {
