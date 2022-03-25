@@ -1,7 +1,9 @@
 package io.github.s7i.doer.command;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
+import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.domain.kafka.Context;
 import io.github.s7i.doer.domain.kafka.ingest.FeedRecord;
@@ -22,7 +24,7 @@ import picocli.CommandLine.Option;
 
 @Command(name = "kfeed")
 @Slf4j
-public class KafkaFeeder implements Context, Runnable, YamlParser {
+public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
 
     public static final int SEND_TIMEOUT = 10;
 
@@ -40,6 +42,8 @@ public class KafkaFeeder implements Context, Runnable, YamlParser {
     @Option(names = "-l", description = "Allowed Labels")
     protected List<String> allowedLabels;
 
+    private int sentCount;
+
     @Override
     public File getYamlFile() {
         if (!yaml.exists()) {
@@ -52,32 +56,53 @@ public class KafkaFeeder implements Context, Runnable, YamlParser {
     public void run() {
         var config = parseYaml(Ingest.class);
 
+        init(config);
+        publishToKafka(config);
+    }
+
+    private void publishToKafka(Ingest config) {
         final var records = produceRecords(config.getIngest())
               .stream()
               .map(FeedRecord::toRecord)
               .collect(Collectors.toList());
-
         final var toSend = records.size();
-        int sentCount = 0;
-        Doer.console().info("feeding kafka, prepared records count: {}", toSend);
+        info("feeding kafka, prepared records count: {}", toSend);
 
         try (var producer = getKafkaFactory()
               .getProducerFactory()
               .createProducer(config, useTracing || hasFlag(Doer.FLAG_USE_TRACING))) {
+            final boolean flagSendAndForget = hasFlag(Doer.FLAG_SEND_AND_FORGET);
 
-            try {
-                for (var r : records) {
-                    var rm = producer.send(r).get(SEND_TIMEOUT, TimeUnit.SECONDS);
-                    Doer.console().info("record sent {}", rm);
-                    sentCount++;
+            for (var r : records) {
+                if (flagSendAndForget) {
+                    try {
+                        var rm = producer.send(r).get(SEND_TIMEOUT, TimeUnit.SECONDS);
+                        info("record sent {}", rm);
+                        sentCount++;
+                    } catch (Exception e) {
+                        log.error("async send", e);
+                    }
+                } else {
+                    producer.send(r, (rm, e) -> {
+                        if (isNull(e)) {
+                            info("record send {}", rm);
+                            sentCount++;
+                        } else {
+                            info("failed to sent: {} on {}", e, rm);
+                        }
+                    });
                 }
-            } catch (Exception e) {
-                log.error("async send", e);
             }
-
         }
 
-        Doer.console().info("kafka feeder ends, records sent {} of {}", sentCount, toSend);
+        info("kafka feeder ends, records sent {} of {}", sentCount, toSend);
+    }
+
+    private void init(Ingest config) {
+        new Initializer(InitialParameters.builder()
+              .workDir(yaml.toPath().toAbsolutePath().getParent())
+              .params(config.getParams())
+              .build());
     }
 
     private List<FeedRecord> produceRecords(IngestManifest spec) {

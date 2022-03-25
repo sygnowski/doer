@@ -15,7 +15,7 @@ class KafkaFeederTest extends Specification {
         given:
         def records = []
         def producer = Mock(Producer) {
-            2 * send(_) >> { args ->
+            2 * send(_, _) >> { args ->
                 records << args[0]
                 Mock(Future)
             }
