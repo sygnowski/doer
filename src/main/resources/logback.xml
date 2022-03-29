@@ -1,5 +1,7 @@
 <configuration>
+    <property scope="context" name="LOG_DIR" value="${DOER_HOME:-.}"/>
     <timestamp key="time" datePattern="yyyyMMdd_HHmmss"/>
+
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} : [DOER] %msg%n</pattern>
@@ -7,7 +9,7 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>${DOER_HOME:-.}/logs/doer-${time}.log</file>
+        <file>${LOG_DIR}/logs/doer-${time}.log</file>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
