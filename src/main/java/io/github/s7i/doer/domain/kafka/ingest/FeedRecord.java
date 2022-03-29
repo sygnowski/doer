@@ -1,5 +1,6 @@
 package io.github.s7i.doer.domain.kafka.ingest;
 
+import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.manifest.ingest.Entry;
 import io.github.s7i.doer.manifest.ingest.Topic;
 import io.github.s7i.doer.util.PropertyResolver;
@@ -19,7 +20,7 @@ public class FeedRecord {
 
     public static FeedRecord fromSimpleEntry(Entry entry, Topic topic, Function<String, byte[]> binaryEncoder) {
 
-        var resolver = new PropertyResolver();
+        var resolver = new PropertyResolver(Globals.INSTANCE.getScope().getParams().get());
         var topicName = topic.getName();
         var key = entry.getKey() != null
               ? resolver.resolve(entry.getKey())
@@ -32,7 +33,7 @@ public class FeedRecord {
     }
 
     public ProducerRecord<String, byte[]> toRecord() {
-        var record = new ProducerRecord(getTopic(), getKey(), getData());
+        var record = new ProducerRecord<>(getTopic(), getKey(), getData());
         entry.getHeaders().forEach(h -> record.headers().add(h.getName(), h.getValue()));
         return record;
     }
