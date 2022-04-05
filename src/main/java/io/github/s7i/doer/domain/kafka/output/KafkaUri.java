@@ -1,7 +1,5 @@
 package io.github.s7i.doer.domain.kafka.output;
 
-import static java.util.Objects.nonNull;
-
 import io.github.s7i.doer.Context;
 import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.Globals;
@@ -9,16 +7,17 @@ import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputProvider;
+import lombok.RequiredArgsConstructor;
+import org.apache.kafka.common.TopicPartition;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
-import lombok.RequiredArgsConstructor;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
+
+import static java.util.Objects.nonNull;
 
 @RequiredArgsConstructor
 public class KafkaUri implements KafkaOutputCreator {
@@ -41,9 +40,6 @@ public class KafkaUri implements KafkaOutputCreator {
                 config = () -> {
                     try {
                         var result = new HashMap<String, String>();
-
-                        result.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-                        result.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
                         final var props = new Properties();
                         props.load(new StringReader(kafkaConfig));
