@@ -48,6 +48,9 @@ public class RecordWriter {
             var proto = protoJsonWriter.toJson(record.topic(), record.value());
             var jsProto = gson.fromJson(proto, JsonObject.class);
             jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
+        } else if (specs.isJson()) {
+            var value = gson.fromJson(new String(record.value()), JsonObject.class);
+            value.keySet().forEach(key -> json.add(key, value.get(key)));
         } else {
             json.addProperty("value", new String(record.value()));
         }
