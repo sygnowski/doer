@@ -1,5 +1,6 @@
 package io.github.s7i.doer.domain.kafka.dump;
 
+import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
 import static io.github.s7i.doer.Doer.console;
 import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.isNull;
@@ -45,8 +46,6 @@ import org.apache.kafka.common.errors.WakeupException;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Slf4j
 class KafkaWorker implements Context {
-
-    public static final String FLAG_RAW_DATA = "raw-data";
 
     final DumpManifest specification;
     final KafkaConfig kafkaConfig;
