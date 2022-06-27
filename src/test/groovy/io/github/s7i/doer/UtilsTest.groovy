@@ -1,14 +1,27 @@
 package io.github.s7i.doer
 
-import io.github.s7i.doer.util.PropertyResolver
+import io.github.s7i.doer.domain.output.ConsoleOutput
 import spock.lang.Specification
 
 class UtilsTest extends Specification {
 
-    def uuidTest() {
+    def "URI test"() {
         expect:
-        def result = new PropertyResolver().resolve("\${__UUID}")
-        result ==~ /\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/
+        def uri = new URI(str)
+
+        scheme == uri.getScheme()
+        authority == uri.getAuthority()
+        path == uri.getPath()
+        host == uri.getHost()
+        ssp == uri.getSchemeSpecificPart()
+
+        where:
+        str                    | scheme  | authority | path        | host      | ssp
+        "doer://kafka/123/456" | "doer"  | "kafka"   | "/123/456"  | "kafka"   | "//kafka/123/456"
+        "/test/123"            | null    | null      | "/test/123" | null      | "/test/123"
+        "kafka:topic"          | "kafka" | null      | null        | null      | "topic"
+        "kafka://config/topic" | "kafka" | "config"  | "/topic"    | "config"  | "//config/topic"
+        ConsoleOutput.CONSOLE  | "doer"  | "console" | ""          | "console" | "//console"
 
     }
 

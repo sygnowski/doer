@@ -1,0 +1,14 @@
+version: "1.0"
+type: "kafka-dump"
+kafka-properties: kafka.properties
+params:
+  doer.flags: raw-data, just-another-flag
+  dest: |+
+    bootstrap.servers=destKafka:9092
+dump:
+  pool_timeout_sec: 5
+  topics:
+    - name: topicName
+      show_binary: true
+      range: ..9
+      output: kafka://dest/topic

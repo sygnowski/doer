@@ -7,11 +7,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "command-manifest", description = "Parsing command manifest yaml file")
@@ -22,6 +24,9 @@ public class CommandManifest implements Runnable {
     File[] yamls;
 
     int threadNo;
+
+    @Option(names = "-wp")
+    List<String> withParam;
 
     public Thread spawnNewThread(Runnable runnable) {
         return new Thread(runnable, "Doer-" + ++threadNo);
