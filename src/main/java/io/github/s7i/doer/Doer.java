@@ -6,6 +6,7 @@ import io.github.s7i.doer.command.Rocks;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.command.util.CommandManifest;
+import io.github.s7i.doer.util.GitProps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -19,7 +20,7 @@ import java.util.Arrays;
       ProtoProcessor.class,
       Rocks.class,
       ReplaceInFile.class})
-public class Doer {
+public class Doer implements Runnable {
 
     static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
     public static final String FLAGS = "doer.flags";
@@ -30,6 +31,18 @@ public class Doer {
 
     public static Logger console() {
         return CONSOLE;
+    }
+
+    @CommandLine.Option(names = {"-v", "--version"})
+    private boolean showVersion;
+
+    @Override
+    public void run() {
+        if (showVersion) {
+            console().info("version: {}", new GitProps());
+        } else {
+            new CommandLine(Doer.class).usage(System.out);
+        }
     }
 
     public static void main(String[] args) {
