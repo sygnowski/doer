@@ -32,7 +32,7 @@ dependencies {
             "com.fasterxml.jackson.core:jackson-core:2.13.0",
             "com.fasterxml.jackson.core:jackson-databind:2.13.0",
             'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.0',
-            "com.data-artisans:frocksdbjni:5.17.2-artisans-2.0",
+            "org.rocksdb:rocksdbjni:7.4.5",
             "org.jeasy:easy-rules-mvel:4.1.0"
 
 
