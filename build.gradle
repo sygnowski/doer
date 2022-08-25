@@ -4,6 +4,7 @@ plugins {
     id 'groovy'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
     id 'io.freefair.lombok' version '6.2.0'
+    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 }
 
 sourceCompatibility = JavaVersion.VERSION_11
