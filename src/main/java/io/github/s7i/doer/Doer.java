@@ -6,11 +6,12 @@ import io.github.s7i.doer.command.Rocks;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.command.util.CommandManifest;
-import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+
+import java.util.Arrays;
 
 @Command(name = "doer", description = "let's do big things...", subcommands = {
       KafkaFeeder.class,
@@ -40,6 +41,7 @@ public class Doer {
               : new Doer();
 
         new CommandLine(command)
+              .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(args);
     }
 }
