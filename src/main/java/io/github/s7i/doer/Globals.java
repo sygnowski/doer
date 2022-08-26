@@ -2,6 +2,7 @@ package io.github.s7i.doer;
 
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.domain.output.OutputFactory;
+import io.github.s7i.doer.pipeline.Pipeline;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,8 @@ public enum Globals implements Context {
     List<Runnable> stopHooks = new ArrayList<>();
     @Getter
     KafkaFactory kafka = new KafkaFactory();
+    @Getter
+    Pipeline pipeline = new Pipeline();
 
     public Scope getScope() {
 

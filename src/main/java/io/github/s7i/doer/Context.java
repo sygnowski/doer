@@ -5,6 +5,7 @@ import io.github.s7i.doer.domain.kafka.output.KafkaUri;
 import io.github.s7i.doer.domain.output.*;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
+import io.github.s7i.doer.domain.output.creator.PipelineOutputCreator;
 import io.github.s7i.doer.util.QuitWatcher;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -75,11 +76,13 @@ public interface Context {
         FileOutputCreator foc = () -> getBaseDir().resolve(outputProvider.getOutput());
         HttpOutputCreator http = outputProvider::getOutput;
         KafkaOutputCreator kafka = new KafkaUri(outputProvider, this);
+        PipelineOutputCreator pipeline = () -> Globals.INSTANCE.pipeline.connect(outputProvider.getOutput());
 
         final var factory = getOutputFactory();
         factory.register(OutputKind.FILE, foc);
         factory.register(OutputKind.HTTP, http);
         factory.register(OutputKind.KAFKA, kafka);
+        factory.register(OutputKind.PIPELINE, pipeline);
 
         return factory.resolve(new UriResolver(outputProvider.getOutput()))
                 .orElseThrow();
