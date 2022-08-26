@@ -1,28 +1,25 @@
 package io.github.s7i.doer;
 
-import static io.github.s7i.doer.Doer.console;
-import static java.util.Objects.nonNull;
-import static java.util.Objects.requireNonNull;
-
 import io.github.s7i.doer.domain.kafka.output.KafkaOutputCreator;
 import io.github.s7i.doer.domain.kafka.output.KafkaUri;
-import io.github.s7i.doer.domain.output.Output;
-import io.github.s7i.doer.domain.output.OutputFactory;
-import io.github.s7i.doer.domain.output.OutputKind;
-import io.github.s7i.doer.domain.output.OutputProvider;
-import io.github.s7i.doer.domain.output.UriResolver;
+import io.github.s7i.doer.domain.output.*;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
 import io.github.s7i.doer.util.QuitWatcher;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import org.slf4j.LoggerFactory;
+
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Predicate;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Getter;
-import org.slf4j.LoggerFactory;
+
+import static io.github.s7i.doer.Doer.console;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
 public interface Context {
 
@@ -49,9 +46,13 @@ public interface Context {
             new QuitWatcher().watchForQuit(() -> System.exit(Doer.EC_QUIT));
         }
 
+        public Context context() {
+            return Globals.INSTANCE;
+        }
+
         private static void shutdown() {
             console().info("Init shutdown procedure...");
-            Globals.INSTANCE.stopHooks.stream().forEach(Runnable::run);
+            Globals.INSTANCE.stopHooks.forEach(Runnable::run);
             console().info("Shutdown completed.");
         }
     }
@@ -81,7 +82,7 @@ public interface Context {
         factory.register(OutputKind.KAFKA, kafka);
 
         return factory.resolve(new UriResolver(outputProvider.getOutput()))
-              .orElseThrow();
+                .orElseThrow();
     }
 
     default Map<String, String> getParams() {
@@ -99,8 +100,8 @@ public interface Context {
 
             final var split = flags.split("\\,");
             final var hasFlag = Arrays.stream(split)
-                  .filter(Predicate.not(String::isBlank))
-                  .anyMatch(flag::equals);
+                    .filter(Predicate.not(String::isBlank))
+                    .anyMatch(flag::equals);
 
             if (hasFlag) {
                 LoggerFactory.getLogger(Context.class).debug("ON FLAG: {}", flag);

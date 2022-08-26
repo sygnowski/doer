@@ -2,18 +2,19 @@ package io.github.s7i.doer;
 
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.domain.output.OutputFactory;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public enum Globals {
+public enum Globals implements Context {
     INSTANCE;
     private final Map<String, Scope> scopeMap = new ConcurrentHashMap<>();
 
