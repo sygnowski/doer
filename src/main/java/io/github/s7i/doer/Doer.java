@@ -1,5 +1,6 @@
 package io.github.s7i.doer;
 
+import io.github.s7i.doer.command.Ingest;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.Rocks;
@@ -19,7 +20,9 @@ import java.util.Arrays;
       KafkaDump.class,
       ProtoProcessor.class,
       Rocks.class,
-      ReplaceInFile.class})
+      ReplaceInFile.class,
+      Ingest.class
+})
 public class Doer implements Runnable {
 
     static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
