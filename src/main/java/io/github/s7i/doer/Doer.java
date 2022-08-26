@@ -29,6 +29,8 @@ public class Doer implements Runnable {
     public static final String FLAG_RAW_DATA = "raw-data";
     public static final int EC_QUIT = 7;
 
+    public static final String ENV_CONFIG = "DOER_CONFIG";
+
     public static Logger console() {
         return CONSOLE;
     }
