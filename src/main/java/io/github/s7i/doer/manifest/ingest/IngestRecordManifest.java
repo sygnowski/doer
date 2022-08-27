@@ -1,5 +1,6 @@
 package io.github.s7i.doer.manifest.ingest;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.s7i.doer.config.Base;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ public class IngestRecordManifest extends Base {
     }
 
     @JsonProperty("ingest")
+    @JsonAlias("spec")
     List<Record> records = Collections.emptyList();
 
 
