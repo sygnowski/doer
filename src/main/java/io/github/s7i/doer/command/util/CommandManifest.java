@@ -1,7 +1,15 @@
 package io.github.s7i.doer.command.util;
 
+import io.github.s7i.doer.command.Ingest;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.dump.KafkaDump;
+import io.github.s7i.doer.domain.ConfigProcessor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,11 +18,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 @Command(name = "command-manifest", description = "Parsing command manifest yaml file")
 @Slf4j
@@ -58,7 +61,7 @@ public class CommandManifest implements Runnable {
             try (var br = Files.newBufferedReader(yaml.toPath())) {
                 String version = br.readLine();
                 String kind = br.readLine();
-                kind = kind.substring(kind.lastIndexOf(':') + 1).trim();
+                kind = kind.substring(kind.lastIndexOf(':') + 1).trim().toLowerCase();
 
                 switch (kind) {
                     case "kafka-ingest":
@@ -66,6 +69,12 @@ public class CommandManifest implements Runnable {
                         break;
                     case "kafka-dump":
                         pool.execute(new TaskWrapper(kind, KafkaDump.createCommandInstance(yaml)));
+                        break;
+                    case "ingest":
+                        pool.execute(new TaskWrapper(kind, Ingest.createCommandInstance(yaml)));
+                        break;
+                    case "config":
+                        pool.execute(new TaskWrapper(kind, () -> new ConfigProcessor(yaml).processConfig()));
                         break;
                     default:
                         log.warn("unsupported kind/type of file: {}", kind);
