@@ -2,8 +2,7 @@ package io.github.s7i.doer.domain.helix;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import java.util.List;
-import java.util.Map;
+import io.github.s7i.doer.ConsoleLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.HelixManager;
@@ -13,9 +12,12 @@ import org.apache.helix.NotificationContext;
 import org.apache.helix.model.ExternalView;
 import org.apache.helix.model.IdealState;
 
+import java.util.List;
+import java.util.Map;
+
 @RequiredArgsConstructor
 @Slf4j
-public abstract class HelixMember {
+public abstract class HelixMember implements ConsoleLog {
 
     protected final String instanceName;
     protected final String clusterName;
@@ -55,7 +57,7 @@ public abstract class HelixMember {
                   "changeType", changeType.name(),
                   "externalViewList", externalViewList
             );
-            log.info("onExternalViewChange: \n{}", objectMapper.writeValueAsString(event));
+            info("onExternalViewChange: \n{}", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("oops", e);
         }
@@ -70,7 +72,7 @@ public abstract class HelixMember {
                   "changeType", changeType.name(),
                   "idealStateList", idealState
             );
-            log.info("onIdealStateChange: \n{}", objectMapper.writeValueAsString(event));
+            info("onIdealStateChange: \n{}", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("oops", e);
         }
