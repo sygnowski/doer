@@ -1,9 +1,8 @@
 package io.github.s7i.doer.domain.kafka;
 
-import io.github.s7i.doer.config.KafkaConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.Consumer;
 
 public interface KafkaConsumerFactory {
 
-    KafkaConsumer<String, byte[]> createConsumer(KafkaConfig config);
+    Consumer<String, byte[]> createConsumer(KafkaConfig config, boolean useTracing);
 }

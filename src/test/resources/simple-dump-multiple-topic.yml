@@ -1,0 +1,26 @@
+version: "1.0"
+type: kafka-dump
+kafka-properties: kafka.properties
+params:
+  paramA: valueParamA
+  paramB: valueParamB
+kafka:
+  group.id: kafka-dump001
+dump:
+  pool_timeout_sec: 12
+  topics:
+    - name: topicName1
+      show_binary: true
+      range: ..9
+      value:
+        proto_message: Type1
+    - name: topicName2
+      show_binary: true
+      range: ..19
+      value:
+        proto_message: Type2
+    - name: topicName3
+      show_binary: true
+      range: ..29
+      value:
+        proto_message: Type3

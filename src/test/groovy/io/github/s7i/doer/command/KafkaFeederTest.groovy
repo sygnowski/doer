@@ -1,11 +1,14 @@
 package io.github.s7i.doer.command
 
+import io.github.s7i.doer.Globals
 import io.github.s7i.doer.domain.kafka.KafkaConsumerFactory
 import io.github.s7i.doer.domain.kafka.KafkaFactory
 import io.github.s7i.doer.domain.kafka.KafkaProducerFactory
 import org.apache.kafka.clients.producer.Producer
 import spock.lang.Specification
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.Future
 
 class KafkaFeederTest extends Specification {
@@ -14,7 +17,7 @@ class KafkaFeederTest extends Specification {
         given:
         def records = []
         def producer = Mock(Producer) {
-            2 * send(_) >> { args ->
+            2 * send(_, _) >> { args ->
                 records << args[0]
                 Mock(Future)
             }
@@ -24,12 +27,60 @@ class KafkaFeederTest extends Specification {
             createProducer(_, _) >> producer
         }
         def feeder = new KafkaFeeder()
-        feeder.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
         feeder.yaml = new File("src/test/resources/simple-ingest.yml")
         expect:
         feeder.run()
         records.any { it.value() == "no-key-value".getBytes() }
         records.any { it.value() == "some-message-value".getBytes() }
+
+    }
+
+
+    def "template"() {
+        given:
+        def records = []
+        def producer = Mock(Producer) {
+            1 * send(_, _) >> { args ->
+                records << args[0]
+                Mock(Future)
+            }
+            1 * close()
+        }
+        def producerFactory = Mock(KafkaProducerFactory) {
+            createProducer(_, _) >> producer
+        }
+        def feeder = new KafkaFeeder()
+        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        feeder.yaml = new File("src/test/resources/ingest-with-template.yml")
+        expect:
+        feeder.run()
+        def val = records.first().value()
+        def valExpected = Files.readAllBytes(Path.of("src/test/resources/ingest-with-template-result.txt"))
+        new String(val) == new String(valExpected)
+    }
+
+    def "template with value set - produce 2 records"() {
+        given:
+        def records = []
+        def producer = Mock(Producer) {
+            2 * send(_, _) >> { args ->
+                records << args[0]
+                Mock(Future)
+            }
+            1 * close()
+        }
+        def producerFactory = Mock(KafkaProducerFactory) {
+            createProducer(_, _) >> producer
+        }
+        def feeder = new KafkaFeeder()
+        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        feeder.yaml = new File("src/test/resources/ingest-with-template-value-set.yml")
+        expect:
+        feeder.run()
+
+        records.any { it.value() == '{"a": "value-A","b": "value-B","c": "value-C"}'.getBytes() }
+        records.any { it.value() == '{"a": "value-D","b": "value-E","c": "value-F"}'.getBytes() }
 
     }
 

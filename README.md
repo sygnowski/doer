@@ -1,4 +1,4 @@
-![Gradle Build](https://github.com/sygnowski/doer/workflows/Gradle%20Build/badge.svg)
+![Gradle Build](https://github.com/sygnowski/doer/workflows/Gradle%20Build/badge.svg) [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/sygnowski/doer.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/sygnowski/doer/context:java)
 
 # Doer
 
@@ -10,6 +10,7 @@ List of available commands:
 
 - kfeed - Kafka topics data populator
 - kdump - Kafka topic consumer with rich options
+- rocks - RocksDB support, [more info](docs/rocksdb.md)
 - helix - Helix spectator
 
 ### Working with Kafka
