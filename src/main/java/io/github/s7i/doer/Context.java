@@ -6,6 +6,7 @@ import io.github.s7i.doer.domain.output.*;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
 import io.github.s7i.doer.domain.output.creator.PipelineOutputCreator;
+import io.github.s7i.doer.pipeline.Pipeline;
 import io.github.s7i.doer.util.QuitWatcher;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -40,6 +41,7 @@ public interface Context {
         }
 
         public Initializer(InitialParameters parameters) {
+            Pipeline.initFrom(parameters::getParams);
             var scope = Globals.INSTANCE.getScope();
             scope.setRoot(parameters::getWorkDir);
             scope.setParams(parameters::getParams);
