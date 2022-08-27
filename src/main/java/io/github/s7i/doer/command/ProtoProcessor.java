@@ -1,18 +1,21 @@
 package io.github.s7i.doer.command;
 
-import static java.util.Objects.nonNull;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.session.Input;
 import io.github.s7i.doer.session.InteractiveSession;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -21,10 +24,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
+
+import static java.util.Objects.nonNull;
 
 @Slf4j
 @Command(name = "proto")
@@ -34,7 +35,7 @@ public class ProtoProcessor implements Runnable {
     public static final String DOER_PROMPT = "doer > ";
 
     enum InputType {
-        TEXT, JSON, BYTESTRING;
+        TEXT, JSON, BYTESTRING
     }
 
     enum ExportAs {
@@ -186,7 +187,7 @@ public class ProtoProcessor implements Runnable {
                 if (nonNull(output)) {
                     toOutputFile(bytes);
                 } else {
-                    log.info("decoded proto in binary\nBINARY_BEGIN\n{}BINARY_END", new String(bytes, Charset.forName("UTF8")));
+                    log.info("decoded proto in binary\nBINARY_BEGIN\n{}BINARY_END", new String(bytes, StandardCharsets.UTF_8));
                 }
                 break;
             case "bytestring":
@@ -210,7 +211,7 @@ public class ProtoProcessor implements Runnable {
 
     @NotNull
     private List<Path> getPaths() {
-        return Stream.of(desc).map(d -> d.toPath()).collect(Collectors.toList());
+        return Stream.of(desc).map(File::toPath).collect(Collectors.toList());
     }
 
     public String toJson(List<Path> descriptorPaths, String messageName, byte[] data) {

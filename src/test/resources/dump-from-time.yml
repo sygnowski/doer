@@ -1,0 +1,9 @@
+version: "1.0"
+type: kafka-dump
+kafka-properties: kafka.properties
+dump:
+  pool_timeout_sec: 10
+  topics:
+    - name: fromTimeTopicName
+      from_time: 2021-01-01T12:30:00
+      range: ..9
