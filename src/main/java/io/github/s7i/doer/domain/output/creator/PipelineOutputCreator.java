@@ -2,12 +2,12 @@ package io.github.s7i.doer.domain.output.creator;
 
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.PipelineOutput;
-import io.github.s7i.doer.pipeline.LoadPipe;
+import io.github.s7i.doer.pipeline.PipeConnection;
 
 public interface PipelineOutputCreator extends OutputCreator {
 
 
-    LoadPipe getLoadPipe();
+    PipeConnection getLoadPipe();
 
     @Override
     default Output create() {

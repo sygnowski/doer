@@ -2,9 +2,9 @@ package io.github.s7i.doer.pipeline;
 
 import io.github.s7i.doer.domain.output.Output.Load;
 
-public interface LoadPipe {
+public interface PipeConnection {
 
-    void push(Load load);
+    void push(PipePusher pusher);
 
     Load pull();
 }

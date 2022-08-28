@@ -1,6 +1,6 @@
 package io.github.s7i.doer.domain.output;
 
-import io.github.s7i.doer.pipeline.LoadPipe;
+import io.github.s7i.doer.pipeline.PipeConnection;
 import lombok.RequiredArgsConstructor;
 
 
@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 public class PipelineOutput implements Output {
 
 
-    private final LoadPipe loadPipe;
+    private final PipeConnection pipeConnection;
 
     @Override
     public void open() {
@@ -17,7 +17,7 @@ public class PipelineOutput implements Output {
 
     @Override
     public void emit(Load load) {
-        loadPipe.push(load);
+        pipeConnection.push(() -> load);
     }
 
     @Override

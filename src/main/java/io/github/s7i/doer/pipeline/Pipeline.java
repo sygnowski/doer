@@ -25,7 +25,7 @@ public class Pipeline {
 
     }
 
-    public LoadPipe connect(String name) {
+    public PipeConnection connect(String name) {
         return null;
     }
 
