@@ -1,0 +1,6 @@
+extraction:
+  java:
+    index:
+      gradle:
+        version: 7.5.1
+      java_version: 11
