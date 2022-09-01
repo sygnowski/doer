@@ -13,7 +13,7 @@ List of available commands:
   Kafka topics ingestion.
   
   Features:
-  - [x] yaml manifest configuratio
+  - [x] yaml manifest configuration
   - [x] ingest manifest
   - [x] proto processor
   - [x] templates  
@@ -29,7 +29,7 @@ List of available commands:
   - [x] proto processor
   - [x] offset navigation
     - [x] from_time: `timestamp`
-    - [ ] to_tiem: `timestamp`
+    - [ ] to_time: `timestamp`
     - [x] from offset: `range: 5..`
     - [x] to offset: `range: ..5`
     - [x] between: `renge: 5..30`
