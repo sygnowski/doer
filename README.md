@@ -13,10 +13,10 @@ List of available commands:
   Kafka topics ingestion.
   
   Features:
-  - yaml manifest configuratio
-  - ingest manifest
-  - proto processor
-  - templates  
+  - [x] yaml manifest configuratio
+  - [x] ingest manifest
+  - [x] proto processor
+  - [x] templates  
 
 
 - `kdump`
@@ -25,18 +25,26 @@ List of available commands:
   
   Features:
   
-  - yaml manifest configuration
-  - proto processor
-  - offset navigation
+  - [x] yaml manifest configuration
+  - [x] proto processor
+  - [x] offset navigation
     - [x] from_time: `timestamp`
+    - [ ] to_tiem: `timestamp`
     - [x] from offset: `range: 5..`
     - [x] to offset: `range: ..5`
     - [x] between: `renge: 5..30`
-  - mvel rule support: `rule: mvel expression`
+  - [x] mvel rule support: `rule: mvel expression`
 
 - `rocks`
 
   RocksDB support, [more info](docs/rocksdb.md)
+
+  Features:
+  - [x] list column familes
+  - [x] get value of key
+  - [x] set value of key
+  - [x] create a new column famili
+  - [x] list entries (key:value) of column famili
 
 ## Usage
 ### Working with Kafka
