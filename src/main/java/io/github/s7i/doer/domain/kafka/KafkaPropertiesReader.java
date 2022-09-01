@@ -1,13 +1,16 @@
 package io.github.s7i.doer.domain.kafka;
 
-import static java.util.Objects.nonNull;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+
+import static java.util.Objects.nonNull;
 
 @Slf4j
 public class KafkaPropertiesReader {
@@ -17,6 +20,9 @@ public class KafkaPropertiesReader {
 
     public KafkaPropertiesReader(KafkaConfig config) {
         properties = new Properties();
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+
         readPropFile(config);
         assignProps(config);
     }

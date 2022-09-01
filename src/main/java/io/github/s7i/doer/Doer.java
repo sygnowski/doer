@@ -6,11 +6,13 @@ import io.github.s7i.doer.command.Rocks;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.command.util.CommandManifest;
-import java.util.Arrays;
+import io.github.s7i.doer.util.GitProps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+
+import java.util.Arrays;
 
 @Command(name = "doer", description = "let's do big things...", subcommands = {
       KafkaFeeder.class,
@@ -18,14 +20,29 @@ import picocli.CommandLine.Command;
       ProtoProcessor.class,
       Rocks.class,
       ReplaceInFile.class})
-public class Doer {
+public class Doer implements Runnable {
 
-    private static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
+    static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
+    public static final String FLAG_SEND_AND_FORGET = "send-and-forget";
+    public static final String FLAG_RAW_DATA = "raw-data";
+    public static final int EC_QUIT = 7;
 
     public static Logger console() {
         return CONSOLE;
+    }
+
+    @CommandLine.Option(names = {"-v", "--version"})
+    private boolean showVersion;
+
+    @Override
+    public void run() {
+        if (showVersion) {
+            console().info("version: {}", new GitProps());
+        } else {
+            new CommandLine(Doer.class).usage(System.out);
+        }
     }
 
     public static void main(String[] args) {
@@ -37,6 +54,7 @@ public class Doer {
               : new Doer();
 
         new CommandLine(command)
+              .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(args);
     }
 }

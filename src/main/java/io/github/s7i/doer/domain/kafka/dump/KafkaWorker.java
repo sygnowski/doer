@@ -1,5 +1,6 @@
 package io.github.s7i.doer.domain.kafka.dump;
 
+import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
 import static io.github.s7i.doer.Doer.console;
 import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.isNull;
@@ -22,6 +23,8 @@ import io.github.s7i.doer.util.TopicNameResolver;
 import io.github.s7i.doer.util.TopicWithResolvableName;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,8 +46,6 @@ import org.apache.kafka.common.errors.WakeupException;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Slf4j
 class KafkaWorker implements Context {
-
-    public static final String FLAG_RAW_DATA = "raw-data";
 
     final DumpManifest specification;
     final KafkaConfig kafkaConfig;
@@ -70,25 +71,7 @@ class KafkaWorker implements Context {
                 keepRunning = false;
                 consumer.wakeup();
             });
-            consumer.subscribe(topics, new ConsumerRebalanceListener() {
-                @Override
-                public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-
-                }
-
-                @Override
-                public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                    consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> console().info("Offset {} : {}", tp, offset));
-                    for (var tp : partitions) {
-                        var ctx = contexts.get(tp.topic());
-                        if (nonNull(ctx) && nonNull(ctx.getRange()) && ctx.getRange().hasFrom()) {
-                            var offset = ctx.getRange().getFrom();
-                            console().info("seeking to offset {} on partition {}", offset, tp);
-                            consumer.seek(tp, offset);
-                        }
-                    }
-                }
-            });
+            subscribe(topics, consumer);
             do {
 
                 var records = consumer.poll(timeout);
@@ -102,6 +85,45 @@ class KafkaWorker implements Context {
             log.debug("wakeup", w);
         }
         console().info("Stop dumping from Kafka, saved records: {}", recordCounter);
+    }
+
+    private void subscribe(List<String> topics, Consumer<String, byte[]> consumer) {
+        consumer.subscribe(topics, new ConsumerRebalanceListener() {
+            @Override
+            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+
+            }
+
+            @Override
+            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                handlePartitionAssigned(consumer, partitions);
+            }
+        });
+    }
+
+    private void handlePartitionAssigned(Consumer<String, byte[]> consumer, Collection<TopicPartition> partitions) {
+        consumer.committed(new HashSet<>(partitions)).forEach((tp, offset) -> console().info("Offset {} : {}", tp, offset));
+
+        var jumpToTime = new HashMap<TopicPartition, Long>(partitions.size());
+        for (var tp : partitions) {
+            var ctx = contexts.get(tp.topic());
+            if (nonNull(ctx)) {
+                if (nonNull(ctx.getRange()) && ctx.getRange().hasFrom()) {
+                    var offset = ctx.getRange().getFrom();
+                    console().info("seeking to offset {} on partition {}", offset, tp);
+                    consumer.seek(tp, offset);
+
+                } else if (nonNull(ctx.getFromTime())) {
+                    jumpToTime.put(tp, ctx.getFromTime().toEpochMilli());
+                    console().info("Seeking on {} to time {}", tp, ctx.getFromTime());
+                }
+            } else {
+                log.error("unhandled topic context ({})", tp);
+            }
+        }
+        if (!jumpToTime.isEmpty()) {
+            consumer.offsetsForTimes(jumpToTime);
+        }
     }
 
     private List<String> resolveTopicNames() {
@@ -125,8 +147,12 @@ class KafkaWorker implements Context {
             var context = contexts.computeIfAbsent(name, TopicContext::new);
             context.setRecordWriter(new RecordWriter(topic, jsonWriter));
 
-            if (nonNull(topic.getRule())) {
+            if (hasAnyValue(topic.getRule())) {
                 context.setRule(new Rule(topic.getRule()));
+            }
+
+            if (hasAnyValue(topic.getFromTime())) {
+                context.setFromTime(LocalDateTime.parse(topic.getFromTime()).toInstant(ZoneOffset.UTC));
             }
 
             var output = createOutput(topic);

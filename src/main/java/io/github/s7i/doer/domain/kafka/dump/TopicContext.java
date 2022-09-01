@@ -7,6 +7,7 @@ import io.github.s7i.doer.command.dump.RecordWriter;
 import io.github.s7i.doer.config.Range;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.rule.Rule;
+import java.time.Instant;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -21,6 +22,7 @@ public class TopicContext {
     final String name;
     Long lastOffset = 0L;
     Range range;
+    Instant fromTime;
     Descriptor descriptor;
     Output output;
     RecordWriter recordWriter;

@@ -1,22 +1,25 @@
 package io.github.s7i.doer.command;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-
+import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.domain.rocksdb.RocksDb;
-import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 @Command(name = "rocks")
-@Slf4j
-public class Rocks implements Runnable {
+public class Rocks implements Runnable, ConsoleLog {
+
+    enum Action {
+        PUT, GET, LIST
+    }
 
     @Option(names = "-db", required = true)
     String dbPath;
 
-    @Option(names = "-a", required = true)
-    String action;
+    @Option(names = "-a", defaultValue = "get", description = "Actions: ${COMPLETION-CANDIDATES}")
+    Action action;
 
     @Option(names = "-cf")
     String colFamilyName;
@@ -33,17 +36,17 @@ public class Rocks implements Runnable {
     public void run() {
         rocksdb = new RocksDb(dbPath);
         switch (action) {
-            case "put":
+            case PUT:
                 put();
                 break;
-            case "get":
+            case GET:
                 get();
                 break;
-            case "list":
+            case LIST:
                 list();
                 break;
             default:
-                log.info("bad action");
+                info("bad action");
                 break;
         }
     }
@@ -52,9 +55,9 @@ public class Rocks implements Runnable {
         readOnly();
         if (nonNull(colFamilyName)) {
             rocksdb.readAsString(colFamilyName)
-                  .forEach(e -> log.info("k: {}, v: {}", e.getKey(), e.getValue()));
+                  .forEach(e -> info("k: {}, v: {}", e.getKey(), e.getValue()));
         } else {
-            log.info("columns families: {}", rocksdb.listColumns());
+            info("columns families: {}", rocksdb.listColumns());
         }
     }
 
@@ -64,7 +67,7 @@ public class Rocks implements Runnable {
         } else {
             readOnly();
             String value = rocksdb.getAsString(name(), key);
-            log.info("v: {}", value);
+            info("v: {}", value);
         }
     }
 

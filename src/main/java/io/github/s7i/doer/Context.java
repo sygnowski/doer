@@ -13,6 +13,7 @@ import io.github.s7i.doer.domain.output.UriResolver;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
 import io.github.s7i.doer.util.ParamFlagExtractor;
+import io.github.s7i.doer.util.QuitWatcher;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
@@ -41,6 +42,8 @@ public interface Context extends ParamFlagExtractor {
             var scope = Globals.INSTANCE.getScope();
             scope.setRoot(parameters::getWorkDir);
             scope.setParams(parameters::getParams);
+
+            new QuitWatcher().watchForQuit(() -> System.exit(Doer.EC_QUIT));
         }
 
         private static void shutdown() {

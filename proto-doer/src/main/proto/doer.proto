@@ -4,7 +4,16 @@ package io.github.s7i.doer.proto;
 
 option java_multiple_files = true;
 
+import "google/protobuf/wrappers.proto";
+
 message DoerVersion {
   string name = 1;
+}
+
+message Record {
+  google.protobuf.StringValue resource = 1;
+  google.protobuf.StringValue key = 2;
+  map<string, string> meta = 3;
+  google.protobuf.BytesValue data = 4;
 }
 
