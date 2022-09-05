@@ -8,8 +8,8 @@ main() {
     info
 
     case $1 in
-        slim)
-            slim_build
+        jre11)
+            build_jdk11
             ;;
         *)
         with_builder
@@ -38,11 +38,9 @@ with_builder () {
     runBuild
 }
 
-slim_build () {
-    if [[ ! -e "./build/libs/doer-all.jar" ]]; then
-        ./gradlew build --console=plain
-    fi
-    runBuild "Dockerfile-slim"
+build_jdk11 () {
+    ./gradlew distTar --console=plain
+    runBuild "Dockerfile.jre11"
 }
 
 runBuild () {

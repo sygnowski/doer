@@ -1,0 +1,26 @@
+FROM openjdk:11-jre
+
+ARG VERSION
+ARG VCS_REF
+
+ENV DOER_VERSION $VERSION
+ENV DOER_VCS_REF $VCS_REF
+
+ADD ./build/distributions/doer.tar /opt
+
+
+ENV DOER_HOME /opt/doer
+WORKDIR $DOER_HOME
+
+RUN chmod +x /opt/doer/bin/doer && \
+    ln -s /opt/doer/bin/doer /usr/bin/doer
+
+LABEL org.opencontainers.image.revison=$VCS_REF \
+  org.opencontainers.image.name=s7i/doer \
+  org.opencontainers.image.version=$VERSION \
+  org.opencontainers.image.url=https://github.com/sygnowski/doer
+
+CMD [ "doer" ]
+
+EXPOSE 8080
+EXPOSE 5005
