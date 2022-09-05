@@ -4,7 +4,7 @@ import io.github.s7i.doer.domain.output.Output.Load;
 
 public interface PipeConnection {
 
-    void push(PipePusher pusher);
+    void registerPusher(PipePusher pusher);
 
-    Load pull();
+    void registerPuller();
 }
