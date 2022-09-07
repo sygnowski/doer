@@ -2,6 +2,8 @@ package io.github.s7i.doer.proto;
 
 import static java.util.Objects.nonNull;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -62,8 +64,15 @@ public class Decoder {
                 var message = DynamicMessage.parseFrom(descriptor, data);
                 var registry = TypeRegistry.newBuilder().add(descriptors).build();
 
-                var printer = JsonFormat.printer().usingTypeRegistry(registry);
-                return printer.print(message);
+                try {
+                    var printer = JsonFormat.printer().usingTypeRegistry(registry);
+                    return printer.print(message);
+                } catch (InvalidProtocolBufferException ipe) {
+                    var to = new JsonObject();
+                    to.addProperty("doer.fallback.proto.error", ipe.getMessage());
+                    to.addProperty("doer.fallback.proto.text", message.toString());
+                    return new Gson().toJson(to);
+                }
             }
             return "{}";
         } catch (InvalidProtocolBufferException ipe) {
