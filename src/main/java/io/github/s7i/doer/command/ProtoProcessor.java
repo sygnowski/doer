@@ -2,12 +2,15 @@ package io.github.s7i.doer.command;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.session.Input;
 import io.github.s7i.doer.session.InteractiveSession;
+import java.util.Base64;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -25,7 +28,9 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 @Slf4j
 @Command(name = "proto")
@@ -75,19 +80,28 @@ public class ProtoProcessor implements Runnable {
     @Option(names = {"-o", "--output"})
     private File output;
 
+    @Option(names = {"--base64"})
+    private String base64;
+
     @Override
     public void run() {
         try {
             if (interactive) {
                 processInteractive();
             } else {
+                if (isNull(messageName) || isNull(desc)) {
+                    new CommandLine(ProtoProcessor.class).usage(System.out);
+                    return;
+                }
+                var data = isNull(base64) || isBlank(base64)
+                      ? Files.readAllBytes(protoData.toPath())
+                      : Base64.getDecoder().decode(base64);
 
-                var data = Files.readAllBytes(protoData.toPath());
                 var paths = getPaths();
-                var json = toJson(paths, messageName, data);
-                log.info(json);
+                var decoded = decode(paths, messageName, data);
+                Doer.console().info("Decoded proto:\n {}", decoded);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("running command error", e);
         }
     }
@@ -214,10 +228,11 @@ public class ProtoProcessor implements Runnable {
         return Stream.of(desc).map(File::toPath).collect(Collectors.toList());
     }
 
-    public String toJson(List<Path> descriptorPaths, String messageName, byte[] data) {
+    public String decode(List<Path> descriptorPaths, String messageName, byte[] data) {
         var decoder = new Decoder();
         decoder.loadDescriptors(descriptorPaths);
-        return decoder.toJson(decoder.findMessageDescriptor(messageName), data);
+        var descriptor = decoder.findMessageDescriptor(messageName);
+        return decoder.toMessage(descriptor, data).toString();
     }
 
     public Message toMessage(List<Path> descriptorPaths, String messageName, String json) {

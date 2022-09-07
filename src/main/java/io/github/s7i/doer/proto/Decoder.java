@@ -1,5 +1,7 @@
 package io.github.s7i.doer.proto;
 
+import static java.util.Objects.nonNull;
+
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -13,8 +15,6 @@ import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
 import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.config.ProtoDescriptorContainer;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,8 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.nonNull;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Decoder {
@@ -86,6 +85,15 @@ public class Decoder {
         } catch (InvalidProtocolBufferException ipe) {
             log.error("toJson", ipe);
             throw new HandledRuntimeException(ipe);
+        }
+    }
+
+    public Message toMessage(Descriptor descriptor, byte[] data) {
+        try {
+            return DynamicMessage.parseFrom(descriptor, data);
+        } catch (InvalidProtocolBufferException e) {
+            log.error("decode bytes using descriptor {}, error: {}", descriptor, e);
+            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getName());
         }
     }
 
