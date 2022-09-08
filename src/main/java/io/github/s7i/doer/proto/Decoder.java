@@ -15,6 +15,7 @@ import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.config.ProtoDescriptorContainer;
 import java.io.IOException;
@@ -35,10 +36,11 @@ public class Decoder {
         loadDescriptors(container.getDescriptorsPaths());
     }
 
-    public void loadDescriptors(List<Path> paths) {
+    public Decoder loadDescriptors(List<Path> paths) {
         descriptors = readDescSet(paths).stream()
                 .flatMap(fd -> fd.getMessageTypes().stream())
                 .collect(Collectors.toList());
+        return this;
     }
 
     public Descriptor findMessageDescriptor(String messageName) {
@@ -101,8 +103,8 @@ public class Decoder {
         try {
             return DynamicMessage.parseFrom(descriptor, data);
         } catch (InvalidProtocolBufferException e) {
-            log.error("decode bytes using descriptor {}, error: {}", descriptor, e);
-            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getName());
+            log.error("decode bytes using descriptor {}, error: {}", descriptor.getFullName(), e);
+            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getFullName());
         }
     }
 
@@ -118,7 +120,7 @@ public class Decoder {
             return builder.build();
         } catch (InvalidProtocolBufferException e) {
             log.error("making proto message, form json:\n{} exception is:\n", json, e);
-            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getName());
+            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getFullName());
         }
     }
 
@@ -136,7 +138,7 @@ public class Decoder {
             return builder.build();
         } catch (ParseException e) {
             log.error("making proto message", e);
-            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getName());
+            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getFullName());
         }
     }
 
@@ -173,8 +175,8 @@ public class Decoder {
                     log.debug("registered proto descriptor: {}", fd.getFullName());
                 }
             } catch (IOException | DescriptorValidationException e) {
-                log.error("{}", e);
-                throw new RuntimeException(e);
+                log.error("oh no", e);
+                throw new DoerException(e);
             }
         }
         return descriptors;

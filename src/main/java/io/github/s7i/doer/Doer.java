@@ -27,7 +27,9 @@ public class Doer implements Runnable {
     public static final String FLAG_USE_TRACING = "trace";
     public static final String FLAG_SEND_AND_FORGET = "send-and-forget";
     public static final String FLAG_RAW_DATA = "raw-data";
+    public static final int EC_INVALID_USAGE = 1;
     public static final int EC_QUIT = 7;
+    public static final int EC_ERROR = 4;
 
     public static Logger console() {
         return CONSOLE;
