@@ -1,0 +1,29 @@
+version: '1.0'
+kind: kafka-ingest
+kafka:
+  bootstrap.servers: localhost:9092
+ingest:
+  templates:
+    - name: some.tpl
+      content: '{"a": "${A}","b": "${B}","c": "${C}"}'
+  value_sets:
+    - name: my-set
+      attributes:
+        - A
+        - B
+        - C
+      values:
+        -
+          - value-A
+          - value-B
+          - value-C
+        -
+          - value-D
+          - value-E
+          - value-F
+  topics:
+    - name: my-topic
+      value_set: my-set
+      entries:
+        - value_template:
+            name: some.tpl

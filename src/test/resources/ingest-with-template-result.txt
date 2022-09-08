@@ -1,0 +1,5 @@
+{
+  "a": "value-A",
+  "b": "value-B",
+  "c": "value-C"
+}

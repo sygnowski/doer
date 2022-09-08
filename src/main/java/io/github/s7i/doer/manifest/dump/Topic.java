@@ -3,6 +3,7 @@ package io.github.s7i.doer.manifest.dump;
 import static io.github.s7i.doer.util.Utils.hasAnyValue;
 import static java.util.Objects.nonNull;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.TopicWithResolvableName;
@@ -22,6 +23,8 @@ public class Topic implements TopicWithResolvableName {
 
     @JsonProperty("show_binary")
     boolean showBinary;
+    @JsonProperty("json")
+    boolean isJson;
     String name;
     String range;
     @JsonProperty("from_time")
