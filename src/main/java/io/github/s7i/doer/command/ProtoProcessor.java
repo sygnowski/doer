@@ -9,7 +9,11 @@ import com.google.protobuf.Message;
 import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.DoerException;
+import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.HandledRuntimeException;
+import io.github.s7i.doer.domain.output.Output.Load;
+import io.github.s7i.doer.domain.output.OutputKind;
+import io.github.s7i.doer.domain.output.UriResolver;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.session.Input;
 import io.github.s7i.doer.session.InteractiveSession;
@@ -81,7 +85,7 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
     private ExportAs exportAs;
 
     @Option(names = {"-o", "--output"})
-    private File output;
+    private String output;
 
     @Option(names = {"--base64"}, description = "Base64 input.")
     private String base64;
@@ -98,11 +102,7 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
                 }
                 switch (exportAs) {
                     case BIN:
-                        if (nonNull(output)) {
-                            toOutputFile(encodeProto());
-                        } else {
-                            System.out.write(encodeProto());
-                        }
+                        exportBinary();
                         break;
                     case BASE64:
                         if (nonNull(output)) {
@@ -120,6 +120,25 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
         } catch (Exception e) {
             log.error("running command error", e);
             return Doer.EC_ERROR;
+        }
+    }
+
+    private void exportBinary() throws IOException {
+        if (nonNull(output)) {
+            try {
+                if (OutputKind.KAFKA == new UriResolver(output).resolveOutputKind()) {
+                    try (var out = Globals.INSTANCE.buildOutput(() -> output)) {
+                        out.emit(Load.builder()
+                              .data(encodeProto())
+                              .build());
+                    }
+                }
+            } catch (Exception e) {
+                log.trace("can't emit to kafka", e);
+            }
+            toOutputFile(encodeProto());
+        } else {
+            System.out.write(encodeProto());
         }
     }
 
@@ -272,9 +291,10 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
     }
 
     private void toOutputFile(byte[] bytes) {
+        var path = Path.of(output);
         try {
-            Files.write(output.toPath(), bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-            info("proto exported to: {} bytes witted: {} bytes", output.getAbsolutePath(), bytes.length);
+            Files.write(path, bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+            info("proto exported to: {} bytes witted: {} bytes", path.toAbsolutePath(), bytes.length);
         } catch (IOException e) {
             log.error("while exporting", e);
         }
