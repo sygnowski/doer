@@ -1,7 +1,6 @@
 package io.github.s7i.doer;
 
 import static io.github.s7i.doer.Doer.console;
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import io.github.s7i.doer.domain.kafka.output.KafkaOutputCreator;
@@ -13,18 +12,16 @@ import io.github.s7i.doer.domain.output.OutputProvider;
 import io.github.s7i.doer.domain.output.UriResolver;
 import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
 import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
+import io.github.s7i.doer.util.ParamFlagExtractor;
 import io.github.s7i.doer.util.QuitWatcher;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Predicate;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import org.slf4j.LoggerFactory;
 
-public interface Context {
+public interface Context extends ParamFlagExtractor {
 
     @Builder
     @Getter
@@ -86,27 +83,5 @@ public interface Context {
 
     default Map<String, String> getParams() {
         return Globals.INSTANCE.getScope().getParams().get();
-    }
-
-    default boolean hasFlag(String flag) {
-        final var flags = getParams().get(Doer.FLAGS);
-
-        if (nonNull(flags)) {
-            if (flags.equals(flag)) {
-                LoggerFactory.getLogger(Context.class).debug("ON FLAG: {}", flag);
-                return true;
-            }
-
-            final var split = flags.split("\\,");
-            final var hasFlag = Arrays.stream(split)
-                  .filter(Predicate.not(String::isBlank))
-                  .anyMatch(flag::equals);
-
-            if (hasFlag) {
-                LoggerFactory.getLogger(Context.class).debug("ON FLAG: {}", flag);
-            }
-            return hasFlag;
-        }
-        return false;
     }
 }
