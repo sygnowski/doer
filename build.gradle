@@ -34,7 +34,8 @@ dependencies {
             'com.fasterxml.jackson.core:jackson-databind:2.13.3',
             'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.3',
             "org.rocksdb:rocksdbjni:7.4.5",
-            "org.jeasy:easy-rules-mvel:4.1.0"
+            "org.jeasy:easy-rules-mvel:4.1.0",
+            "org.apache.helix:helix-core:1.0.4"
 
 
     // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle

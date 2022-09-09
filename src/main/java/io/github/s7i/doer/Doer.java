@@ -1,5 +1,6 @@
 package io.github.s7i.doer;
 
+import io.github.s7i.doer.command.Helix;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.Rocks;
@@ -18,6 +19,7 @@ import java.util.Arrays;
       KafkaFeeder.class,
       KafkaDump.class,
       ProtoProcessor.class,
+      Helix.class,
       Rocks.class,
       ReplaceInFile.class})
 public class Doer implements Runnable {
