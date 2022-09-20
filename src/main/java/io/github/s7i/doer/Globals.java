@@ -13,7 +13,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public enum Globals {
+public enum Globals implements Context {
     INSTANCE;
     private final Map<String, Scope> scopeMap = new ConcurrentHashMap<>();
 
