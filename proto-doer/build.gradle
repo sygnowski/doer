@@ -7,7 +7,7 @@ plugins {
 version '0.0.2'
 
 ext {
-    grcpVersion= '1.48.1'
+    grcpVersion= '1.49.0'
 }
 
 repositories {
