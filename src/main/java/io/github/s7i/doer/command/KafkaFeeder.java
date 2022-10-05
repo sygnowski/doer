@@ -14,12 +14,9 @@ import io.github.s7i.doer.manifest.ingest.Topic;
 import io.github.s7i.doer.proto.Decoder;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +59,12 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
         var config = parseYaml(Ingest.class);
 
         init(config);
-        publishToKafka(config);
+
+        if (hasFlag(Doer.FLAG_DRY_RUN)) {
+            produceRecords(config.getIngest()).forEach( r -> info("[Dry-Run] {}",r.toSimpleString()));
+        } else {
+            publishToKafka(config);
+        }
     }
 
     private void publishToKafka(Ingest config) {

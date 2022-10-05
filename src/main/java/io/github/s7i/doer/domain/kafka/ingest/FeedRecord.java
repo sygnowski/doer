@@ -37,4 +37,8 @@ public class FeedRecord {
         entry.getHeaders().forEach(h -> record.headers().add(h.getName(), h.getValue()));
         return record;
     }
+
+    public String toSimpleString() {
+        return String.format("topic: %s, data: %s", topic, new String(getData()));
+    }
 }
