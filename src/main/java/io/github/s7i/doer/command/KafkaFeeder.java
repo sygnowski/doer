@@ -17,8 +17,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -42,7 +47,7 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
     @Option(names = "-l", description = "Allowed Labels")
     protected List<String> allowedLabels;
 
-    private int sentCount;
+    private int sentCount, toSend;
 
     @Override
     public File getYamlFile() {
@@ -61,19 +66,14 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
     }
 
     private void publishToKafka(Ingest config) {
-        final var records = produceRecords(config.getIngest())
-              .stream()
-              .map(FeedRecord::toRecord)
-              .collect(Collectors.toList());
-        final var toSend = records.size();
-        info("feeding kafka, prepared records count: {}", toSend);
+        info("feeding kafka...");
 
         try (var producer = getKafkaFactory()
               .getProducerFactory()
               .createProducer(config, useTracing || hasFlag(Doer.FLAG_USE_TRACING))) {
             final boolean flagSendAndForget = hasFlag(Doer.FLAG_SEND_AND_FORGET);
 
-            for (var r : records) {
+            Consumer<ProducerRecord<String, byte[]>> sender = r -> {
                 if (flagSendAndForget) {
                     try {
                         var rm = producer.send(r).get(SEND_TIMEOUT, TimeUnit.SECONDS);
@@ -92,7 +92,12 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
                         }
                     });
                 }
-            }
+            };
+
+            produceRecords(config.getIngest())
+                    .map(FeedRecord::toRecord)
+                    .peek(r -> toSend++)
+                    .forEach(sender);
         }
 
         info("kafka feeder ends, records sent {} of {}", sentCount, toSend);
@@ -105,18 +110,14 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
               .build());
     }
 
-    private List<FeedRecord> produceRecords(IngestManifest spec) {
+    private Stream<FeedRecord> produceRecords(IngestManifest spec) {
         if (nonNull(spec.getProto())) {
             decoder = new Decoder();
             decoder.loadDescriptors(spec.getProto());
         }
-        var result = new ArrayList<FeedRecord>();
-        for (var topic : spec.getTopics()) {
-            if (isAllowed(topic)) {
-                buildEntries(spec, result, topic);
-            }
-        }
-        return result;
+        return spec.getTopics().stream()
+                .filter(this::isAllowed)
+                .flatMap(t -> buildEntries(spec, t));
     }
 
     private boolean isAllowed(Topic topic) {
@@ -126,25 +127,29 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
         return true;
     }
 
-    protected void buildEntries(IngestManifest spec, ArrayList<FeedRecord> result, Topic topic) {
-        for (var entry : topic.getEntries()) {
+    protected Stream<FeedRecord> buildEntries(IngestManifest spec, Topic topic) {
+        return topic.getEntries()
+                .stream()
+                .flatMap(entry -> {
             if (entry.isTemplateEntry()) {
-                TemplateResolver.builder()
+                return TemplateResolver.builder()
                       .entry(entry)
                       .valueSet(spec.findValueSet(topic.getValueSet()))
                       .template(spec.findTemplate(entry.getValueTemplate()))
                       .decoder(decoder)
                       .build()
                       .topicEntries()
-                      .forEach(data -> result.add(new FeedRecord(topic.getName(), data)));
+                      .map(data -> new FeedRecord(topic.getName(), data));
             } else if (entry.isSimpleValue()) {
                 var r = FeedRecord.fromSimpleEntry(entry, topic, raw -> entry.lookupForProto()
                       .map(message -> decoder.toBinaryProto(raw, message))
                       .orElseGet(() -> toBinary(raw))
                 );
-                result.add(r);
+                return Stream.of(r);
             }
-        }
+            log.warn("invalid entry: {}", entry);
+            return Stream.of();
+        });
     }
 
     private byte[] toBinary(String value) {
