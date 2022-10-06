@@ -3,6 +3,7 @@ package io.github.s7i.doer.manifest.ingest;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.LongStream;
@@ -20,8 +21,8 @@ public class ValueSet {
     };
 
     String name;
-    List<String> attributes;
-    List<List<String>> values;
+    List<String> attributes = Collections.emptyList();
+    List<List<String>> values = Collections.emptyList();
     Long repeat;
 
     public Stream<List<String>> stream() {
