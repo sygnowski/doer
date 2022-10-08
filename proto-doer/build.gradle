@@ -8,7 +8,7 @@ plugins {
 version '0.0.2'
 
 ext {
-    grcpVersion= '1.49.0'
+    grcpVersion= '1.49.2'
 }
 
 repositories {
@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.google.protobuf:protobuf-java:3.21.5'
+    implementation 'com.google.protobuf:protobuf-java:3.21.7'
     implementation "io.grpc:grpc-stub:$grcpVersion"
     implementation "io.grpc:grpc-protobuf:$grcpVersion"
     if (JavaVersion.current().isJava9Compatible()) {
