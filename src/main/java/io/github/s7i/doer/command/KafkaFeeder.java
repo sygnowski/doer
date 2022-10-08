@@ -72,12 +72,13 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
 
         try (var producer = getKafkaFactory()
               .getProducerFactory()
-              .createProducer(config, useTracing || hasFlag(Doer.FLAG_USE_TRACING))) {
+              .createProducer(config, useTracing())) {
             final boolean flagSendAndForget = hasFlag(Doer.FLAG_SEND_AND_FORGET);
 
             Consumer<ProducerRecord<String, byte[]>> sender = r -> {
                 if (flagSendAndForget) {
                     try {
+                        //TODO: not async anymore. https://github.com/sygnowski/doer/issues/17
                         var rm = producer.send(r).get(SEND_TIMEOUT, TimeUnit.SECONDS);
                         info("record sent {}", rm);
                         sentCount++;
@@ -103,6 +104,10 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
         }
 
         info("kafka feeder ends, records sent {} of {}", sentCount, toSend);
+    }
+
+    private boolean useTracing() {
+        return useTracing || hasFlag(Doer.FLAG_USE_TRACING);
     }
 
     private void init(Ingest config) {
