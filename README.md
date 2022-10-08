@@ -38,11 +38,16 @@ List of available commands:
   RocksDB support, [more info](docs/rocksdb.md)
 
   Features:
-  - [x] list column familes
+  - [x] list column families
   - [x] get value of key
   - [x] set value of key
-  - [x] create a new column famili
-  - [x] list entries (key:value) of column famili
+  - [x] create a new column family
+  - [x] list entries (key:value) of column family
+
+- `helix`
+
+  Helix spectator.
+
 
 ## Usage
 ### Working with Kafka
