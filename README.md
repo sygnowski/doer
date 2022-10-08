@@ -4,15 +4,47 @@
 
 Small tool for doing big things.
 
-### Commands:
+## Commands:
 
 List of available commands:
 
-- kfeed - Kafka topics data populator
-- kdump - Kafka topic consumer with rich options
-- rocks - RocksDB support, [more info](docs/rocksdb.md)
-- helix - Helix spectator
+- `kfeed`
 
+  Kafka topics ingestion.
+  
+  Features:
+  - [x] yaml manifest configuration
+  - [x] proto processor
+  - [x] templates
+
+- `kdump`
+  
+  Kafka topic consumer with rich options.
+  
+  Features:
+  
+  - [x] yaml manifest configuration
+  - [x] proto processor
+  - [x] offset / timestamp navigation
+    - [x] from_time: `timestamp`
+    - [ ] to_time: `timestamp`
+    - [x] from offset: `range: 5..`
+    - [x] to offset: `range: ..5`
+    - [x] between: `renge: 5..30`
+  - [x] mvel rule support: `rule: mvel expression`
+
+- `rocks`
+
+  RocksDB support, [more info](docs/rocksdb.md)
+
+  Features:
+  - [x] list column familes
+  - [x] get value of key
+  - [x] set value of key
+  - [x] create a new column famili
+  - [x] list entries (key:value) of column famili
+
+## Usage
 ### Working with Kafka
 
 Samples of Doer - Kafka specific command usage
@@ -20,7 +52,7 @@ Samples of Doer - Kafka specific command usage
 Collecting data by using `kdump` command with proto message content. The dump file manifest: `dump.yml`:
 
 ```yaml
-# kafka-dump configuration file
+# kafka-dump manifest file
 version: "1.0"
 type: "kafka-dump"
 kafka-properties: kafka.properties
