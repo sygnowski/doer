@@ -14,10 +14,8 @@ List of available commands:
   
   Features:
   - [x] yaml manifest configuration
-  - [x] ingest manifest
   - [x] proto processor
-  - [x] templates  
-
+  - [x] templates
 
 - `kdump`
   
@@ -27,7 +25,7 @@ List of available commands:
   
   - [x] yaml manifest configuration
   - [x] proto processor
-  - [x] offset navigation
+  - [x] offset / timestamp navigation
     - [x] from_time: `timestamp`
     - [ ] to_time: `timestamp`
     - [x] from offset: `range: 5..`
