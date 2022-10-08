@@ -3,15 +3,7 @@ package io.github.s7i.doer;
 import static io.github.s7i.doer.Doer.console;
 import static java.util.Objects.requireNonNull;
 
-import io.github.s7i.doer.domain.kafka.output.KafkaOutputCreator;
-import io.github.s7i.doer.domain.kafka.output.KafkaUri;
-import io.github.s7i.doer.domain.output.Output;
-import io.github.s7i.doer.domain.output.OutputFactory;
-import io.github.s7i.doer.domain.output.OutputKind;
-import io.github.s7i.doer.domain.output.OutputProvider;
-import io.github.s7i.doer.domain.output.UriResolver;
-import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
-import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
+import io.github.s7i.doer.domain.output.*;
 import io.github.s7i.doer.util.ParamFlagExtractor;
 import io.github.s7i.doer.util.QuitWatcher;
 import java.nio.file.Path;
@@ -68,17 +60,7 @@ public interface Context extends ParamFlagExtractor {
     }
 
     default Output buildOutput(OutputProvider outputProvider) {
-        FileOutputCreator foc = () -> getBaseDir().resolve(outputProvider.getOutput());
-        HttpOutputCreator http = outputProvider::getOutput;
-        KafkaOutputCreator kafka = new KafkaUri(outputProvider, this);
-
-        final var factory = getOutputFactory();
-        factory.register(OutputKind.FILE, foc);
-        factory.register(OutputKind.HTTP, http);
-        factory.register(OutputKind.KAFKA, kafka);
-
-        return factory.resolve(new UriResolver(outputProvider.getOutput()))
-              .orElseThrow();
+        return new OutputBuilder().context(this).build(outputProvider);
     }
 
     default Map<String, String> getParams() {
