@@ -5,8 +5,6 @@ import org.apache.commons.lang3.SystemUtils;
 import org.fusesource.jansi.AnsiConsole;
 import picocli.CommandLine;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -38,7 +36,11 @@ public interface Banner {
             AnsiConsole.systemInstall();
         }
 
-        try(var br = new BufferedReader(new InputStreamReader(Doer.class.getResourceAsStream("/banner.txt")))) {
+        var banner = SystemUtils.IS_OS_WINDOWS
+                ? "/win_banner.txt"
+                : "/banner.txt";
+
+        try (var br = Utils.resource(banner)) {
                     br.lines()
                     .map(l -> "@|" + color.get() + " " + l +" |@")
                     .map(CommandLine.Help.Ansi.AUTO::string)
