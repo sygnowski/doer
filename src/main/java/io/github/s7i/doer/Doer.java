@@ -7,6 +7,7 @@ import io.github.s7i.doer.command.Rocks;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
 import io.github.s7i.doer.command.util.Misc;
+import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ import java.util.Arrays;
       Helix.class,
       Rocks.class,
       Misc.class})
-public class Doer implements Runnable {
+public class Doer implements Runnable, Banner {
 
     static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
     public static final String FLAGS = "doer.flags";
@@ -45,6 +46,7 @@ public class Doer implements Runnable {
 
     @Override
     public void run() {
+        printBanner();
         if (showVersion) {
             console().info("version: {}", new GitProps());
         } else {

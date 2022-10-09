@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import io.github.s7i.doer.util.Banner;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -26,7 +28,7 @@ import static java.util.Objects.requireNonNull;
         description = "Parsing command manifest yaml file."
 )
 @Slf4j
-public class CommandManifest implements Runnable {
+public class CommandManifest implements Runnable, Banner {
 
     public static final int MAX_THR_COUNT = 20;
     @Parameters(arity = "1..*")
@@ -66,6 +68,7 @@ public class CommandManifest implements Runnable {
 
     @Override
     public void run() {
+        printBanner();
         requireNonNull(yamls, "manifest file set...");
 
         var pool = Executors.newFixedThreadPool(Math.max(yamls.length, MAX_THR_COUNT), this::spawnNewThread);
