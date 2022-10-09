@@ -1,23 +1,28 @@
 package io.github.s7i.doer.command.util;
 
+import com.google.gson.Gson;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.jeasy.rules.api.Facts;
+import org.jeasy.rules.api.Rules;
+import org.jeasy.rules.core.DefaultRulesEngine;
+import org.jeasy.rules.mvel.MVELRuleFactory;
+import org.jeasy.rules.support.reader.YamlRuleDefinitionReader;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Objects.nonNull;
@@ -87,5 +92,42 @@ public class Misc {
                         });
             }
         }
+    }
+
+    @Command
+    public void rules(@Parameters(arity = "1..") List<File> rules,
+                      @Option(names = "-f") Map<String, String> facts) {
+        var gson = new Gson();
+        var ruleFactory = new MVELRuleFactory(new YamlRuleDefinitionReader());
+        var allFacts = new Facts();
+        allFacts.put("log", log);
+        facts.forEach((k, v) -> {
+            if (v.endsWith(".json")) {
+                try {
+                    var factJson = Files.readString(Path.of(v));
+                    var mapFact = gson.fromJson(factJson, Map.class);
+                    allFacts.put(k, mapFact);
+
+                } catch (IOException e) {
+                    log.warn("parsing json fact {}", v, e);
+                }
+            } else {
+                allFacts.put(k, v);
+            }
+        });
+
+        var allRules = new Rules();
+        rules.forEach(file -> {
+            try {
+                var ruleText = Files.readString(file.toPath());
+                var rule = ruleFactory.createRule(new StringReader(ruleText));
+                allRules.register(rule);
+
+            } catch (Exception e) {
+                log.warn("parsing rule {}", file, e);
+            }
+        });
+        var rulesEngine = new DefaultRulesEngine();
+        rulesEngine.fire(allRules, allFacts);
     }
 }
