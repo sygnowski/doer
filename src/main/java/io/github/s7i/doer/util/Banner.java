@@ -1,6 +1,8 @@
 package io.github.s7i.doer.util;
 
 import io.github.s7i.doer.Doer;
+import org.apache.commons.lang3.SystemUtils;
+import org.fusesource.jansi.AnsiConsole;
 import picocli.CommandLine;
 
 import java.io.BufferedReader;
@@ -32,14 +34,21 @@ public interface Banner {
             }
         };
 
-        try (var is = Doer.class.getResourceAsStream("/banner.txt")) {
-            new BufferedReader(new InputStreamReader(is))
-                    .lines()
+        if (SystemUtils.IS_OS_WINDOWS) {
+            AnsiConsole.systemInstall();
+        }
+
+        try(var br = new BufferedReader(new InputStreamReader(Doer.class.getResourceAsStream("/banner.txt")))) {
+                    br.lines()
                     .map(l -> "@|" + color.get() + " " + l +" |@")
                     .map(CommandLine.Help.Ansi.AUTO::string)
                     .forEach(System.out::println);
         } catch (Exception e) {
             Doer.console().warn("oops" , e);
+        }
+
+        if (SystemUtils.IS_OS_WINDOWS) {
+            AnsiConsole.systemUninstall();
         }
     }
 }
