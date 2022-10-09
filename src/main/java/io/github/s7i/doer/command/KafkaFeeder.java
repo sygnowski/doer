@@ -26,18 +26,14 @@ import picocli.CommandLine.Option;
 
 @Command(name = "kfeed")
 @Slf4j
-public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
+public class KafkaFeeder extends ManifestFileCommand implements Context, ConsoleLog {
 
     public static final int SEND_TIMEOUT = 10;
-
-    public static KafkaFeeder createCommandInstance(File yaml) {
-        var cmd = new KafkaFeeder();
-        cmd.yaml = yaml;
-        return cmd;
+    @Override
+    protected File getDefaultManifestFile() {
+        return new File("ingest.yml");
     }
 
-    @Option(names = {"-y", "-yaml"}, defaultValue = "ingest.yml")
-    protected File yaml;
     protected Decoder decoder;
     @Option(names = "-t", description = "Use Open Tracing")
     protected boolean useTracing;
@@ -45,17 +41,8 @@ public class KafkaFeeder implements Context, Runnable, YamlParser, ConsoleLog {
     protected List<String> allowedLabels;
 
     private int sentCount, toSend;
-
     @Override
-    public File getYamlFile() {
-        if (!yaml.exists()) {
-            throw new IllegalStateException("ingestion file doesn't exists: " + yaml);
-        }
-        return yaml;
-    }
-
-    @Override
-    public void run() {
+    public void onExecuteCommand() {
         var config = parseYaml(Ingest.class);
 
         init(config);

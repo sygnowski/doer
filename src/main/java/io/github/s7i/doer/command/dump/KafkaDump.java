@@ -1,7 +1,7 @@
 package io.github.s7i.doer.command.dump;
 
 
-import io.github.s7i.doer.command.YamlParser;
+import io.github.s7i.doer.command.ManifestFileCommand;
 import io.github.s7i.doer.domain.kafka.dump.DumpBuilder;
 import io.github.s7i.doer.flow.Task;
 import io.github.s7i.doer.flow.Variant;
@@ -14,23 +14,11 @@ import picocli.CommandLine.Option;
 
 @Command(name = "kdump")
 @Slf4j
-public class KafkaDump implements Runnable, YamlParser {
-
-    public static KafkaDump createCommandInstance(File yaml) {
-        var cmd = new KafkaDump();
-        cmd.yaml = yaml;
-        return cmd;
-    }
-
-    @Option(names = {"-y", "-yaml"}, defaultValue = "dump.yml")
-    protected File yaml;
+public class KafkaDump extends ManifestFileCommand {
 
     @Override
-    public File getYamlFile() {
-        if (!yaml.exists()) {
-            throw new IllegalStateException("missing file with definition of kafka-dump.yml");
-        }
-        return yaml;
+    protected File getDefaultManifestFile() {
+        return new File("dump.yml");
     }
 
     @Option(names = "-v", converter = VariantParser.class)
@@ -40,7 +28,7 @@ public class KafkaDump implements Runnable, YamlParser {
     protected boolean parallel;
 
     @Override
-    public void run() {
+    public void onExecuteCommand() {
         var workDir = yaml.toPath().toAbsolutePath().getParent();
         var job = new DumpBuilder()
               .setManifest(parseYaml(Dump.class))

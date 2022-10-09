@@ -1,5 +1,6 @@
 package io.github.s7i.doer.util;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import java.util.HashMap;
@@ -44,6 +45,9 @@ public class PropertyResolver implements StringLookup {
         switch (key) {
             case SpecialExpression.UUID:
                 return UUID.randomUUID().toString();
+        }
+        if (isNull(propertyMap)) {
+            return null;
         }
         return propertyMap.get(key);
     }
