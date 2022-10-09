@@ -1,6 +1,6 @@
 package io.github.s7i.doer;
 
-public class HandledRuntimeException extends RuntimeException {
+public class HandledRuntimeException extends DoerException {
 
     public HandledRuntimeException() {
         super();

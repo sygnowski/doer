@@ -11,19 +11,7 @@ import java.io.File;
 import java.util.concurrent.Callable;
 
 @Command(name = "ingest")
-public class Ingest implements Callable<Integer>, YamlParser {
-
-    public static Runnable createCommandInstance(File yaml) {
-        return () -> {
-            var ingest = new Ingest();
-            ingest.yaml = yaml;
-            try {
-                ingest.call();
-            } catch (Exception e) {
-                throw new DoerException(e);
-            }
-        };
-    }
+public class Ingest extends ManifestFileCommand {
 
     @Option(names = {"-y"}, required = true)
     File yaml;
@@ -36,9 +24,14 @@ public class Ingest implements Callable<Integer>, YamlParser {
         return yaml;
     }
 
+    @Override
+    protected File getDefaultManifestFile() {
+        return new File("ingest.yml");
+    }
+
 
     @Override
-    public Integer call() throws Exception {
+    public void onExecuteCommand() {
 
         var manifest = parseYaml(IngestRecordManifest.class);
 
@@ -49,7 +42,5 @@ public class Ingest implements Callable<Integer>, YamlParser {
                 .context();
 
         new IngestProcessor(ctx).process(manifest);
-
-        return 0;
     }
 }

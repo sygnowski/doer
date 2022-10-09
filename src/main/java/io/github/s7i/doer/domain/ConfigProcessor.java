@@ -18,11 +18,14 @@ public class ConfigProcessor implements YamlParser {
     }
 
     public void processConfig() {
-        var manifest = parseYaml(ConfigManifest.class);
         new Context.Initializer(Context.InitialParameters.builder()
                 .workDir(yaml.toPath().toAbsolutePath().getParent())
-                .params(manifest.getParams())
+                .params(parseManifest().getParams())
                 .build());
 
+    }
+    public ConfigManifest parseManifest() {
+        var manifest = parseYaml(ConfigManifest.class);
+        return manifest;
     }
 }

@@ -1,13 +1,12 @@
 package io.github.s7i.doer.util;
 
-import io.github.s7i.doer.Doer;
-import org.slf4j.LoggerFactory;
+import static java.util.Objects.nonNull;
 
+import io.github.s7i.doer.Doer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Predicate;
-
-import static java.util.Objects.nonNull;
+import org.slf4j.LoggerFactory;
 
 public interface ParamFlagExtractor {
 

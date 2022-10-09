@@ -20,7 +20,7 @@ public class FeedRecord {
 
     public static FeedRecord fromSimpleEntry(Entry entry, Topic topic, Function<String, byte[]> binaryEncoder) {
 
-        var resolver = new PropertyResolver(Globals.INSTANCE.getScope().getParams().get());
+        var resolver = new PropertyResolver(Globals.INSTANCE);
         var topicName = topic.getName();
         var key = entry.getKey() != null
               ? resolver.resolve(entry.getKey())
@@ -36,5 +36,9 @@ public class FeedRecord {
         var record = new ProducerRecord<>(getTopic(), getKey(), getData());
         entry.getHeaders().forEach(h -> record.headers().add(h.getName(), h.getValue()));
         return record;
+    }
+
+    public String toSimpleString() {
+        return String.format("topic: %s, data: %s", topic, new String(getData()));
     }
 }

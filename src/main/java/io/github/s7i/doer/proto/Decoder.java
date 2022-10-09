@@ -1,5 +1,9 @@
 package io.github.s7i.doer.proto;
 
+import static java.util.Objects.nonNull;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -11,10 +15,9 @@ import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.config.ProtoDescriptorContainer;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,8 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.nonNull;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Decoder {
@@ -34,10 +36,11 @@ public class Decoder {
         loadDescriptors(container.getDescriptorsPaths());
     }
 
-    public void loadDescriptors(List<Path> paths) {
+    public Decoder loadDescriptors(List<Path> paths) {
         descriptors = readDescSet(paths).stream()
                 .flatMap(fd -> fd.getMessageTypes().stream())
                 .collect(Collectors.toList());
+        return this;
     }
 
     public Descriptor findMessageDescriptor(String messageName) {
@@ -63,8 +66,15 @@ public class Decoder {
                 var message = DynamicMessage.parseFrom(descriptor, data);
                 var registry = TypeRegistry.newBuilder().add(descriptors).build();
 
-                var printer = JsonFormat.printer().usingTypeRegistry(registry);
-                return printer.print(message);
+                try {
+                    var printer = JsonFormat.printer().usingTypeRegistry(registry);
+                    return printer.print(message);
+                } catch (InvalidProtocolBufferException ipe) {
+                    var to = new JsonObject();
+                    to.addProperty("doer.fallback.proto.error", ipe.getMessage());
+                    to.addProperty("doer.fallback.proto.text", message.toString());
+                    return new Gson().toJson(to);
+                }
             }
             return "{}";
         } catch (InvalidProtocolBufferException ipe) {
@@ -89,6 +99,15 @@ public class Decoder {
         }
     }
 
+    public Message toMessage(Descriptor descriptor, byte[] data) {
+        try {
+            return DynamicMessage.parseFrom(descriptor, data);
+        } catch (InvalidProtocolBufferException e) {
+            log.error("decode bytes using descriptor {}, error: {}", descriptor.getFullName(), e);
+            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getFullName());
+        }
+    }
+
     public Message toMessage(Descriptor descriptor, String json) {
         try {
             var builder = DynamicMessage.newBuilder(descriptor);
@@ -101,7 +120,7 @@ public class Decoder {
             return builder.build();
         } catch (InvalidProtocolBufferException e) {
             log.error("making proto message, form json:\n{} exception is:\n", json, e);
-            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getName());
+            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getFullName());
         }
     }
 
@@ -119,7 +138,7 @@ public class Decoder {
             return builder.build();
         } catch (ParseException e) {
             log.error("making proto message", e);
-            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getName());
+            throw new HandledRuntimeException("Cannot make proto message: " + descriptor.getFullName());
         }
     }
 
@@ -156,8 +175,8 @@ public class Decoder {
                     log.debug("registered proto descriptor: {}", fd.getFullName());
                 }
             } catch (IOException | DescriptorValidationException e) {
-                log.error("{}", e);
-                throw new RuntimeException(e);
+                log.error("oh no", e);
+                throw new DoerException(e);
             }
         }
         return descriptors;

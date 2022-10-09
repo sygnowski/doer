@@ -1,24 +1,18 @@
 package io.github.s7i.doer;
 
-import io.github.s7i.doer.domain.kafka.output.KafkaOutputCreator;
-import io.github.s7i.doer.domain.kafka.output.KafkaUri;
+import static io.github.s7i.doer.Doer.console;
+import static java.util.Objects.requireNonNull;
+
 import io.github.s7i.doer.domain.output.*;
-import io.github.s7i.doer.domain.output.creator.FileOutputCreator;
-import io.github.s7i.doer.domain.output.creator.HttpOutputCreator;
-import io.github.s7i.doer.domain.output.creator.PipelineOutputCreator;
 import io.github.s7i.doer.pipeline.Pipeline;
 import io.github.s7i.doer.util.ParamFlagExtractor;
 import io.github.s7i.doer.util.QuitWatcher;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Getter;
-
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
-
-import static io.github.s7i.doer.Doer.console;
-import static java.util.Objects.requireNonNull;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
 
 public interface Context extends ParamFlagExtractor {
 
@@ -72,19 +66,7 @@ public interface Context extends ParamFlagExtractor {
     }
 
     default Output buildOutput(OutputProvider outputProvider) {
-        FileOutputCreator foc = () -> getBaseDir().resolve(outputProvider.getOutput());
-        HttpOutputCreator http = outputProvider::getOutput;
-        KafkaOutputCreator kafka = new KafkaUri(outputProvider, this);
-        PipelineOutputCreator pipeline = () -> Globals.INSTANCE.pipeline.connect(outputProvider.getOutput());
-
-        final var factory = getOutputFactory();
-        factory.register(OutputKind.FILE, foc);
-        factory.register(OutputKind.HTTP, http);
-        factory.register(OutputKind.KAFKA, kafka);
-        factory.register(OutputKind.PIPELINE, pipeline);
-
-        return factory.resolve(new UriResolver(outputProvider.getOutput()))
-                .orElseThrow();
+        return new OutputBuilder().context(this).build(outputProvider);
     }
 
     default Map<String, String> getParams() {

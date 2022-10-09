@@ -7,10 +7,12 @@ import java.util.Properties;
 @Slf4j
 public class GitProps {
 
+    public static final String GIT_PROPERTIES = "/git.properties";
+
     @Override
     public String toString() {
         var props = new Properties();
-        try (var is = GitProps.class.getResourceAsStream("/git.properties")) {
+        try (var is = GitProps.class.getResourceAsStream(GIT_PROPERTIES)) {
             props.load(is);
         } catch (Exception io) {
             log.error("loading git properties", io);
