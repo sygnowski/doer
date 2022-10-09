@@ -53,7 +53,7 @@ class KafkaDumpTest extends Specification {
         dump.yaml = new File("src/test/resources/simple-dump.yml")
 
         expect:
-        dump.run()
+        dump.onExecuteCommand()
     }
 
 
@@ -92,7 +92,7 @@ class KafkaDumpTest extends Specification {
         dump.yaml = new File("src/test/resources/dump-to-kafka.yml")
 
         expect:
-        dump.run()
+        dump.onExecuteCommand()
     }
 
 
@@ -133,6 +133,6 @@ class KafkaDumpTest extends Specification {
         dump.yaml = new File("src/test/resources/dump-from-time.yml")
 
         expect:
-        dump.run()
+        dump.onExecuteCommand()
     }
 }

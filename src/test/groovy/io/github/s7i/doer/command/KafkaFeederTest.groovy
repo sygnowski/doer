@@ -33,7 +33,7 @@ class KafkaFeederTest extends Specification {
         Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
         feeder.yaml = new File("src/test/resources/simple-ingest.yml")
         expect:
-        feeder.run()
+        feeder.onExecuteCommand()
         records.any { it.value() == "no-key-value".getBytes() }
         records.any { it.value() == "some-message-value".getBytes() }
 
@@ -57,7 +57,7 @@ class KafkaFeederTest extends Specification {
         Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
         feeder.yaml = new File("src/test/resources/ingest-with-template.yml")
         expect:
-        feeder.run()
+        feeder.onExecuteCommand()
         def val = records.first().value()
         def valExpected = Files.readAllBytes(Path.of("src/test/resources/ingest-with-template-result.txt"))
         new String(val) == new String(valExpected)
@@ -80,7 +80,7 @@ class KafkaFeederTest extends Specification {
         Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
         feeder.yaml = new File("src/test/resources/ingest-with-template-value-set.yml")
         expect:
-        feeder.run()
+        feeder.onExecuteCommand()
 
         records.any { it.value() == '{"a": "value-A","b": "value-B","c": "value-C"}'.getBytes() }
         records.any { it.value() == '{"a": "value-D","b": "value-E","c": "value-F"}'.getBytes() }
@@ -113,7 +113,7 @@ class KafkaFeederTest extends Specification {
         Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
         feeder.yaml = new File("src/test/resources/ingest-with-template-value-set-repeat.yml")
         expect:
-        feeder.run()
+        feeder.onExecuteCommand()
     }
 
 }

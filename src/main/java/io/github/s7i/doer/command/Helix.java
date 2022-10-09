@@ -13,7 +13,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "helix", description = "Runs the Helix Spectator")
-@Slf4j
+@Slf4j(topic = "doer.console")
 public class Helix implements Runnable {
 
     @Option(names = "-s", defaultValue = "localhost:2181")
