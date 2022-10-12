@@ -25,4 +25,9 @@ class PropertyResolverTest extends Specification {
         pr.resolve('${doer://pipeline/${val}/1/2/3}') == "it's working"
         arg == "doer://pipeline/OK/1/2/3"
     }
+
+    def 'test 123'() {
+        expect:
+        1 == 2
+    }
 }
