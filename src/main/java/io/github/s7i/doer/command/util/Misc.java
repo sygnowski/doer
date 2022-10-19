@@ -8,6 +8,7 @@ import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rules;
 import org.jeasy.rules.core.DefaultRulesEngine;
@@ -61,6 +62,25 @@ public class Misc {
 
         log.info(new PropertyResolver(param).resolve(input));
 
+    }
+
+    @Command
+    public void unescape(
+          @Parameters(arity = "1") String input,
+          @Option(names = {"-t", "--type"}, defaultValue = "java") String type) {
+
+        var in = new PropertyResolver().resolve(input);
+        String out;
+        switch (type) {
+            case "json":
+                out = StringEscapeUtils.unescapeJson(in);
+                break;
+            case "java":
+            default:
+                out = StringEscapeUtils.unescapeJava(in);
+                break;
+        }
+        System.out.println(out);
     }
 
     @Command
