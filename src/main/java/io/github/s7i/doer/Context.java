@@ -40,7 +40,7 @@ public interface Context extends ParamFlagExtractor {
 
         private static void shutdown() {
             console().info("Init shutdown procedure...");
-            Globals.INSTANCE.stopHooks.stream().forEach(Runnable::run);
+            Globals.INSTANCE.stopHooks.forEach(Runnable::run);
             console().info("Shutdown completed.");
         }
     }

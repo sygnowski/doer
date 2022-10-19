@@ -2,13 +2,15 @@ package io.github.s7i.doer.util;
 
 import static java.util.Objects.nonNull;
 
-import lombok.experimental.UtilityClass;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Objects;
+import java.util.function.Consumer;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 @UtilityClass
+@Slf4j
 public class Utils {
 
     public static boolean hasAnyValue(String str) {
@@ -24,5 +26,13 @@ public class Utils {
                 )
         );
     }
-
+    public boolean readResource(String path, Consumer<BufferedReader> brConsumer) {
+        try (var br = resource(path)) {
+            brConsumer.accept(br);
+        } catch (Exception e) {
+            log.error("oops", e);
+            return false;
+        }
+        return true;
+    }
 }

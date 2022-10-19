@@ -5,6 +5,7 @@ import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
+import io.github.s7i.doer.util.Utils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jeasy.rules.api.Facts;
@@ -67,9 +68,7 @@ public class Misc {
         log.info("DOER_HOME = {}", System.getenv().get("DOER_HOME"));
         log.info("DOER_CONFIG = {}", System.getenv().get(Doer.ENV_CONFIG));
 
-        try (var br = new BufferedReader(new InputStreamReader(Misc.class.getResourceAsStream(GitProps.GIT_PROPERTIES)))) {
-            br.lines().forEach(log::info);
-        }
+        Utils.readResource(GitProps.GIT_PROPERTIES, br -> br.lines().forEach(log::info));
     }
 
     @SneakyThrows
@@ -87,7 +86,7 @@ public class Misc {
                             try {
                                 Files.deleteIfExists(p);
                             } catch (IOException e) {
-                                log.warn("oops", e);
+                                log.warn("can't delete: {} ({})", p, e.getMessage());
                             }
                         });
             }
