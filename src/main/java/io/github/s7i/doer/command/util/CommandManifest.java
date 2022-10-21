@@ -71,7 +71,7 @@ public class CommandManifest implements Runnable, Banner {
         printBanner();
         requireNonNull(yamls, "manifest file set...");
 
-        var pool = Executors.newFixedThreadPool(Math.max(yamls.length, MAX_THR_COUNT), this::spawnNewThread);
+        var pool = Executors.newFixedThreadPool(Math.min(yamls.length, MAX_THR_COUNT), this::spawnNewThread);
         for (var yaml : yamls) {
             try (var br = Files.newBufferedReader(yaml.toPath())) {
                 String version = br.readLine();
