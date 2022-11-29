@@ -3,9 +3,13 @@ package io.github.s7i.doer.command.util;
 import com.google.gson.Gson;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.file.ReplaceInFile;
+import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.health.v1.HealthCheckRequest;
+import io.grpc.health.v1.HealthGrpc;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
@@ -34,7 +38,8 @@ import static java.util.Objects.nonNull;
         description = "Miscellaneous command set.",
         subcommands = {
                 ReplaceInFile.class,
-                CommandManifest.class
+                CommandManifest.class,
+                PipelineService.class
         }
 )
 @Slf4j(topic = "doer.console")
@@ -148,5 +153,26 @@ public class Misc {
         });
         var rulesEngine = new DefaultRulesEngine();
         rulesEngine.fire(allRules, allFacts);
+    }
+
+    @Command(name = "grpc-health")
+    public void grpcHealth(
+            @Option(names = "--host", required = true)
+            String host,
+            @Option(names = "--port", required = true)
+            Integer port,
+            @Option(names = {"-s", "--service"}, defaultValue = "", description = "package_names.ServiceName")
+            String srvName) {
+        final var channel = ManagedChannelBuilder.forAddress(host, port).build();
+        final var healthSrv = HealthGrpc.newBlockingStub(channel);
+
+        final var request = HealthCheckRequest.newBuilder()
+                .setService(srvName)
+                .build();
+        final var result = healthSrv.check(request);
+        final var status = result.getStatus();
+        final var hs = status.getValueDescriptor().getFullName();
+
+        log.info("Health status: {}", hs);
     }
 }
