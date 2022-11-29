@@ -7,7 +7,8 @@ import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.Grpc;
+import io.grpc.InsecureChannelCredentials;
 import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthGrpc;
 import lombok.SneakyThrows;
@@ -30,6 +31,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.nonNull;
 
@@ -157,22 +159,23 @@ public class Misc {
 
     @Command(name = "grpc-health")
     public void grpcHealth(
-            @Option(names = "--host", required = true)
-            String host,
-            @Option(names = "--port", required = true)
-            Integer port,
+            @Parameters()
+            String target,
             @Option(names = {"-s", "--service"}, defaultValue = "", description = "package_names.ServiceName")
-            String srvName) {
-        final var channel = ManagedChannelBuilder.forAddress(host, port).build();
-        final var healthSrv = HealthGrpc.newBlockingStub(channel);
+            String srvName) throws InterruptedException {
+        final var channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create()).build();
+        try {
+            final var healthSrv = HealthGrpc.newBlockingStub(channel);
 
-        final var request = HealthCheckRequest.newBuilder()
-                .setService(srvName)
-                .build();
-        final var result = healthSrv.check(request);
-        final var status = result.getStatus();
-        final var hs = status.getValueDescriptor().getFullName();
-
-        log.info("Health status: {}", hs);
+            final var request = HealthCheckRequest.newBuilder()
+                    .setService(srvName)
+                    .build();
+            final var result = healthSrv.check(request);
+            final var status = result.getStatus();
+            final var hs = status.name();
+            log.info("Health status: {}", hs);
+        } finally {
+            channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+        }
     }
 }

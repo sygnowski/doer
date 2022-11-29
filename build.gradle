@@ -15,15 +15,19 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    grcpVersion= '1.51.0'
+}
+
 dependencies {
     implementation project(":proto-doer")
     implementation 'org.slf4j:slf4j-api:2.0.3',
             'ch.qos.logback:logback-classic:1.4.3',
             'info.picocli:picocli:4.6.3',
-            'io.grpc:grpc-protobuf:1.49.2',
-            'io.grpc:grpc-stub:1.49.2',
-            'io.grpc:grpc-services:1.49.2',
-            'io.grpc:grpc-netty-shaded:1.49.2',
+            'io.grpc:grpc-protobuf:1.51.0',
+            'io.grpc:grpc-stub:1.51.0',
+            'io.grpc:grpc-services:1.51.0',
+            'io.grpc:grpc-netty-shaded:1.51.0',
             'io.jaegertracing:jaeger-client:1.8.1',
             'io.opentracing.contrib:opentracing-kafka-client:0.1.15',
             "javax.annotation:javax.annotation-api:1.3.2",
