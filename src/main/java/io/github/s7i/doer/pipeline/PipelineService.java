@@ -4,14 +4,20 @@ import io.github.s7i.doer.pipeline.proto.PipelinePublishRequest;
 import io.github.s7i.doer.pipeline.proto.PipelinePublishResponse;
 import io.github.s7i.doer.pipeline.proto.PipelineServiceGrpc;
 import io.grpc.ServerBuilder;
+import io.grpc.protobuf.services.HealthStatusManager;
+import io.grpc.protobuf.services.ProtoReflectionService;
 import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @Command(name = "pipeline")
-@Slf4j
+@Slf4j(topic = "doer.console")
 public class PipelineService implements Runnable {
+
+    @Option(names ="--port", defaultValue = "6565")
+    private Integer port;
 
     public static void main(String[] args) {
         new PipelineService().run();
@@ -36,12 +42,19 @@ public class PipelineService implements Runnable {
     @SneakyThrows
     @Override
     public void run() {
+        var hsm = new HealthStatusManager();
 
-        ServerBuilder.forPort(6565)
+
+        final var server = ServerBuilder.forPort(port)
                 .addService(new Handler())
+                .addService(ProtoReflectionService.newInstance())
+                .addService(hsm.getHealthService())
                 .build()
-                .start()
-                .awaitTermination();
+                .start();
+
+        log.info("Server Started: {}", server);
+
+        server.awaitTermination();
 
     }
 }
