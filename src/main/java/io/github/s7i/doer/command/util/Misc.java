@@ -7,10 +7,6 @@ import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
-import io.grpc.Grpc;
-import io.grpc.InsecureChannelCredentials;
-import io.grpc.health.v1.HealthCheckRequest;
-import io.grpc.health.v1.HealthGrpc;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
@@ -31,7 +27,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.nonNull;
 
@@ -155,27 +150,5 @@ public class Misc {
         });
         var rulesEngine = new DefaultRulesEngine();
         rulesEngine.fire(allRules, allFacts);
-    }
-
-    @Command(name = "grpc-health")
-    public void grpcHealth(
-            @Parameters()
-            String target,
-            @Option(names = {"-s", "--service"}, defaultValue = "", description = "package_names.ServiceName")
-            String srvName) throws InterruptedException {
-        final var channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create()).build();
-        try {
-            final var healthSrv = HealthGrpc.newBlockingStub(channel);
-
-            final var request = HealthCheckRequest.newBuilder()
-                    .setService(srvName)
-                    .build();
-            final var result = healthSrv.check(request);
-            final var status = result.getStatus();
-            final var hs = status.name();
-            log.info("Health status: {}", hs);
-        } finally {
-            channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
-        }
     }
 }
