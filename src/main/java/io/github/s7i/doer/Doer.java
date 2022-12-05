@@ -1,9 +1,6 @@
 package io.github.s7i.doer;
 
-import io.github.s7i.doer.command.Helix;
-import io.github.s7i.doer.command.KafkaFeeder;
-import io.github.s7i.doer.command.ProtoProcessor;
-import io.github.s7i.doer.command.Rocks;
+import io.github.s7i.doer.command.*;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
 import io.github.s7i.doer.command.util.Misc;
@@ -22,6 +19,7 @@ import java.util.Arrays;
       ProtoProcessor.class,
       Helix.class,
       Rocks.class,
+      GrpcHealth.class,
       Misc.class})
 public class Doer implements Runnable, Banner {
 

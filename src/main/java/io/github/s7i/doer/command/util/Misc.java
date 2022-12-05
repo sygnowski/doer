@@ -3,6 +3,7 @@ package io.github.s7i.doer.command.util;
 import com.google.gson.Gson;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.file.ReplaceInFile;
+import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
@@ -34,7 +35,8 @@ import static java.util.Objects.nonNull;
         description = "Miscellaneous command set.",
         subcommands = {
                 ReplaceInFile.class,
-                CommandManifest.class
+                CommandManifest.class,
+                PipelineService.class
         }
 )
 @Slf4j(topic = "doer.console")
