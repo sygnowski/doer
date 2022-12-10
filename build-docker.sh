@@ -2,7 +2,7 @@
 
 TAG=s7i/doer
 VERSION=0.1.1
-VCS_REF=$(git rev-parse HEAD)
+VCS_REF=$(git describe --tags --always --dirty)
 
 main() {
     info
@@ -28,7 +28,7 @@ versionTag() {
   local branch=$(git rev-parse --abbrev-ref HEAD)
 
   if [[ ! " ${mains[*]} " =~ " ${branch} " ]]; then
-    echo "$VERSION-$branch"
+    echo "$VERSION-${branch//\//\_}"
   else
     echo $VERSION
   fi
@@ -57,7 +57,7 @@ runBuild () {
     local tag=$TAG:$(versionTag)
     echo "Docker Tag: $tag"
 
-    docker build -t $tag --build-arg VERSION=$VERSION --build-arg VCS_REF=$VCS_REF $dockerFile .
+    docker build --progress=plain -t $tag --build-arg VERSION=$VERSION --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" --build-arg VCS_REF=$VCS_REF $dockerFile .
 }
 
 # call the main function

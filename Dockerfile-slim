@@ -1,4 +1,4 @@
-FROM openjdk:11-jre
+FROM s71/ubuntu-dev-jdk11
 
 ARG VERSION
 ARG VCS_REF
