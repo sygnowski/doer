@@ -5,7 +5,7 @@ VERSION=0.1.1
 VCS_REF=$(git describe --tags --always --dirty)
 
 main() {
-    info
+    info Docker build helper script
 
     case $1 in
         slim)
@@ -39,10 +39,16 @@ with_builder () {
 }
 
 slim_build () {
-    if [[ ! -e "./build/libs/doer-all.jar" ]]; then
-        ./gradlew build --console=plain
+    ./gradlew test distTar --console=plain
+
+    if [[ ! -e "./build/distributions/doer.tar" ]]; then
+      echo "missing doer.tar"
+      exit -1
     fi
+
+    cp ./build/distributions/doer.tar ./doer.tar
     runBuild "Dockerfile-slim"
+    rm ./doer.tar
 }
 
 runBuild () {
