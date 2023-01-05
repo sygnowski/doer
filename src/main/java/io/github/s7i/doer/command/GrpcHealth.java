@@ -1,6 +1,7 @@
 package io.github.s7i.doer.command;
 
 import io.github.s7i.doer.DoerException;
+import io.grpc.Deadline;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import io.grpc.StatusRuntimeException;
@@ -30,6 +31,12 @@ public class GrpcHealth extends Command {
     @CommandLine.Option(names = {"-d"}, description = "Delay between check in seconds", defaultValue = "1")
     Integer delay;
 
+    @CommandLine.Option(names = {"--duration"}, defaultValue = "10")
+    Long duration;
+
+    @CommandLine.Option(names = {"--timeUnit"}, defaultValue = "SECONDS")
+    TimeUnit timeUnit;
+
     @Override
     public void onExecuteCommand() {
         try {
@@ -43,7 +50,8 @@ public class GrpcHealth extends Command {
     public void grpcHealth() throws InterruptedException {
         final var channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create()).build();
         try {
-            final var healthSrv = HealthGrpc.newBlockingStub(channel);
+            final var healthSrv = HealthGrpc.newBlockingStub(channel)
+                    .withDeadline(Deadline.after(duration, timeUnit));
 
             final var request = HealthCheckRequest.newBuilder()
                     .setService(srvName)
