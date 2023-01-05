@@ -1,6 +1,7 @@
 package io.github.s7i.doer.command.util;
 
 import com.google.gson.Gson;
+import com.google.protobuf.TextFormat;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.pipeline.PipelineService;
@@ -15,6 +16,8 @@ import org.jeasy.rules.api.Rules;
 import org.jeasy.rules.core.DefaultRulesEngine;
 import org.jeasy.rules.mvel.MVELRuleFactory;
 import org.jeasy.rules.support.reader.YamlRuleDefinitionReader;
+import org.mvel2.MVEL;
+import org.mvel2.compiler.CompiledExpression;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
@@ -25,6 +28,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,14 +70,19 @@ public class Misc {
 
     }
 
+    @SneakyThrows
     @Command
     public void unescape(
           @Parameters(arity = "1") String input,
-          @Option(names = {"-t", "--type"}, defaultValue = "java") String type) {
+          @Option(names = {"-t", "--type"}, defaultValue = "java") String type,
+          @Option(names = {"-p"}, description = "Unescape Proto Bytes") boolean unEscProto) {
 
         var in = new PropertyResolver().resolve(input);
         String out;
         switch (type) {
+            case "none":
+                out = in;
+                break;
             case "json":
                 out = StringEscapeUtils.unescapeJson(in);
                 break;
@@ -82,7 +91,40 @@ public class Misc {
                 out = StringEscapeUtils.unescapeJava(in);
                 break;
         }
+        if (unEscProto) {
+            var bs =  TextFormat.unescapeBytes(out);
+            bs.writeTo(System.out);
+            return;
+        }
         System.out.println(out);
+    }
+
+    @SneakyThrows
+    @Command(name = "unesc-proto", description = "Unescape proto ByteString.")
+    public void unescapeProto(@Parameters(arity = "1") String input) {
+        TextFormat.unescapeBytes(input).writeTo(System.out);
+    }
+
+    @SuppressWarnings("unchecked")
+    @SneakyThrows
+    @Command(name = "parse-json")
+    public void parseJson(@Parameters(arity = "1", description = "JSON file Path") String jsonPath,
+                          @Option(names = "--mvel", description = "MVEL Expression") String mvelExp) {
+        var gosn = new Gson();
+
+        var rawJson = Files.readString(Path.of(jsonPath));
+        var jsonMap = gosn.fromJson(rawJson, Map.class);
+
+        if (nonNull(mvelExp)) {
+            var imports = new HashMap<String, Object>();
+            imports.put("unescProtoBytes", MVEL.getStaticMethod(TextFormat.class, "unescapeBytes", new Class[]{CharSequence.class}));
+
+            var ce = (CompiledExpression) MVEL.compileExpression(mvelExp, imports);
+            var result = MVEL.executeExpression(ce, jsonMap);
+            System.out.println(result);
+        } else {
+            System.out.println(jsonMap);
+        }
     }
 
     @Command
