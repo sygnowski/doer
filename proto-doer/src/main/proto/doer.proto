@@ -5,6 +5,7 @@ package io.github.s7i.doer.proto;
 option java_multiple_files = true;
 
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
 
 message DoerVersion {
   string name = 1;
@@ -15,5 +16,17 @@ message Record {
   google.protobuf.StringValue key = 2;
   map<string, string> meta = 3;
   google.protobuf.BytesValue data = 4;
+}
+
+service DoerService {
+
+  rpc version (google.protobuf.Empty) returns (Sone);
+  rpc exec(Sone) returns (Sone);
+  rpc pulse(google.protobuf.Empty) returns (stream Sone);
+
+}
+
+message Sone {
+  string s = 1;
 }
 
