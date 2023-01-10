@@ -131,6 +131,7 @@ public class Misc {
     public void info() throws IOException {
         log.info("DOER_HOME = {}", System.getenv().get("DOER_HOME"));
         log.info("DOER_CONFIG = {}", System.getenv().get(Doer.ENV_CONFIG));
+        log.info("DOER_VCS_REF = {}", System.getenv().get("DOER_VCS_REF"));
 
         Utils.readResource(GitProps.GIT_PROPERTIES, br -> br.lines().forEach(log::info));
     }
