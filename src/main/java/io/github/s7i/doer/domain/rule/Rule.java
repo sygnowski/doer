@@ -13,6 +13,7 @@ public class Rule {
 
     final String content;
 
+    @SuppressWarnings("unchecked")
     public boolean testRule(String rawJson) {
         try {
             var jsonAsMap = new ObjectMapper().readValue(rawJson, Map.class);

@@ -10,7 +10,9 @@ import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.text.StringEscapeUtils;
+import org.fusesource.jansi.AnsiConsole;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rules;
 import org.jeasy.rules.core.DefaultRulesEngine;
@@ -18,6 +20,7 @@ import org.jeasy.rules.mvel.MVELRuleFactory;
 import org.jeasy.rules.support.reader.YamlRuleDefinitionReader;
 import org.mvel2.MVEL;
 import org.mvel2.compiler.CompiledExpression;
+import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
@@ -64,10 +67,23 @@ public class Misc {
     @Command(name = "text")
     public void text(
             @Parameters(paramLabel = "text", arity = "1", description = "input text") String input,
-            @Option(names = {"-p"}) Map<String, String> param) {
+            @Option(names = {"-p"}, description = "Param:  key=value") Map<String, String> param,
+            @Option(names = {"-c", "--color"}, description = "Enable ANSI colors") Boolean colors) {
 
-        log.info(new PropertyResolver(param).resolve(input));
+        final var result = new PropertyResolver(param).resolve(input);
+        if (colors) {
+            if (SystemUtils.IS_OS_WINDOWS) {
+                AnsiConsole.systemInstall();
+            }
 
+            System.out.println(CommandLine.Help.Ansi.AUTO.string(result));
+
+            if (SystemUtils.IS_OS_WINDOWS) {
+                AnsiConsole.systemInstall();
+            }
+        } else {
+            log.info(result);
+        }
     }
 
     @SneakyThrows
