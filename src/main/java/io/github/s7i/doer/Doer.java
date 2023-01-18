@@ -1,12 +1,10 @@
 package io.github.s7i.doer;
 
-import io.github.s7i.doer.command.Helix;
-import io.github.s7i.doer.command.KafkaFeeder;
-import io.github.s7i.doer.command.ProtoProcessor;
-import io.github.s7i.doer.command.Rocks;
+import io.github.s7i.doer.command.*;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
 import io.github.s7i.doer.command.util.Misc;
+import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +19,9 @@ import java.util.Arrays;
       ProtoProcessor.class,
       Helix.class,
       Rocks.class,
+      GrpcHealth.class,
       Misc.class})
-public class Doer implements Runnable {
+public class Doer implements Runnable, Banner {
 
     static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
     public static final String FLAGS = "doer.flags";
@@ -45,6 +44,7 @@ public class Doer implements Runnable {
 
     @Override
     public void run() {
+        printBanner();
         if (showVersion) {
             console().info("version: {}", new GitProps());
         } else {

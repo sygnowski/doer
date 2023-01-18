@@ -6,4 +6,7 @@ public class ManifestException extends DoerException {
     public ManifestException(String message) {
         super(message);
     }
+    public ManifestException(Throwable cause) {
+        super(cause);
+    }
 }

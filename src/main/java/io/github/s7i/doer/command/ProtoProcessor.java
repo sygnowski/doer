@@ -1,16 +1,8 @@
 package io.github.s7i.doer.command;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
-import io.github.s7i.doer.ConsoleLog;
-import io.github.s7i.doer.Doer;
-import io.github.s7i.doer.DoerException;
-import io.github.s7i.doer.Globals;
-import io.github.s7i.doer.HandledRuntimeException;
+import com.google.protobuf.TextFormat;
+import io.github.s7i.doer.*;
 import io.github.s7i.doer.domain.output.Output.Load;
 import io.github.s7i.doer.domain.output.OutputKind;
 import io.github.s7i.doer.domain.output.UriResolver;
@@ -18,6 +10,13 @@ import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.session.Input;
 import io.github.s7i.doer.session.InteractiveSession;
 import io.github.s7i.doer.util.PropertyResolver;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,12 +32,10 @@ import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
+
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 @Slf4j
 @Command(name = "proto", description = "Protocol buffers decoder/encoder.")
@@ -48,11 +45,11 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
     public static final String DOER_PROMPT = "doer > ";
 
     enum InputType {
-        TEXT, JSON, BYTESTRING
+        TEXT, JSON, ESC
     }
 
     enum ExportAs {
-        BIN, TEXT, JSON, BYTESTRING, BASE64;
+        BIN, TEXT, JSON, ESC, BASE64, OBJ;
 
         String keyword() {
             return this.name().toLowerCase();
@@ -159,13 +156,28 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
     }
 
     private void decodeProto() throws IOException {
-        var data = isNull(base64) || isBlank(base64)
-              ? readProtoInput()
-              : Base64.getDecoder().decode(base64);
+        try {
+            final var decoder = new Decoder().loadDescriptors(getPaths());
 
-        var paths = getPaths();
-        var decoded = decode(paths, messageName, data);
-        info("Decoded proto:\n {}", decoded);
+            final var data = isNull(base64) || isBlank(base64)
+                    ? readProtoInput()
+                    : Base64.getDecoder().decode(base64);
+
+            Message decoded;
+
+            var descriptor = decoder.findMessageDescriptor(messageName);
+
+            if (InputType.ESC == inputType) {
+                var bsData = TextFormat.unescapeBytes(new String(data)).toByteArray();
+                decoded = decoder.toMessage(descriptor, bsData);
+            } else {
+                decoded = decoder.toMessage(descriptor, data);
+            }
+            export(decoder, decoded);
+
+        } catch (HandledRuntimeException he) {
+            info("oops: {}", he.getMessage());
+        }
     }
 
     private byte[] encodeProto() {
@@ -206,7 +218,7 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
                         var lastLine = line.substring(0, line.indexOf(EOF));
                         input.process(lastLine);
                         break;
-                    } else if (InputType.BYTESTRING == inputType) {
+                    } else if (InputType.ESC == inputType) {
                         input.processOnce(line);
                         break;
                     } else {
@@ -235,14 +247,15 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
 
     }
 
+    @SneakyThrows
     private void printDecodedMessage(Decoder decoder, Input input) {
         try {
             Message proto;
             var msgDescriptor = decoder.findMessageDescriptor(messageName);
 
             switch (inputType) {
-                case BYTESTRING:
-                    var data = ByteString.copyFromUtf8(input.getInputText()).toByteArray();
+                case ESC:
+                    var data = TextFormat.unescapeBytes(input.getInputText()).toByteArray();
                     var jsonString = decoder.toJson(msgDescriptor, data);
                     info("Result \n{}", jsonString);
                     return;
@@ -277,8 +290,8 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
                     info("decoded proto in binary\nBINARY_BEGIN\n{}BINARY_END", new String(bytes, StandardCharsets.UTF_8));
                 }
                 break;
-            case BYTESTRING:
-                info("decoded proto as bytestring\n{}", ByteString.copyFrom(proto.toByteArray()).toString());
+            case ESC:
+                info("decoded proto as escaped bytes\n{}", TextFormat.escapeBytes(proto.toByteArray()));
                 break;
             case TEXT:
                 String textVal = decoder.toText(proto);
@@ -286,6 +299,9 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
                 break;
             case BASE64:
                 info("decoded version as base64: {}", Base64.getEncoder().encode(proto.toByteArray()));
+                break;
+            case OBJ:
+                info("decoded version as message::toString() : {}", proto.toString());
                 break;
         }
     }
@@ -303,13 +319,6 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
     @NotNull
     private List<Path> getPaths() {
         return Stream.of(desc).map(File::toPath).collect(Collectors.toList());
-    }
-
-    public Message decode(List<Path> descriptorPaths, String messageName, byte[] data) {
-        var decoder = new Decoder();
-        decoder.loadDescriptors(descriptorPaths);
-        var descriptor = decoder.findMessageDescriptor(messageName);
-        return decoder.toMessage(descriptor, data);
     }
 
     public void updateParameters(String paramName, String paramValue) {

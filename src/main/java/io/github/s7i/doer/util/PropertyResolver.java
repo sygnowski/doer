@@ -45,6 +45,8 @@ public class PropertyResolver implements StringLookup {
         switch (key) {
             case SpecialExpression.UUID:
                 return UUID.randomUUID().toString();
+            case SpecialExpression.CLIPBOARD:
+                return Clipboard.getString();
         }
         if (isNull(propertyMap)) {
             return null;
