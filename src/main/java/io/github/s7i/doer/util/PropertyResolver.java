@@ -1,11 +1,14 @@
 package io.github.s7i.doer.util;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+
+import io.github.s7i.doer.Context;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,9 @@ public class PropertyResolver implements StringLookup {
     private final Map<String, String> propertyMap;
     private final StringSubstitutor sysSubstitutor = StringSubstitutor.createInterpolator().setEnableSubstitutionInVariables(true);
     private final StringSubstitutor substitutor = new StringSubstitutor(this).setEnableSubstitutionInVariables(true);
+    public PropertyResolver(Context context) {
+        this(context.getParams());
+    }
     @Setter
     private Function<String, String> handle;
 
@@ -39,6 +45,11 @@ public class PropertyResolver implements StringLookup {
         switch (key) {
             case SpecialExpression.UUID:
                 return UUID.randomUUID().toString();
+            case SpecialExpression.CLIPBOARD:
+                return Clipboard.getString();
+        }
+        if (isNull(propertyMap)) {
+            return null;
         }
         return propertyMap.get(key);
     }

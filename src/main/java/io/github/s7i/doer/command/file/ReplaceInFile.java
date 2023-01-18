@@ -20,8 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "replace-in-file")
-@Slf4j
+@Command(name = "replace-in-file", aliases = "rif")
+@Slf4j(topic = "doer.console")
 public class ReplaceInFile implements Callable<Integer> {
 
     public static final String SHADOW = "shadow";
