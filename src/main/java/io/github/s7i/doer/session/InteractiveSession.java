@@ -62,7 +62,7 @@ public class InteractiveSession {
             var args = argsPart.split("\\s");
             Arrays.stream(args)
                   .filter(s -> !s.isEmpty())
-                  .map(a -> new Arg(a))
+                  .map(Arg::new)
                   .forEach(this::onArg);
         }
     }

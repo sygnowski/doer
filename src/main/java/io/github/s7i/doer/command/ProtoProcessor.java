@@ -2,6 +2,7 @@ package io.github.s7i.doer.command;
 
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
+import com.google.protobuf.UnknownFieldSet;
 import io.github.s7i.doer.*;
 import io.github.s7i.doer.domain.output.Output.Load;
 import io.github.s7i.doer.domain.output.OutputKind;
@@ -37,7 +38,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-@Slf4j
+@Slf4j(topic = "doer.console")
 @Command(name = "proto", description = "Protocol buffers decoder/encoder.")
 public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
 
@@ -87,13 +88,19 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
     @Option(names = {"--base64"}, description = "Base64 input.")
     private String base64;
 
+    @Option(names = {"-u","--unknownFieldSet"}, description = "Decode as Unknown Field Set.")
+    private boolean unknownFieldSet;
+
     @Override
     public Integer call() {
         try {
             if (interactive) {
                 processInteractive();
             } else {
-                if (isNull(messageName) || isNull(desc) || desc.length == 0) {
+                if (unknownFieldSet) {
+                    decodeUnknownFieldSet();
+                    return 0;
+                } else if (isNull(messageName) || isNull(desc) || desc.length == 0) {
                     new CommandLine(ProtoProcessor.class).usage(System.out);
                     return Doer.EC_INVALID_USAGE;
                 }
@@ -118,6 +125,12 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
             log.error("running command error", e);
             return Doer.EC_ERROR;
         }
+    }
+
+    @SneakyThrows
+    private void decodeUnknownFieldSet() {
+        var ufs = UnknownFieldSet.parseFrom(getData());
+        log.info("Unknown Field Set:\n{}", ufs);
     }
 
     private void exportBinary() throws IOException {
@@ -159,9 +172,7 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
         try {
             final var decoder = new Decoder().loadDescriptors(getPaths());
 
-            final var data = isNull(base64) || isBlank(base64)
-                    ? readProtoInput()
-                    : Base64.getDecoder().decode(base64);
+            final byte[] data = getData();
 
             Message decoded;
 
@@ -178,6 +189,12 @@ public class ProtoProcessor implements Callable<Integer>, ConsoleLog {
         } catch (HandledRuntimeException he) {
             info("oops: {}", he.getMessage());
         }
+    }
+
+    private byte[] getData() {
+        return isNull(base64) || isBlank(base64)
+                ? readProtoInput()
+                : Base64.getDecoder().decode(base64);
     }
 
     private byte[] encodeProto() {

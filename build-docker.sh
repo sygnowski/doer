@@ -2,10 +2,10 @@
 
 TAG=s7i/doer
 VERSION=0.1.1
-VCS_REF=$(git rev-parse HEAD)
+VCS_REF=$(git describe --tags --always --dirty)
 
 main() {
-    info
+    info Docker build helper script
 
     case $1 in
         slim)
@@ -28,7 +28,7 @@ versionTag() {
   local branch=$(git rev-parse --abbrev-ref HEAD)
 
   if [[ ! " ${mains[*]} " =~ " ${branch} " ]]; then
-    echo "$VERSION-$branch"
+    echo "$VERSION-${branch//\//\_}"
   else
     echo $VERSION
   fi
@@ -39,10 +39,16 @@ with_builder () {
 }
 
 slim_build () {
-    if [[ ! -e "./build/libs/doer-all.jar" ]]; then
-        ./gradlew build --console=plain
+    ./gradlew test distTar --console=plain
+
+    if [[ ! -e "./build/distributions/doer.tar" ]]; then
+      echo "missing doer.tar"
+      exit -1
     fi
+
+    cp ./build/distributions/doer.tar ./doer.tar
     runBuild "Dockerfile-slim"
+    rm ./doer.tar
 }
 
 runBuild () {
@@ -57,7 +63,7 @@ runBuild () {
     local tag=$TAG:$(versionTag)
     echo "Docker Tag: $tag"
 
-    docker build -t $tag --build-arg VERSION=$VERSION --build-arg VCS_REF=$VCS_REF $dockerFile .
+    docker build --progress=plain -t $tag --build-arg VERSION=$VERSION --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" --build-arg VCS_REF=$VCS_REF $dockerFile .
 }
 
 # call the main function
