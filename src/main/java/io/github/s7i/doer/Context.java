@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.github.s7i.doer.domain.output.*;
 import io.github.s7i.doer.util.ParamFlagExtractor;
+import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.QuitWatcher;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -65,5 +66,9 @@ public interface Context extends ParamFlagExtractor {
 
     default Map<String, String> getParams() {
         return Globals.INSTANCE.getScope().getParams().get();
+    }
+
+    default PropertyResolver getPropertyResolver() {
+        return new PropertyResolver(getParams());
     }
 }
