@@ -1,8 +1,7 @@
 package io.github.s7i.doer.domain.helix;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import io.github.s7i.doer.ConsoleLog;
+import io.github.s7i.doer.util.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.HelixManager;
@@ -16,28 +15,31 @@ import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
-@Slf4j
-public abstract class HelixMember implements ConsoleLog {
+@Slf4j(topic = "doer.console")
+public abstract class HelixMember {
 
     protected final String instanceName;
     protected final String clusterName;
     protected final String server;
 
-    protected ObjectMapper objectMapper = new ObjectMapper()
-          .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-          .configure(SerializationFeature.INDENT_OUTPUT, true);
+    protected HelixManager helixManager;
 
+    {
+        Runtime.getRuntime().addShutdownHook( new Thread(this::cleanup, "helix-shutdown"));
+    }
+
+    protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
 
     protected HelixManager connect(InstanceType instanceType) throws Exception {
-        var helix = HelixManagerFactory.getZKHelixManager(
+        helixManager = HelixManagerFactory.getZKHelixManager(
               clusterName,
               instanceName,
               instanceType,
               server);
-        onBefore(helix);
-        helix.connect();
-        onAfter(helix);
-        return helix;
+        onBefore(helixManager);
+        helixManager.connect();
+        onAfter(helixManager);
+        return helixManager;
     }
 
     protected void onBefore(HelixManager manager) {
@@ -57,7 +59,7 @@ public abstract class HelixMember implements ConsoleLog {
                   "changeType", changeType.name(),
                   "externalViewList", externalViewList
             );
-            info("onExternalViewChange: \n{}", objectMapper.writeValueAsString(event));
+            log.info("onExternalViewChange: \n{}", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("oops", e);
         }
@@ -72,10 +74,17 @@ public abstract class HelixMember implements ConsoleLog {
                   "changeType", changeType.name(),
                   "idealStateList", idealState
             );
-            info("onIdealStateChange: \n{}", objectMapper.writeValueAsString(event));
+            log.info("onIdealStateChange: \n{}", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("oops", e);
         }
+    }
+
+    public void cleanup() {
+        if (helixManager != null && helixManager.isConnected()) {
+            helixManager.disconnect();
+        }
+        log.info("cleanup...");
     }
 
 }
