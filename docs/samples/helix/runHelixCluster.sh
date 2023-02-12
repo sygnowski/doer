@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xe
+set -e
 
 args=("$@")
 
@@ -27,13 +27,13 @@ main() {
 
   echo "env: $( env | grep -e DOER )"
 
-  helix -t create -c ${CLUSTER_NAME} -r ${RESOURCE}
+  helix -t create -c ${CLUSTER_NAME} -r ${RESOURCE} --replicas 3
 
-  #helix -t controller -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-ctl&
+  helix -t controller -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-ctl&
 
   helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-1&
-  #helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-2&
-  #helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-3&
+  helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-2&
+  helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-3&
 
   TOKILL=$(pgrep -P $$ | tr "\n" " ")
 
