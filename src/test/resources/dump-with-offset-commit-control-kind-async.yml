@@ -5,6 +5,7 @@ kafka:
   max.poll.records: 150
 params:
   doer.max.pool.size: 10
+  doer.commit.kind: async
 dump:
   pool_timeout_sec: 10
   topics:

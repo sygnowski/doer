@@ -18,6 +18,9 @@ import java.time.ZoneOffset
 
 class KafkaDumpTest extends Specification {
 
+    def cleanup() {
+        Globals.INSTANCE.kafka = null
+    }
     def "Dump Test"() {
         given:
         def recordList = []
@@ -53,7 +56,6 @@ class KafkaDumpTest extends Specification {
         expect:
         dump.onExecuteCommand()
     }
-
 
     def "Dump Kafka to Kafka"() {
         setup:
@@ -92,7 +94,6 @@ class KafkaDumpTest extends Specification {
         expect:
         dump.onExecuteCommand()
     }
-
 
     def "Dump from time"() {
         setup:
@@ -134,7 +135,7 @@ class KafkaDumpTest extends Specification {
         dump.onExecuteCommand()
     }
 
-    def "Dump Commit Offset Control"() {
+    def "Dump Commit Offset Control / commit kind : sync (default)"() {
         setup:
         def committedOffsets = []
         def kafkaConfig = null
@@ -197,5 +198,121 @@ class KafkaDumpTest extends Specification {
                 .map {(it[tp] as OffsetAndMetadata).offset()}
                 .mapToLong {it}
                 .collect() == [9, 19, 29, 39, 49]
+    }
+
+    def "Dump Commit Offset Control / commit kind : ASYNC"() {
+        setup:
+        def committedOffsets = []
+        def kafkaConfig = null
+        def tp = new TopicPartition("simple-one", 0)
+        def callNo = 0;
+
+        def recordList = []
+
+        50.times {
+            def cr = new ConsumerRecord<>("simple-one", 0, it, "key$it".toString(), "value$it".getBytes())
+            recordList << cr
+        }
+
+        def consumer = Mock(Consumer) {
+            1 * committed(_) >> [:]
+            1 * subscribe(["simple-one"], _) >> { args ->
+                (args[1] as ConsumerRebalanceListener).onPartitionsAssigned([tp])
+            }
+            5 * poll(_) >> { aPool ->
+                //println("calling pool no#" + callNo)
+
+                Mock(ConsumerRecords) {
+                    def f = callNo++ * 10
+                    def t = f + 10 -1
+                    def recs = recordList[f..t]
+
+                    count() >> recs.size()
+                    forEach(_) >> { args ->
+                        recs.forEach(args[0])
+                    }
+                }
+            }
+
+            0 * commitSync(_, _)
+
+            5 * commitAsync(_, _) >> { args ->
+                committedOffsets << args[0]
+            }
+        }
+
+        def consumerFactory = Mock(KafkaConsumerFactory) {
+            1 * createConsumer(_, _) >> { args ->
+                kafkaConfig = args[0]
+
+                consumer
+            }
+        }
+
+        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+
+        def dump = new KafkaDump()
+        dump.yaml = new File("src/test/resources/dump-with-offset-commit-control-kind-async.yml")
+
+        expect:
+        dump.onExecuteCommand()
+
+        def kafka = (kafkaConfig as KafkaConfig).getKafka()
+
+        kafka.get(ConsumerConfig.MAX_POLL_RECORDS_CONFIG) == "10"
+        kafka.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG) == "false"
+        committedOffsets.stream()
+                .map {(it[tp] as OffsetAndMetadata).offset()}
+                .mapToLong {it}
+                .collect() == [9, 19, 29, 39, 49]
+    }
+
+    def "Dump Commit Offset Control / disable commits (doer.commit.kind=OFF)"() {
+        setup:
+        def kafkaConfig = null
+        def tp = new TopicPartition("simple-one", 0)
+
+        def recordList = []
+
+        13.times {
+            def cr = new ConsumerRecord<>("simple-one", 0, it, "key$it".toString(), "value$it".getBytes())
+            recordList << cr
+        }
+
+        def consumer = Mock(Consumer) {
+            1 * committed(_) >> [:]
+            1 * subscribe(["simple-one"], _) >> { args ->
+                (args[1] as ConsumerRebalanceListener).onPartitionsAssigned([tp])
+            }
+            1 * poll(_) >> Mock(ConsumerRecords) {
+                count() >> recordList.size()
+                forEach(_) >> { args ->
+                    recordList.forEach(args[0])
+                }
+            }
+
+            0 * commitSync(_, _)
+        }
+
+        def consumerFactory = Mock(KafkaConsumerFactory) {
+            1 * createConsumer(_, _) >> { args ->
+                kafkaConfig = args[0]
+
+                consumer
+            }
+        }
+
+        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+
+        def dump = new KafkaDump()
+        dump.yaml = new File("src/test/resources/dump-with-offset-commit-control-kind-off.yml")
+
+        expect:
+        dump.onExecuteCommand()
+
+        def kafka = (kafkaConfig as KafkaConfig).getKafka()
+
+        kafka.get(ConsumerConfig.MAX_POLL_RECORDS_CONFIG) == "150"
+        kafka.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG) == "false"
     }
 }

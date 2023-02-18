@@ -161,16 +161,26 @@ class KafkaWorker implements Context {
             context.setDescriptor(proto.get(name));
         }
 
-        if (!ranges.isEmpty()) {
-            var settings = OffsetCommitSettings.from(getParams());
+        initOffsetControl(ranges);
+    }
 
-            console().info("Offset commit control enabled.");
+    private void initOffsetControl(Map<String, Range> ranges) {
+        if (OffsetCommitSettings.isEnabled(getParams(), ranges.values())) {
+            var settings = OffsetCommitSettings.from(getParams());
 
             ConsumerConfigSetup ccs = kafkaConfig::getKafka;
             ccs.disableAutoCommit();
-            ccs.configureMaxPool(settings.getMaxPollSize());
 
-            committer = new OffsetCommitter(settings);
+            if (settings.canMakeCommits()) {
+                console().info("Offset commit control enabled.\n" +
+                        "Settings: {}", settings);
+
+                ccs.configureMaxPool(settings.getMaxPollSize());
+
+                committer = new OffsetCommitter(settings);
+            } else {
+                console().info("Offset commit disabled.");
+            }
         }
     }
 

@@ -5,8 +5,9 @@ kafka:
   max.poll.records: 150
 params:
   doer.max.pool.size: 10
+  doer.commit.kind: off
 dump:
   pool_timeout_sec: 10
   topics:
     - name: simple-one
-      range: ..49
+      range: ..12
