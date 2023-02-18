@@ -1,0 +1,12 @@
+version: "1.0"
+type: kafka-dump
+kafka:
+  enable.auto.commit: true
+  max.pool.size: 150
+params:
+  doer.max.pool.size: 10
+dump:
+  pool_timeout_sec: 10
+  topics:
+    - name: simple-one
+      range: ..49

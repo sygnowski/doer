@@ -29,6 +29,7 @@ public class OffsetCommitter implements ConsoleLog {
         if (commitMap.isEmpty()) {
             return true;
         }
+        var toCommit = new HashMap<>(commitMap);
         switch (settings.getType()) {
             case ASYNC:
                 log.debug("async commit of {}", commitMap);
@@ -38,7 +39,8 @@ public class OffsetCommitter implements ConsoleLog {
                 var duration = settings.getSyncCommitDeadline();
                 log.debug("sync commit of {} with timeout: {}", commitMap, duration);
                 try {
-                    consumer.commitSync(commitMap, duration);
+                    consumer.commitSync(toCommit, duration);
+                    commitMap.clear();
                 } catch (KafkaException k) {
                     log.warn("Kafka : cannot commit", k);
                     return false;

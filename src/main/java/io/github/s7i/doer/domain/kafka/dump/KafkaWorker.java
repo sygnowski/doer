@@ -162,7 +162,7 @@ class KafkaWorker implements Context {
         }
 
         if (!ranges.isEmpty()) {
-            var settings = OffsetCommitSettings.DEFAULT;
+            var settings = OffsetCommitSettings.from(getParams());
 
             console().info("Offset commit control enabled.");
 
@@ -230,6 +230,7 @@ class KafkaWorker implements Context {
         var ctx = contexts.get(record.topic());
         if (isNull(ctx)) {
             log.error("missing context for topic {}, contexts {}", record.topic(), contexts);
+            return;
         }
         var lastOffset = record.offset();
         ctx.setLastOffset(lastOffset);
