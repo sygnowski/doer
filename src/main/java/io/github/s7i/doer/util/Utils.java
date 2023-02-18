@@ -1,13 +1,16 @@
 package io.github.s7i.doer.util;
 
-import static java.util.Objects.nonNull;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Objects;
 import java.util.function.Consumer;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+
+import static java.util.Objects.nonNull;
 
 @UtilityClass
 @Slf4j
@@ -34,5 +37,11 @@ public class Utils {
             return false;
         }
         return true;
+    }
+
+    public static ObjectMapper preetyObjectMapper() {
+        return new ObjectMapper()
+                .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+                .configure(SerializationFeature.INDENT_OUTPUT, true);
     }
 }

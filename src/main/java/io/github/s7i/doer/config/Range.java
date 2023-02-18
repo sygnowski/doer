@@ -1,10 +1,10 @@
 package io.github.s7i.doer.config;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-
 import lombok.Getter;
 import lombok.ToString;
+
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 @Getter
 @ToString
@@ -53,6 +53,6 @@ public class Range {
     }
 
     public boolean reachEnd(long pos) {
-        return isNull(to) ? false : pos >= to;
+        return !isNull(to) && pos >= to;
     }
 }

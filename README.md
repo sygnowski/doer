@@ -71,7 +71,7 @@ List of available commands:
 
 - `helix`
 
-  Helix spectator.
+  Helix Toolkit.
 
 
 ## Usage
