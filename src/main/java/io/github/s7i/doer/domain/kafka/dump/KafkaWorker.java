@@ -11,6 +11,7 @@ import io.github.s7i.doer.domain.kafka.Context;
 import io.github.s7i.doer.domain.output.ConsoleOutput;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.rule.Rule;
+import io.github.s7i.doer.domain.rule.RuleContextDataAdapter;
 import io.github.s7i.doer.manifest.dump.DumpManifest;
 import io.github.s7i.doer.manifest.dump.Topic;
 import io.github.s7i.doer.proto.Decoder;
@@ -250,7 +251,8 @@ class KafkaWorker implements Context {
             return;
         }
         if (ctx.hasRule()) {
-            var pass = ctx.getRule().testRule(jsonWriter.toJson(record.topic(), record.value()));
+            RuleContextDataAdapter rcda = () -> ctx;
+            var pass = rcda.testRule(record);
             if (!pass) {
                 return;
             }
