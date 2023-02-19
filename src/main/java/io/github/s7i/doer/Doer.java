@@ -23,6 +23,7 @@ import java.util.Arrays;
       Helix.class,
       Rocks.class,
       GrpcHealth.class,
+      ZooSrv.class,
       Misc.class})
 public class Doer implements Runnable, Banner {
 
