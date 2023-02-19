@@ -9,15 +9,21 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class BlockingPipePusher implements PipePusher {
 
+    public static final int SLEEP_FOR_CHANGE = 10;
     private final ArrayBlockingQueue<Output.Load> queue = new ArrayBlockingQueue<>(1);
 
+    /**
+     * Blocking call.
+     *
+     * @return
+     */
     @Override
     public Output.Load onNextLoad() {
 
         Output.Load load;
         while ((load = queue.peek()) == null) {
             try {
-                TimeUnit.MILLISECONDS.sleep(10);
+                TimeUnit.MILLISECONDS.sleep(SLEEP_FOR_CHANGE);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -30,11 +36,27 @@ public class BlockingPipePusher implements PipePusher {
     @Override
     public void onAccept() {
         queue.poll();
-
     }
 
 
+    /**
+     * Blocking call.
+     *
+     * @param load
+     */
     public void offer(Output.Load load) {
-        queue.offer(load);
+        boolean accepted;
+        do {
+            accepted = queue.offer(load);
+            if (!accepted) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(SLEEP_FOR_CHANGE);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        while (!accepted);
     }
 }
