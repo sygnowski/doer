@@ -1,6 +1,6 @@
 package io.github.s7i.doer.domain.output
 
-import io.github.s7i.doer.pipeline.BlockingPipePusher
+import io.github.s7i.doer.pipeline.BlockingPipePuller
 import io.github.s7i.doer.pipeline.PipeConnection
 import spock.lang.Specification
 
@@ -17,10 +17,10 @@ class PipelineOutputTest extends Specification {
         def load = Output.Load.builder()
                 .data("test".getBytes())
                 .build()
-        BlockingPipePusher pusher
+        BlockingPipePuller puller
         def pipeConnection = Mock(PipeConnection) {
-            registerPusher(_) >> { args ->
-                pusher = args[0]
+            registerPuller(_) >> { args ->
+                puller = args[0]
             }
         }
         def out = new PipelineOutput(pipeConnection)
@@ -28,8 +28,8 @@ class PipelineOutputTest extends Specification {
         when:
         out.open()
         thrSrv.submit({ out.emit(load) })
-        def nextLoad = pusher.onNextLoad()
-        pusher.onAccept()
+        def nextLoad = puller.onNextLoad()
+        puller.onAccept()
 
         then:
         thrSrv.shutdown()
@@ -47,10 +47,10 @@ class PipelineOutputTest extends Specification {
             t.setDaemon(true)
             return t
         })
-        BlockingPipePusher pusher
+        BlockingPipePuller puller
         def pipeConnection = Mock(PipeConnection) {
-            registerPusher(_) >> { args ->
-                pusher = args[0]
+            registerPuller(_) >> { args ->
+                puller = args[0]
             }
         }
         def out = new PipelineOutput(pipeConnection)
@@ -79,8 +79,8 @@ class PipelineOutputTest extends Specification {
         new Thread({
 
             10.times {
-                def nextLoad = pusher.onNextLoad()
-                pusher.onAccept()
+                def nextLoad = puller.onNextLoad()
+                puller.onAccept()
 
                 loadTransfer << nextLoad
                 cdlWorkDone.countDown()

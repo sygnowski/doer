@@ -1,6 +1,6 @@
 package io.github.s7i.doer.domain.output;
 
-import io.github.s7i.doer.pipeline.BlockingPipePusher;
+import io.github.s7i.doer.pipeline.BlockingPipePuller;
 import io.github.s7i.doer.pipeline.PipeConnection;
 import lombok.RequiredArgsConstructor;
 
@@ -12,12 +12,12 @@ public class PipelineOutput implements Output {
 
 
     private final PipeConnection pipeConnection;
-    private BlockingPipePusher pusher;
+    private BlockingPipePuller pusher;
 
     @Override
     public void open() {
-        pusher = new BlockingPipePusher();
-        pipeConnection.registerPusher(pusher);
+        pusher = new BlockingPipePuller();
+        pipeConnection.registerPuller(pusher);
     }
 
     @Override
