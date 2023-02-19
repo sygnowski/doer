@@ -11,6 +11,7 @@ import io.github.s7i.doer.domain.kafka.Context;
 import io.github.s7i.doer.domain.output.ConsoleOutput;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.rule.Rule;
+import io.github.s7i.doer.domain.rule.RuleContextDataAdapter;
 import io.github.s7i.doer.manifest.dump.DumpManifest;
 import io.github.s7i.doer.manifest.dump.Topic;
 import io.github.s7i.doer.proto.Decoder;
@@ -161,16 +162,26 @@ class KafkaWorker implements Context {
             context.setDescriptor(proto.get(name));
         }
 
-        if (!ranges.isEmpty()) {
-            var settings = OffsetCommitSettings.from(getParams());
+        initOffsetControl(ranges);
+    }
 
-            console().info("Offset commit control enabled.");
+    private void initOffsetControl(Map<String, Range> ranges) {
+        if (OffsetCommitSettings.isEnabled(getParams(), ranges.values())) {
+            var settings = OffsetCommitSettings.from(getParams());
 
             ConsumerConfigSetup ccs = kafkaConfig::getKafka;
             ccs.disableAutoCommit();
-            ccs.configureMaxPool(settings.getMaxPollSize());
 
-            committer = new OffsetCommitter(settings);
+            if (settings.canMakeCommits()) {
+                console().info("Offset commit control enabled.\n" +
+                        "Settings: {}", settings);
+
+                ccs.configureMaxPool(settings.getMaxPollSize());
+
+                committer = new OffsetCommitter(settings);
+            } else {
+                console().info("Offset commit disabled.");
+            }
         }
     }
 
@@ -240,7 +251,8 @@ class KafkaWorker implements Context {
             return;
         }
         if (ctx.hasRule()) {
-            var pass = ctx.getRule().testRule(jsonWriter.toJson(record.topic(), record.value()));
+            RuleContextDataAdapter rcda = () -> ctx;
+            var pass = rcda.testRule(record);
             if (!pass) {
                 return;
             }

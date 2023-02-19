@@ -1,6 +1,7 @@
 package io.github.s7i.doer.domain.kafka.dump;
 
 import io.github.s7i.doer.ConsoleLog;
+import io.github.s7i.doer.DoerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -30,22 +31,25 @@ public class OffsetCommitter implements ConsoleLog {
             return true;
         }
         var toCommit = new HashMap<>(commitMap);
-        switch (settings.getType()) {
+        commitMap.clear();
+
+        switch (settings.getKind()) {
             case ASYNC:
                 log.debug("async commit of {}", commitMap);
-                consumer.commitAsync(commitMap, this::offsetCommitCallback);
+                consumer.commitAsync(toCommit, this::offsetCommitCallback);
                 break;
             case SYNC:
                 var duration = settings.getSyncCommitDeadline();
                 log.debug("sync commit of {} with timeout: {}", commitMap, duration);
                 try {
                     consumer.commitSync(toCommit, duration);
-                    commitMap.clear();
                 } catch (KafkaException k) {
                     log.warn("Kafka : cannot commit", k);
                     return false;
                 }
                 break;
+            default:
+                throw new DoerException(new IllegalStateException("illegal state"));
         }
         return true;
     }
