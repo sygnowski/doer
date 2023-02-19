@@ -4,22 +4,25 @@ import io.github.s7i.doer.command.Command;
 import io.github.s7i.doer.command.Ingest;
 import io.github.s7i.doer.command.KafkaFeeder;
 import io.github.s7i.doer.command.dump.KafkaDump;
+import io.github.s7i.doer.domain.ConfigProcessor;
+import io.github.s7i.doer.util.Banner;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import io.github.s7i.doer.util.Banner;
-import io.github.s7i.doer.domain.ConfigProcessor;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import picocli.CommandLine;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.github.s7i.doer.command.ManifestFileCommand.Builder.fromManifestFile;
 import static java.util.Objects.requireNonNull;
@@ -68,41 +71,45 @@ public class CommandManifest implements Runnable, Banner {
         }
     }
 
+    private Optional<Runnable> mapToTask(File yaml) {
+        try (var br = Files.newBufferedReader(yaml.toPath())) {
+            String version = br.readLine();
+            String kind = br.readLine();
+            kind = kind.substring(kind.lastIndexOf(':') + 1).trim();
+
+            switch (kind) {
+                case "kafka-ingest":
+                    return Optional.of(new TaskWrapper(kind, fromManifestFile(KafkaFeeder.class, yaml)));
+                case "kafka-dump":
+                    return Optional.of(new TaskWrapper(kind, fromManifestFile(KafkaDump.class, yaml)));
+                case "ingest":
+                    return Optional.of(new TaskWrapper(kind, fromManifestFile(Ingest.class, yaml)));
+                case "config":
+                    return Optional.of(() -> new ConfigProcessor(yaml).processConfig());
+                default:
+                    log.warn("unsupported kind/type of file: {}", kind);
+                    break;
+            }
+
+        } catch (IOException e) {
+            log.error("reading yaml file", e);
+        }
+        return Optional.empty();
+    }
+
     @Override
     public void run() {
         printBanner();
         requireNonNull(yamls, "manifest file set...");
 
-        var pool = Executors.newFixedThreadPool(Math.min(yamls.length, MAX_THR_COUNT), this::spawnNewThread);
-        for (var yaml : yamls) {
-            try (var br = Files.newBufferedReader(yaml.toPath())) {
-                String version = br.readLine();
-                String kind = br.readLine();
-                kind = kind.substring(kind.lastIndexOf(':') + 1).trim();
+        var tasks = Stream.of(yamls)
+                .map(this::mapToTask)
+                .flatMap(Optional::stream)
+                .collect(Collectors.toList());
 
-                switch (kind) {
-                    case "kafka-ingest":
-                        pool.execute(new TaskWrapper(kind, fromManifestFile(KafkaFeeder.class, yaml)));
-                        break;
-                    case "kafka-dump":
-                        pool.execute(new TaskWrapper(kind, fromManifestFile(KafkaDump.class, yaml)));
-                        break;
-                    case "ingest":
-                        pool.execute(new TaskWrapper(kind, fromManifestFile(Ingest.class, yaml)));
-                        break;
-                    case "config":
-                        pool.execute(() -> new ConfigProcessor(yaml).processConfig());
-                        break;
-                    default:
-                        log.warn("unsupported kind/type of file: {}", kind);
-                        break;
+        var pool = Executors.newFixedThreadPool(Math.min(tasks.size(), MAX_THR_COUNT), this::spawnNewThread);
+        tasks.forEach(pool::execute);
 
-                }
-
-            } catch (IOException e) {
-                log.error("reading yaml file", e);
-            }
-        }
         try {
             pool.shutdown();
             pool.awaitTermination(24, TimeUnit.HOURS);

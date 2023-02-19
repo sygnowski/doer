@@ -4,6 +4,7 @@ import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.util.Mark;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -22,13 +23,23 @@ public class Pipeline {
         Globals.INSTANCE.getPipeline().init(p);
     }
 
+    enum PipelineKind {
+        GRPC
+    }
+
+    private Map<PipelineKind, Supplier<PipeConnection>> factory = new EnumMap<>(PipelineKind.class);
 
     void init(Map<String, String> params) {
-
+        var kind = PipelineKind.valueOf(params.get(DOER_PIPELINE).toUpperCase());
+        switch (kind) {
+            case GRPC:
+                factory.put(kind, () -> new GrpcConnection(params.get(DOER_PIPELINE +".target")) );
+                break;
+        }
     }
 
     public PipeConnection connect(String name) {
-        return null;
+        return factory.get(PipelineKind.GRPC).get();
     }
 
 }

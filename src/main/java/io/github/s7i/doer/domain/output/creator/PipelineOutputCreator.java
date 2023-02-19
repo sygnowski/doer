@@ -11,6 +11,8 @@ public interface PipelineOutputCreator extends OutputCreator {
 
     @Override
     default Output create() {
-        return new PipelineOutput(getLoadPipe());
+        var pipelineOutput = new PipelineOutput(getLoadPipe());
+        pipelineOutput.open();
+        return pipelineOutput;
     }
 }

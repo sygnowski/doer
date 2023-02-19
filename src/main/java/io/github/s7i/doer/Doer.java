@@ -6,6 +6,7 @@ import io.github.s7i.doer.command.util.CommandManifest;
 import io.github.s7i.doer.command.util.Misc;
 import io.github.s7i.doer.domain.ServiceEntrypoint;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
+import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import java.util.Arrays;
       Rocks.class,
       GrpcHealth.class,
       ZooSrv.class,
+      PipelineService.class,
       Misc.class})
 public class Doer implements Runnable, Banner {
 

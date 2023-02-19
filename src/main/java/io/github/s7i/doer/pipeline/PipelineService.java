@@ -5,10 +5,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
-import io.github.s7i.doer.pipeline.proto.PipelineLoad;
-import io.github.s7i.doer.pipeline.proto.PipelinePublishRequest;
-import io.github.s7i.doer.pipeline.proto.PipelinePublishResponse;
-import io.github.s7i.doer.pipeline.proto.PipelineServiceGrpc;
+import io.github.s7i.doer.pipeline.proto.*;
 import io.github.s7i.doer.proto.Record;
 import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
@@ -19,6 +16,7 @@ import picocli.CommandLine.Option;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
 import static java.util.Objects.nonNull;
 
@@ -44,6 +42,20 @@ public class PipelineService implements Runnable {
             responseObserver.onNext(PipelinePublishResponse.newBuilder()
                     .setStatus("ok")
                     .build());
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void exchangeMeta(MetaOp request, StreamObserver<MetaOp> responseObserver) {
+
+            var response = MetaOp.newBuilder();
+
+            if (request.getRequest().getName().equals("add-new-pipeline-client")) {
+                log.info("new client");
+                response.setResponse(MetaOp.Response.newBuilder().setStatus(UUID.randomUUID().toString()));
+            }
+
+            responseObserver.onNext(response.build());
             responseObserver.onCompleted();
         }
     }

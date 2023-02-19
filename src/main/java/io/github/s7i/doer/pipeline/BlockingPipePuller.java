@@ -21,7 +21,7 @@ public class BlockingPipePuller implements PipePuller {
     public Output.Load onNextLoad() {
 
         Output.Load load;
-        while ((load = queue.peek()) == null) {
+        while ((load = queue.peek()) == null && !Thread.currentThread().isInterrupted()) {
             try {
                 TimeUnit.MILLISECONDS.sleep(SLEEP_FOR_CHANGE);
             } catch (InterruptedException e) {
