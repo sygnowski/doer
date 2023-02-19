@@ -20,7 +20,7 @@ import java.util.UUID;
 
 import static java.util.Objects.nonNull;
 
-@Command(name = "pipeline")
+@Command(name = "pipeline", description = "Pipeline Backend Service.")
 @Slf4j(topic = "doer.console")
 public class PipelineService implements Runnable {
 

@@ -1,5 +1,6 @@
 package io.github.s7i.doer.command.util;
 
+import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.command.Command;
 import io.github.s7i.doer.command.Ingest;
 import io.github.s7i.doer.command.KafkaFeeder;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.github.s7i.doer.Doer.DOER_CONSOLE;
 import static io.github.s7i.doer.command.ManifestFileCommand.Builder.fromManifestFile;
 import static java.util.Objects.requireNonNull;
 
@@ -32,7 +34,7 @@ import static java.util.Objects.requireNonNull;
         aliases = "cm",
         description = "Parsing command manifest yaml file."
 )
-@Slf4j
+@Slf4j(topic = DOER_CONSOLE)
 public class CommandManifest implements Runnable, Banner {
 
     public static final int MAX_THR_COUNT = 20;
@@ -53,6 +55,7 @@ public class CommandManifest implements Runnable, Banner {
 
         final String name;
         final Command coreTask;
+        Duration duration;
 
         @Override
         public void run() {
@@ -65,9 +68,11 @@ public class CommandManifest implements Runnable, Banner {
                     log.error("fatal error", e);
                 }
             } finally {
-                var duration = Duration.between(begin, Instant.now());
-                log.info("Task {} ends in {}", name, duration);
+                duration = Duration.between(begin, Instant.now());
             }
+        }
+        public String getSummary() {
+            return String.format("Task %s ends in %s", name, duration);
         }
     }
 
@@ -113,9 +118,25 @@ public class CommandManifest implements Runnable, Banner {
         try {
             pool.shutdown();
             pool.awaitTermination(24, TimeUnit.HOURS);
-            log.info("All task ended");
+
+            log.info("All task finished.");
+            log.info("Summary:");
+
+            var sum = tasks.stream()
+                    .filter(t -> t instanceof TaskWrapper)
+                    .mapToLong(t -> {
+                        var task = (TaskWrapper) t;
+                        log.info(task.getSummary());
+                        return task.duration.toNanos();
+                    })
+                    .sum();
+
+            log.info("Total time: {}.", Duration.ofNanos(sum));
+
+            Globals.INSTANCE.stopAllSilent();
+
         } catch (InterruptedException e) {
-            log.error("", e);
+            log.error("oops", e);
             Thread.currentThread().interrupt();
         }
     }

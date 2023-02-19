@@ -29,7 +29,8 @@ import java.util.Arrays;
       Misc.class})
 public class Doer implements Runnable, Banner {
 
-    static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
+    public static final String DOER_CONSOLE = "doer.console";
+    static final Logger CONSOLE = LoggerFactory.getLogger(DOER_CONSOLE);
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
     public static final String FLAG_SEND_AND_FORGET = "send-and-forget";

@@ -1,19 +1,23 @@
 package io.github.s7i.doer;
 
-import static io.github.s7i.doer.Doer.console;
-import static java.util.Objects.requireNonNull;
-
-import io.github.s7i.doer.domain.output.*;
+import io.github.s7i.doer.domain.output.Output;
+import io.github.s7i.doer.domain.output.OutputBuilder;
+import io.github.s7i.doer.domain.output.OutputFactory;
+import io.github.s7i.doer.domain.output.OutputProvider;
 import io.github.s7i.doer.pipeline.Pipeline;
 import io.github.s7i.doer.util.ParamFlagExtractor;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.QuitWatcher;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Map;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
+
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
+
+import static io.github.s7i.doer.Doer.console;
+import static java.util.Objects.requireNonNull;
 
 public interface Context extends ParamFlagExtractor {
 
@@ -29,7 +33,7 @@ public interface Context extends ParamFlagExtractor {
     class Initializer {
 
         static {
-            Runtime.getRuntime().addShutdownHook(new Thread(Initializer::shutdown, "shutdown"));
+            Runtime.getRuntime().addShutdownHook(new Thread(Globals.INSTANCE::stopAll, "shutdown"));
         }
 
         public Initializer(InitialParameters parameters) {
@@ -44,16 +48,20 @@ public interface Context extends ParamFlagExtractor {
         public Context context() {
             return Globals.INSTANCE;
         }
-
-        private static void shutdown() {
-            console().info("Init shutdown procedure...");
-            Globals.INSTANCE.stopHooks.forEach(Runnable::run);
-            console().info("Shutdown completed.");
-        }
     }
 
     default void addStopHook(Runnable runnable) {
         Globals.INSTANCE.stopHooks.add(runnable);
+    }
+
+    default void stopAll() {
+        console().info("Init shutdown procedure...");
+        Globals.INSTANCE.stopHooks.forEach(Runnable::run);
+        console().info("Shutdown completed.");
+    }
+
+    default void stopAllSilent() {
+        Globals.INSTANCE.stopHooks.forEach(Runnable::run);
     }
 
     default OutputFactory getOutputFactory() {

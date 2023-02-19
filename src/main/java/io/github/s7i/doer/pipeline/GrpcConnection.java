@@ -1,14 +1,15 @@
 package io.github.s7i.doer.pipeline;
 
 import com.google.protobuf.Any;
+import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.pipeline.proto.*;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import io.grpc.ManagedChannel;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -28,6 +29,8 @@ public class GrpcConnection implements PipeConnection, AutoCloseable {
     private String uuid;
     private Thread thread;
 
+    private transient boolean isClosed;
+
     final String target;
     public void connect() {
         channel = Grpc.newChannelBuilder(
@@ -35,34 +38,64 @@ public class GrpcConnection implements PipeConnection, AutoCloseable {
                 InsecureChannelCredentials.create()
         ).build();
         service = PipelineServiceGrpc.newFutureStub(channel);
+
+        int retryNo=0;
+        final int ofRetries=10;
+
+        boolean success = false;
+        do {
+            try {
+                success = introduceNewConnection();
+
+            } catch (RuntimeException | TimeoutException | InterruptedException | ExecutionException e) {
+                log.warn("oops but still working... {}/{}", retryNo + 1, ofRetries, e);
+                try {
+                    int t = 1000 + (1000 * retryNo);
+                    TimeUnit.MILLISECONDS.sleep(t);
+                } catch (InterruptedException x) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        } while (!success && retryNo++ < ofRetries );
+
+        if (!success) {
+            throw new DoerException("[PIPELINE GRPC] FAILURE");
+        }
+    }
+
+    boolean introduceNewConnection() throws ExecutionException, InterruptedException, TimeoutException {
+        uuid = service.exchangeMeta(metaNewConnection())
+                .get(TIMEOUT, TimeUnit.SECONDS)
+                .getResponse()
+                .getStatus();
+        log.info("pipeline client id: {}", uuid);
+        return true;
     }
 
     @Override
     public void registerPuller(PipePuller puller) {
-        try {
-            connect();
-            var meta = meteNewClient();
-            uuid = service.exchangeMeta(meta).get(TIMEOUT, TimeUnit.SECONDS).getResponse().getStatus();
+        connect();
 
-            start(() -> {
-                try {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        var load = puller.onNextLoad();
-                        sendLoad(load).ifPresentOrElse(r -> puller.onAccept(), () -> log.error("!!! BUG !!! can't happened"));
+        start(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted() && !isClosed) {
+                    var load = puller.onNextLoad();
+                    if (nonNull(load)) {
+                        sendLoad(load).ifPresentOrElse(
+                                r -> puller.onAccept(),
+                                () -> log.error("!!! BUG !!! can't happened")
+                        );
                     }
-                } catch (Exception e) {
-                    log.error("oops", e);
                 }
-                log.debug("pipeline puller: end of work");
-            });
-
-        } catch (RuntimeException | TimeoutException | InterruptedException | ExecutionException e) {
-            log.error("oops", e);
-        }
+            } catch (Exception e) {
+                log.error("oops", e);
+            }
+            log.debug("[PIPELINE GRPC] : pipeline puller - end of work");
+        });
     }
 
-    @NotNull
-    private static MetaOp meteNewClient() {
+    private static MetaOp metaNewConnection() {
         return MetaOp.newBuilder()
                 .setRequest(MetaOp.Request.newBuilder().setName("add-new-pipeline-client"))
                 .build();
@@ -85,12 +118,24 @@ public class GrpcConnection implements PipeConnection, AutoCloseable {
 
     private void start(Runnable task) {
         thread = new Thread(task, "grpc-pipeline-puller");
-        thread.setDaemon(true);
+        //thread.setDaemon(true);
         thread.start();
+    }
+
+
+    @SneakyThrows
+    public void closeSafe() {
+        close();
     }
 
     @Override
     public void close() throws Exception {
+        log.debug("[PIPELINE GRPC] : closing");
+
+        TimeUnit.MILLISECONDS.sleep(1000);
+
+        isClosed = true;
+
         if (nonNull(thread)) {
             thread.interrupt();
         }

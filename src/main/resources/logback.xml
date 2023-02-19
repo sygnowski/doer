@@ -23,6 +23,7 @@
     </logger>
 
     <logger name="io.github.s7i.doer" level="DEBUG"/>
+    <logger name="io.grpc" level="INFO"/>
     <logger name="org.apache.helix" level="INFO"/>
     <logger name="org.apache.kafka" level="INFO"/>
     <logger name="org.apache.zookeeper" level="INFO"/>
