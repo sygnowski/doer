@@ -1,0 +1,13 @@
+version: "1.0"
+kind: kafka-ingest
+kafka:
+  bootstrap.servers: localhost:9092
+params:
+  doer.flags: dry-run
+ingest:
+  topics:
+    - name: topicName
+      entries:
+        - key: some-key-value
+          value: some-message-value
+        - value: no-key-value

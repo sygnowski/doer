@@ -1,0 +1,10 @@
+version: "1.0"
+type: kafka-dump
+dump:
+  pool_timeout_sec: 10
+  topics:
+    - name: my-topic
+      # mvel condition
+      rule: value.something.color == 'red'
+      range: ..11
+

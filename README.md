@@ -1,17 +1,80 @@
-![Gradle Build](https://github.com/sygnowski/doer/workflows/Gradle%20Build/badge.svg) [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/sygnowski/doer.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/sygnowski/doer/context:java)
+[![Gradle Build](https://github.com/sygnowski/doer/workflows/Gradle%20Build/badge.svg)](https://github.com/sygnowski/doer/actions/workflows/gradle.yml)
 
 # Doer
+```
+▓█████▄  ▒█████  ▓█████  ██▀███ 
+▒██▀ ██▌▒██▒  ██▒▓█   ▀ ▓██ ▒ ██▒ 
+░██   █▌▒██░  ██▒▒███   ▓██ ░▄█ ▒ 
+░▓█▄   ▌▒██   ██░▒▓█  ▄ ▒██▀▀█▄ 
+░▒████▓ ░ ████▓▒░░▒████▒░██▓ ▒██▒ 
+https://github.com/sygnowski/doer 
+ ▒▒▓  ▒ ░ ▒░▒░▒░ ░░ ▒░ ░░ ▒▓ ░▒▓░ 
+ ░ ▒  ▒   ░ ▒ ▒░  ░ ░  ░  ░▒ ░ ▒░ 
+ ░ ░  ░ ░ ░ ░ ▒     ░     ░░   ░ 
+   ░        ░ ░     ░  ░   ░ 
+ ░ 
+Usage: doer [-v] [COMMAND]
+let's do big things...
+  -v, --version
+Commands:
+  kfeed
+  kdump
+  proto        Protocol buffers decoder/encoder.
+  helix        Helix Toolkit.
+  rocks
+  grpc-health  gRPC Health (io.grpc.HealthGrpc)
+  zoosrv       Local Zookeeper Server
+  misc         Miscellaneous command set.
+ ```
 
 Small tool for doing big things.
 
-### Commands:
+## Commands:
 
 List of available commands:
 
-- kfeed - Kafka topics data populator
-- kdump - Kafka topic consumer with rich options
-- rocks - RocksDB support, [more info](docs/rocksdb.md)
+- `kfeed`
 
+  Kafka topics ingestion.
+  
+  Features:
+  - [x] yaml manifest configuration
+  - [x] proto processor
+  - [x] templates
+
+- `kdump`
+  
+  Kafka topic consumer with rich options.
+  
+  Features:
+  
+  - [x] yaml manifest configuration
+  - [x] proto processor
+  - [x] offset / timestamp navigation
+    - [x] from_time: `timestamp`
+    - [ ] to_time: `timestamp`
+    - [x] from offset: `range: 5..`
+    - [x] to offset: `range: ..5`
+    - [x] between: `renge: 5..30`
+  - [x] mvel rule support: `rule: mvel expression`
+
+- `rocks`
+
+  RocksDB support, [more info](docs/rocksdb.md)
+
+  Features:
+  - [x] list column families
+  - [x] get value of key
+  - [x] set value of key
+  - [x] create a new column family
+  - [x] list entries (key:value) of column family
+
+- `helix`
+
+  Helix Toolkit.
+
+
+## Usage
 ### Working with Kafka
 
 Samples of Doer - Kafka specific command usage
@@ -19,7 +82,7 @@ Samples of Doer - Kafka specific command usage
 Collecting data by using `kdump` command with proto message content. The dump file manifest: `dump.yml`:
 
 ```yaml
-# kafka-dump configuration file
+# kafka-dump manifest file
 version: "1.0"
 type: "kafka-dump"
 kafka-properties: kafka.properties
