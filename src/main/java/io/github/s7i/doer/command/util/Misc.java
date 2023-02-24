@@ -3,6 +3,7 @@ package io.github.s7i.doer.command.util;
 import com.google.gson.Gson;
 import com.google.protobuf.TextFormat;
 import io.github.s7i.doer.Doer;
+import io.github.s7i.doer.command.Bar;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.GitProps;
@@ -21,11 +22,13 @@ import org.jeasy.rules.support.reader.YamlRuleDefinitionReader;
 import org.mvel2.MVEL;
 import org.mvel2.compiler.CompiledExpression;
 import picocli.CommandLine;
-import picocli.CommandLine.Parameters;
-import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -43,7 +46,8 @@ import static java.util.Objects.nonNull;
         subcommands = {
                 ReplaceInFile.class,
                 CommandManifest.class,
-                PipelineService.class
+                PipelineService.class,
+                Bar.class
         }
 )
 @Slf4j(topic = "doer.console")
