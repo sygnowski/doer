@@ -54,15 +54,37 @@ public class PipelineService implements Runnable {
         @Override
         public void exchangeMeta(MetaOp request, StreamObserver<MetaOp> responseObserver) {
 
+            log.info("new connection {}", request);
+
             var response = MetaOp.newBuilder();
 
             if (request.getRequest().getName().equals("add-new-pipeline-client")) {
-                log.info("new client");
-                response.setResponse(MetaOp.Response.newBuilder().setStatus(UUID.randomUUID().toString()));
+
+                var resp = MetaOp.Response.newBuilder().setStatus(UUID.randomUUID().toString());
+
+
+                response.setResponse(resp);
+                log.info("response: {}" , resp);
             }
 
             responseObserver.onNext(response.build());
             responseObserver.onCompleted();
+        }
+
+        @Override
+        public void subscribe(MetaOp request, StreamObserver<PipelineLoad> responseObserver) {
+            log.info("new connection: {}", request);
+
+            var pipe = storage.getPipe("default").orElseThrow();
+
+            pipe.stream(PipelineStorage.Direction.FIFO)
+                    .map(PipelineStorage.Element::getPackage)
+                    .peek(p -> log.info("streaming {}", p))
+                    .forEach(responseObserver::onNext);
+
+            responseObserver.onCompleted();
+
+            log.info("stream done");
         }
     }
 

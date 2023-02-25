@@ -1,0 +1,10 @@
+version: v1
+kind: sink
+params:
+  doer.pipeline.backend: grpc
+  doer.pipeline.backend.target: localhost:6565
+  doer.pipeline.sink: true
+  doer.pipeline.bind: from-ingest-to-sink
+  doer.pipeline.id: id-sink1
+spec:
+  - output: doer://console

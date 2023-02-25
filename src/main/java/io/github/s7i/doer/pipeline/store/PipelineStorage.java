@@ -162,4 +162,8 @@ public class PipelineStorage<P> {
     public Pipe<P> addToPipe(String pipeName, P pack) {
         return addToPipe(pipeName, List.of(pack));
     }
+
+    public Optional<Pipe<P>> getPipe(String name) {
+        return Optional.ofNullable(store.get(name));
+    }
 }

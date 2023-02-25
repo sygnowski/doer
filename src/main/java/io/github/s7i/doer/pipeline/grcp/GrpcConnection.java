@@ -62,6 +62,7 @@ public abstract class GrpcConnection implements PipeConnection, AutoCloseable {
         if (!success) {
             throw new DoerException("[PIPELINE GRPC] FAILURE");
         }
+        onConnection();
     }
 
     protected void onConnection() {
