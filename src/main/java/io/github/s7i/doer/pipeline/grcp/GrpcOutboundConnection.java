@@ -56,7 +56,7 @@ public class GrpcOutboundConnection extends GrpcConnection {
                             .putHeaders("client.uuid", uuid)
                             .setLoad(Any.pack(load.toRecord())))
                     .build();
-            return Optional.ofNullable(service.publish(request).get(TIMEOUT, TimeUnit.SECONDS));
+            return Optional.ofNullable(serviceFuture.publish(request).get(TIMEOUT, TimeUnit.SECONDS));
         } catch (RuntimeException | TimeoutException | InterruptedException | ExecutionException e) {
             log.error("oops", e);
         }

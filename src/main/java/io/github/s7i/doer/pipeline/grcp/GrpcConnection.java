@@ -23,7 +23,8 @@ public abstract class GrpcConnection implements PipeConnection, AutoCloseable {
 
     public static final int TIMEOUT = 10;
     protected ManagedChannel channel;
-    protected PipelineServiceGrpc.PipelineServiceFutureStub service;
+    protected PipelineServiceGrpc.PipelineServiceFutureStub serviceFuture;
+    protected PipelineServiceGrpc.PipelineServiceStub serviceStub;
 
     protected String uuid;
 
@@ -34,7 +35,9 @@ public abstract class GrpcConnection implements PipeConnection, AutoCloseable {
                 requireNonNull(target, "target"),
                 InsecureChannelCredentials.create()
         ).build();
-        service = PipelineServiceGrpc.newFutureStub(channel);
+
+        serviceFuture = PipelineServiceGrpc.newFutureStub(channel);
+        serviceStub = PipelineServiceGrpc.newStub(channel);
 
         int retryNo=0;
         final int ofRetries=10;
@@ -61,8 +64,12 @@ public abstract class GrpcConnection implements PipeConnection, AutoCloseable {
         }
     }
 
+    protected void onConnection() {
+        log.info("[PIPELINE GRPC] connected");
+    }
+
     boolean introduceNewConnection() throws ExecutionException, InterruptedException, TimeoutException {
-        uuid = service.exchangeMeta(metaNewConnection())
+        uuid = serviceFuture.exchangeMeta(metaNewConnection())
                 .get(TIMEOUT, TimeUnit.SECONDS)
                 .getResponse()
                 .getStatus();

@@ -7,7 +7,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class BlockingPipePuller implements PipePuller, PipePusher {
+public class BlockingPipe implements PipePuller, PipePusher {
 
     public static final int SLEEP_FOR_CHANGE = 10;
     private final ArrayBlockingQueue<Output.Load> queue = new ArrayBlockingQueue<>(1);

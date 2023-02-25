@@ -51,6 +51,7 @@ public class Pipeline {
             case GRPC_INBOUND:
                 register.put(kind, ()-> {
                     var c = new GrpcInboundConnection(params.get(DOER_PIPELINE +".target"));
+                    c.connect();
                     Globals.INSTANCE.addStopHook(c::closeSafe);
                     return c;
                 });

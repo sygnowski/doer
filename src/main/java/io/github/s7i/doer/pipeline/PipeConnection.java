@@ -8,7 +8,7 @@ public interface PipeConnection {
         throw new DoerException("not implemented");
     }
 
-    default void registerPusher(PipePusher pusher) {
+    default PipePuller lookupPuller() {
         throw new DoerException("not implemented");
     }
 }
