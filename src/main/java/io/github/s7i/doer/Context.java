@@ -15,8 +15,10 @@ import lombok.Getter;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import static io.github.s7i.doer.Doer.console;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 public interface Context extends ParamFlagExtractor {
@@ -84,5 +86,13 @@ public interface Context extends ParamFlagExtractor {
 
     default PropertyResolver getPropertyResolver() {
         return new PropertyResolver(getParams());
+    }
+
+    default Optional<Pipeline> lookupPipeline() {
+        var pipeline = Globals.INSTANCE.pipeline;
+        if (nonNull(pipeline) && pipeline.isEnabled()) {
+            return Optional.of(pipeline);
+        }
+        return Optional.empty();
     }
 }

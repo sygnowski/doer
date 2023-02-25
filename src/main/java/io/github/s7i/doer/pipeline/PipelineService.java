@@ -6,6 +6,7 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
 import io.github.s7i.doer.pipeline.proto.*;
+import io.github.s7i.doer.pipeline.store.PipelineStorage;
 import io.github.s7i.doer.proto.Record;
 import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
@@ -33,10 +34,15 @@ public class PipelineService implements Runnable {
 
 
     static class Handler extends PipelineServiceGrpc.PipelineServiceImplBase {
+
+        PipelineStorage<PipelineLoad> storage = new PipelineStorage<>();
+
         @Override
         public void publish(PipelinePublishRequest request, StreamObserver<PipelinePublishResponse> responseObserver) {
             var pipelineLoad = request.getPipelineLoad();
             log.info("getting load: {}", pipelineLoad);
+
+            storage.addToPipe("default", pipelineLoad);
 
 
             responseObserver.onNext(PipelinePublishResponse.newBuilder()
