@@ -1,6 +1,8 @@
 package io.github.s7i.doer.pipeline;
 
 import io.github.s7i.doer.Globals;
+import io.github.s7i.doer.pipeline.grcp.GrpcInboundConnection;
+import io.github.s7i.doer.pipeline.grcp.GrpcOutboundConnection;
 import io.github.s7i.doer.util.Mark;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,7 +31,7 @@ public class Pipeline {
     }
 
     enum PipelineKind {
-        GRPC
+        GRPC_OUTBOUND, GRPC_INBOUND
     }
 
     private Map<PipelineKind, BackendFactory> register = new EnumMap<>(PipelineKind.class);
@@ -39,18 +41,24 @@ public class Pipeline {
 
         var kind = PipelineKind.valueOf(backend);
         switch (kind) {
-            case GRPC:
+            case GRPC_OUTBOUND:
                 register.put(kind, () -> {
-                    var c = new GrpcConnection(params.get(DOER_PIPELINE +".target"));
+                    var c = new GrpcOutboundConnection(params.get(DOER_PIPELINE +".target"));
                     Globals.INSTANCE.addStopHook(c::closeSafe);
                     return c;
                 });
                 break;
+            case GRPC_INBOUND:
+                register.put(kind, ()-> {
+                    var c = new GrpcInboundConnection(params.get(DOER_PIPELINE +".target"));
+                    Globals.INSTANCE.addStopHook(c::closeSafe);
+                    return c;
+                });
         }
     }
 
     public PipeConnection connect(String name) {
-        return register.get(PipelineKind.GRPC).create();
+        return register.get(PipelineKind.GRPC_OUTBOUND).create();
     }
 
     public boolean isEnabled() {
