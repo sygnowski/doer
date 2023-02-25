@@ -78,8 +78,10 @@ public class Doer implements Runnable, Banner {
               ? new CommandManifest()
               : new Doer();
 
-        new CommandLine(command)
+        var exitCode = new CommandLine(command)
               .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(args);
+
+        System.exit(exitCode);
     }
 }
