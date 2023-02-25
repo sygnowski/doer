@@ -14,9 +14,11 @@ service PipelineService {
 message MetaOp {
   message Request {
     string name = 1;
+    map<string, string> parameters = 2;
   }
   message Response {
     string status = 1;
+    map<string, string> parameters = 2;
   }
   Request request = 1;
   Response response = 2;
