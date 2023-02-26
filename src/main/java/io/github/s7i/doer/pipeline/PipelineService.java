@@ -7,8 +7,12 @@ import com.google.protobuf.StringValue;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
 import io.github.s7i.doer.pipeline.proto.*;
 import io.github.s7i.doer.pipeline.store.PipelineStorage;
+import io.github.s7i.doer.pipeline.store.PipelineStorage.Direction;
+import io.github.s7i.doer.pipeline.store.PipelineStorage.Element;
 import io.github.s7i.doer.proto.Record;
 import io.grpc.stub.StreamObserver;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -18,6 +22,8 @@ import picocli.CommandLine.Option;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.nonNull;
 
@@ -25,7 +31,7 @@ import static java.util.Objects.nonNull;
 @Slf4j(topic = "doer.console")
 public class PipelineService implements Runnable {
 
-    @Option(names ="--port", defaultValue = "6565")
+    @Option(names = "--port", defaultValue = "6565")
     private Integer port;
 
     public static void main(String[] args) {
@@ -33,9 +39,26 @@ public class PipelineService implements Runnable {
     }
 
 
+    @Data
+    @RequiredArgsConstructor
+    static class ClientMetadata {
+        final String cid;
+        Element<PipelineLoad> last;
+
+        Element<PipelineLoad> update(Element<PipelineLoad> newElement) {
+            return last = newElement;
+        }
+
+        boolean hasLast() {
+            return nonNull(last);
+        }
+    }
+
     static class Handler extends PipelineServiceGrpc.PipelineServiceImplBase {
 
         PipelineStorage<PipelineLoad> storage = new PipelineStorage<>();
+        Map<String, ClientMetadata> clientMetadata = new ConcurrentHashMap<>();
+
 
         @Override
         public void publish(PipelinePublishRequest request, StreamObserver<PipelinePublishResponse> responseObserver) {
@@ -54,15 +77,52 @@ public class PipelineService implements Runnable {
         @Override
         public void exchangeMeta(MetaOp request, StreamObserver<MetaOp> responseObserver) {
 
+            log.info("new connection {}", request);
+
             var response = MetaOp.newBuilder();
 
             if (request.getRequest().getName().equals("add-new-pipeline-client")) {
-                log.info("new client");
-                response.setResponse(MetaOp.Response.newBuilder().setStatus(UUID.randomUUID().toString()));
+
+                var resp = MetaOp.Response.newBuilder().setStatus(UUID.randomUUID().toString());
+
+
+                response.setResponse(resp);
+                log.info("response: {}", resp);
             }
 
             responseObserver.onNext(response.build());
             responseObserver.onCompleted();
+        }
+
+        @Override
+        public void subscribe(MetaOp request, StreamObserver<PipelineLoad> responseObserver) {
+            log.info("new connection: {}", request);
+
+            var clientMeta = clientMetadata.computeIfAbsent(request.getRequest().getName(), ClientMetadata::new);
+
+            boolean streaming = true;
+            do {
+                storage.getPipe("default").ifPresent(pipe -> {
+                    var es = clientMeta.hasLast()
+                            ? Direction.FIFO.streamFrom(clientMeta.getLast()).skip(1)
+                            : pipe.stream(Direction.FIFO);
+
+                    es.map(clientMeta::update)
+                            .map(Element::getPackage)
+                            .peek(p -> log.info("streaming {}", p))
+                            .forEach(responseObserver::onNext);
+                });
+
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } catch (InterruptedException e) {
+                    streaming = false;
+                }
+            } while (streaming);
+
+            responseObserver.onCompleted();
+
+            log.info("stream done");
         }
     }
 
@@ -90,7 +150,7 @@ public class PipelineService implements Runnable {
             String data,
             @Option(names = {"-pl", "--pipeline-load"}, description = "Embed Record in PipelineLoad::Load.")
             boolean pipelineLoad,
-            @Option(names= {"-h", "--help"}, usageHelp = true)
+            @Option(names = {"-h", "--help"}, usageHelp = true)
             boolean help) {
 
         var b = Record.newBuilder();
@@ -114,9 +174,9 @@ public class PipelineService implements Runnable {
         try {
             byte[] bytes = pipelineLoad
                     ? PipelineLoad.newBuilder()
-                        .setLoad(Any.pack(b.build()))
-                        .build()
-                        .toByteArray()
+                    .setLoad(Any.pack(b.build()))
+                    .build()
+                    .toByteArray()
                     : b.build().toByteArray();
 
             System.out.write(bytes);

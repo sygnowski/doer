@@ -1,6 +1,6 @@
 package io.github.s7i.doer.domain.output
 
-import io.github.s7i.doer.pipeline.BlockingPipePuller
+import io.github.s7i.doer.pipeline.BlockingPipe
 import io.github.s7i.doer.pipeline.PipeConnection
 import spock.lang.Specification
 
@@ -17,7 +17,7 @@ class PipelineOutputTest extends Specification {
         def load = Output.Load.builder()
                 .data("test".getBytes())
                 .build()
-        BlockingPipePuller puller
+        BlockingPipe puller
         def pipeConnection = Mock(PipeConnection) {
             registerPuller(_) >> { args ->
                 puller = args[0]
@@ -47,7 +47,7 @@ class PipelineOutputTest extends Specification {
             t.setDaemon(true)
             return t
         })
-        BlockingPipePuller puller
+        BlockingPipe puller
         def pipeConnection = Mock(PipeConnection) {
             registerPuller(_) >> { args ->
                 puller = args[0]

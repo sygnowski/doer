@@ -9,6 +9,7 @@ option java_multiple_files = true;
 service PipelineService {
   rpc exchangeMeta(MetaOp) returns (MetaOp);
   rpc publish(PipelinePublishRequest) returns (PipelinePublishResponse);
+  rpc subscribe(MetaOp) returns (stream PipelineLoad);
 }
 
 message MetaOp {

@@ -4,6 +4,7 @@ import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.command.Command;
 import io.github.s7i.doer.command.Ingest;
 import io.github.s7i.doer.command.KafkaFeeder;
+import io.github.s7i.doer.command.SinkCommand;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.domain.ConfigProcessor;
 import io.github.s7i.doer.util.Banner;
@@ -89,6 +90,8 @@ public class CommandManifest implements Runnable, Banner {
                     return Optional.of(new TaskWrapper(kind, fromManifestFile(KafkaDump.class, yaml)));
                 case "ingest":
                     return Optional.of(new TaskWrapper(kind, fromManifestFile(Ingest.class, yaml)));
+                case "sink":
+                    return Optional.of(new TaskWrapper(kind, fromManifestFile(SinkCommand.class, yaml)));
                 case "config":
                     return Optional.of(() -> new ConfigProcessor(yaml).processConfig());
                 default:
@@ -111,6 +114,11 @@ public class CommandManifest implements Runnable, Banner {
                 .map(this::mapToTask)
                 .flatMap(Optional::stream)
                 .collect(Collectors.toList());
+
+        if (tasks.isEmpty()) {
+            log.info("Nothing to run...");
+            return;
+        }
 
         var pool = Executors.newFixedThreadPool(Math.min(tasks.size(), MAX_THR_COUNT), this::spawnNewThread);
         tasks.forEach(pool::execute);

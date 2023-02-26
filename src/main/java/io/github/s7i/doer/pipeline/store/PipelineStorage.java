@@ -6,9 +6,7 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.util.Objects.*;
 
@@ -27,56 +25,21 @@ public class PipelineStorage<P> {
             }
             throw new IllegalStateException();
         }
+
+        public <T> Stream<Element<T>> streamFrom(Element<T> e) {
+            ElementIterator<T> ei = direction -> e;
+            return ei.stream(this);
+        }
     }
 
     public interface OffsetSequence {
         Long nextOffset();
     }
 
-    static class PipeIterator<P> implements Iterator<Element<P>> {
-
-        Element<P> current;
-        Element<P> initial;
-        final Direction direction;
-
-        PipeIterator(Direction direction, Element<P> initial) {
-            requireNonNull(initial, "initial");
-            requireNonNull(direction, "direction");
-
-            this.direction = direction;
-            this.initial = initial;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (nonNull(initial)) {
-                return true;
-            }
-
-            return nonNull(current) && direction.from(current).isPresent();
-        }
-
-        @Override
-        public Element<P> next() {
-            if (nonNull(initial)) {
-
-                current = initial;
-                initial = null;
-
-                return current;
-            }
-
-            var nextStep = direction.from(requireNonNull(current,
-                    "missing iterator element"
-            ));
-            current = nextStep.get();
-            return current;
-        }
-    }
 
     @Data
     @Accessors(fluent = true)
-    public static class Pipe<P> {
+    public static class Pipe<P> implements ElementIterator<P> {
         Element<P> tail;
         Element<P> head;
 
@@ -94,17 +57,10 @@ public class PipelineStorage<P> {
                 head = el;
             }
         }
-        public Iterable<Element<P>> iterator(Direction direction) {
-            Supplier<Iterator<Element<P>>> prov  = () -> new PipeIterator<>(
-                    direction,
-                    direction == Direction.FIFO ? head : tail
-            );
 
-            return prov::get;
-        }
-
-        public Stream<Element<P>> stream(Direction direction) {
-            return StreamSupport.stream(iterator(direction).spliterator(), false);
+        @Override
+        public Element<P> getStartElement(Direction direction) {
+            return direction == Direction.FIFO ? head : tail;
         }
     }
 
@@ -161,5 +117,9 @@ public class PipelineStorage<P> {
 
     public Pipe<P> addToPipe(String pipeName, P pack) {
         return addToPipe(pipeName, List.of(pack));
+    }
+
+    public Optional<Pipe<P>> getPipe(String name) {
+        return Optional.ofNullable(store.get(name));
     }
 }
