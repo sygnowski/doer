@@ -4,6 +4,7 @@ import io.github.s7i.doer.pipeline.BlockingPipe;
 import io.github.s7i.doer.pipeline.PipeConnection;
 import lombok.RequiredArgsConstructor;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 @RequiredArgsConstructor
@@ -15,6 +16,9 @@ public class PipelineOutput implements Output {
 
     @Override
     public void open() {
+        if (nonNull(pusher)) {
+            return;
+        }
         pusher = new BlockingPipe();
         pipeConnection.registerPuller(pusher);
     }

@@ -138,7 +138,7 @@ public class CommandManifest implements Callable<Integer>, Banner {
             log.info("Summary:");
 
             var sum = tasks.stream()
-                    .filter(t -> t instanceof TaskWrapper)
+                    .filter(TaskWrapper.class::isInstance)
                     .mapToLong(t -> {
                         var task = (TaskWrapper) t;
                         log.info(task.getSummary());
