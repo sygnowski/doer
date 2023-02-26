@@ -2,12 +2,11 @@ package io.github.s7i.doer.pipeline.grcp;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.github.s7i.doer.Doer;
-import io.github.s7i.doer.domain.output.Output;
+import io.github.s7i.doer.domain.Mappers;
 import io.github.s7i.doer.pipeline.BlockingPipe;
 import io.github.s7i.doer.pipeline.PipePuller;
 import io.github.s7i.doer.pipeline.proto.MetaOp;
 import io.github.s7i.doer.pipeline.proto.PipelineLoad;
-import io.github.s7i.doer.proto.Record;
 import io.grpc.stub.StreamObserver;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,12 +49,12 @@ public class GrpcInboundConnection extends GrpcConnection {
 
             @Override
             public void onError(Throwable t) {
-
+                log.error("oops", t);
             }
 
             @Override
             public void onCompleted() {
-
+                log.debug("subscribe done");
             }
         });
     }
@@ -64,10 +63,10 @@ public class GrpcInboundConnection extends GrpcConnection {
         try {
             Doer.console().info("unpack {}", value);
 
-            var rec = value.getLoad().unpack(Record.class);
-            pipe.offer(Output.Load.builder()
-                            .data(rec.getData().toByteArray())
-                    .build());
+            if (value.hasLoad()) {
+                var load = Mappers.mapFrom(value);
+                pipe.offer(load);
+            }
         } catch (InvalidProtocolBufferException e) {
             log.error("oops", e);
         }
