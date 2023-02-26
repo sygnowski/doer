@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static java.util.Objects.requireNonNull;
+import static java.util.Objects.nonNull;
 
 @Slf4j
 public class Pipeline {
@@ -26,7 +26,7 @@ public class Pipeline {
     public static void initFrom(Supplier<Map<String, String>> params) {
         var setup = params.get().entrySet()
                 .stream()
-                .filter(es -> es.getKey().startsWith(DOER_PIPELINE))
+                .filter(es -> es.getKey().startsWith(DOER_PIPELINE) && nonNull(es.getValue()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (!setup.isEmpty()) {
@@ -41,7 +41,7 @@ public class Pipeline {
     private final Map<PipelineKind, BackendFactory> register = new EnumMap<>(PipelineKind.class);
 
     void init(Map<String, String> params) {
-        var backend = requireNonNull(params.get(DOER_PIPELINE_BACKEND), DOER_PIPELINE_BACKEND).toUpperCase();
+        var backend = params.get(DOER_PIPELINE_BACKEND);
         if (GRPC_BACKEND.equalsIgnoreCase(backend)) {
             var kind = Boolean.parseBoolean(params.get(DOER_PIPELINE_SINK))
                     ? PipelineKind.GRPC_INBOUND
