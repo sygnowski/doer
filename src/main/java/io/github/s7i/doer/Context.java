@@ -14,6 +14,7 @@ import lombok.Getter;
 
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -94,5 +95,10 @@ public interface Context extends ParamFlagExtractor {
             return Optional.of(pipeline);
         }
         return Optional.empty();
+    }
+
+    default void shareParams(Map<String, String> otherParams) {
+        var copy = new HashMap<>(otherParams);
+        Globals.INSTANCE.getScope().setParams(() -> copy);
     }
 }

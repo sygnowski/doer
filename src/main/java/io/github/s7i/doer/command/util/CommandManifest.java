@@ -1,5 +1,6 @@
 package io.github.s7i.doer.command.util;
 
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.command.Command;
 import io.github.s7i.doer.command.Ingest;
@@ -22,6 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -37,7 +39,7 @@ import static java.util.Objects.requireNonNull;
         description = "Parsing command manifest yaml file."
 )
 @Slf4j(topic = DOER_CONSOLE)
-public class CommandManifest implements Runnable, Banner {
+public class CommandManifest implements Callable<Integer>, Banner {
 
     public static final int MAX_THR_COUNT = 20;
     @Parameters(arity = "1..*")
@@ -67,7 +69,7 @@ public class CommandManifest implements Runnable, Banner {
             var begin = Instant.now();
             try {
                 try {
-                    coreTask.call();
+                    failed = 0 != coreTask.call();
                 } catch (Exception e) {
                     log.error("[TASK FAILURE]", e);
                     failed = true;
@@ -111,7 +113,7 @@ public class CommandManifest implements Runnable, Banner {
     }
 
     @Override
-    public void run() {
+    public Integer call() {
         printBanner();
         requireNonNull(yamls, "manifest file set...");
 
@@ -122,7 +124,7 @@ public class CommandManifest implements Runnable, Banner {
 
         if (tasks.isEmpty()) {
             log.info("Nothing to run...");
-            return;
+            return Doer.EC_INVALID_USAGE;
         }
 
         var pool = Executors.newFixedThreadPool(Math.min(tasks.size(), MAX_THR_COUNT), this::spawnNewThread);
@@ -152,5 +154,6 @@ public class CommandManifest implements Runnable, Banner {
             log.error("oops", e);
             Thread.currentThread().interrupt();
         }
+        return 0;
     }
 }

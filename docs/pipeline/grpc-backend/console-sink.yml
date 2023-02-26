@@ -6,5 +6,11 @@ params:
   doer.pipeline.sink: true
   doer.pipeline.bind: from-ingest-to-sink
   doer.pipeline.id: id-sink1
+  mykaf: |+
+    bootstrap.servers=localhost:9092
+    client.id=doer.sink
 spec:
   - output: doer://console
+#    enabled: false
+  - output: kafka://mykaf/test-sink123
+#    enable: false

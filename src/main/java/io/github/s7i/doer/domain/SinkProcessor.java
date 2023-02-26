@@ -2,6 +2,7 @@ package io.github.s7i.doer.domain;
 
 import io.github.s7i.doer.Context;
 import io.github.s7i.doer.DoerException;
+import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.domain.output.DefaultOutputProvider;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.manifest.SinkManifest;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,6 +73,7 @@ public class SinkProcessor implements DefaultOutputProvider {
     }
 
     private void enableOutputs(List<SinkManifest.SinkSpec> specList, PipePuller puller) {
+        var initial = context.getParams();
         var size = specList.size();
 
         log.debug("Number of output tasks: {}", size);
@@ -82,13 +85,15 @@ public class SinkProcessor implements DefaultOutputProvider {
                 new Thread(tg, runnable, "output-worker"));
 
         specList.stream()
-                .map(s -> toRunnable(s, puller))
+                .map(s -> toRunnable(s, puller, initial))
                 .forEach(executorService::submit);
     }
 
-    private Runnable toRunnable(SinkManifest.SinkSpec spec, PipePuller puller) {
+    private Runnable toRunnable(SinkManifest.SinkSpec spec, PipePuller puller, Map<String, String> param) {
         return () -> {
             try {
+                Globals.INSTANCE.shareParams(param);
+
                 loopOutput(context.buildOutput(spec::getOutput), puller);
             } catch (RuntimeException r) {
                 log.error("worker task issue", r);
