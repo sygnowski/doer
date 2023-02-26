@@ -2,6 +2,7 @@ package io.github.s7i.doer.domain;
 
 import io.github.s7i.doer.Context;
 import io.github.s7i.doer.domain.output.DefaultOutputProvider;
+import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.manifest.SinkManifest;
 import lombok.RequiredArgsConstructor;
 
@@ -15,8 +16,13 @@ public class SinkProcessor implements DefaultOutputProvider {
 
         context.lookupPipeline().ifPresent(pipeline -> {
             var puller = pipeline.connect("sink").lookupPuller();
-            getDefaultOutput(context).emit(puller.onNextLoad());
-            puller.onAccept();
+
+            Output.Load load;
+            while (null != (load = puller.onNextLoad())) {
+                getDefaultOutput(context).emit(load);
+
+                puller.onAccept();
+            }
         });
 
     }
