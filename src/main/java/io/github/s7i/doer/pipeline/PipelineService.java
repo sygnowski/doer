@@ -81,7 +81,7 @@ public class PipelineService implements Runnable {
 
             var response = MetaOp.newBuilder();
 
-            if (request.getRequest().getName().equals("add-new-pipeline-client")) {
+            if (request.getRequest().getName().equals(Protocol.OP_ADD_NEW)) {
 
                 var resp = MetaOp.Response.newBuilder().setStatus(UUID.randomUUID().toString());
 
