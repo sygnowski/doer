@@ -28,6 +28,8 @@ public class SinkProcessor implements DefaultOutputProvider {
     ExecutorService executorService;
     CountDownLatch taskToComplete;
 
+    transient int failureCount;
+
     public void execute(List<SinkManifest.SinkSpec> specList) {
 
         context.lookupPipeline().ifPresent(pipeline -> {
@@ -63,6 +65,9 @@ public class SinkProcessor implements DefaultOutputProvider {
             }
             log.debug("All tasks done.");
         }
+        if (failureCount > 0) {
+            throw new DoerException("Some failures during executions.");
+        }
     }
 
     private void enableOutputs(List<SinkManifest.SinkSpec> specList, PipePuller puller) {
@@ -83,9 +88,15 @@ public class SinkProcessor implements DefaultOutputProvider {
 
     private Runnable toRunnable(SinkManifest.SinkSpec spec, PipePuller puller) {
         return () -> {
-            loopOutput(context.buildOutput(spec::getOutput), puller);
-            taskToComplete.countDown();
-            log.debug("task completed {}", Thread.currentThread().getName());
+            try {
+                loopOutput(context.buildOutput(spec::getOutput), puller);
+            } catch (RuntimeException r) {
+                log.error("worker task issue", r);
+                failureCount++;
+            } finally {
+                log.debug("task completed {}", Thread.currentThread().getName());
+                taskToComplete.countDown();
+            }
         };
     }
 

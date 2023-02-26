@@ -10,6 +10,7 @@ import io.github.s7i.doer.pipeline.store.PipelineStorage;
 import io.github.s7i.doer.pipeline.store.PipelineStorage.Direction;
 import io.github.s7i.doer.pipeline.store.PipelineStorage.Element;
 import io.github.s7i.doer.proto.Record;
+import io.github.s7i.doer.util.Banner;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import picocli.CommandLine.Option;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -29,13 +31,13 @@ import static java.util.Objects.nonNull;
 
 @Command(name = "pipeline", description = "Pipeline Backend Service.")
 @Slf4j(topic = "doer.console")
-public class PipelineService implements Runnable {
+public class PipelineService implements Callable<Integer>, Banner {
 
     @Option(names = "--port", defaultValue = "6565")
     private Integer port;
 
     public static void main(String[] args) {
-        new CommandLine(PipelineService.class).execute(args);
+        System.exit(new CommandLine(PipelineService.class).execute(args));
     }
 
 
@@ -188,9 +190,13 @@ public class PipelineService implements Runnable {
 
     @SneakyThrows
     @Override
-    public void run() {
+    public Integer call() {
+        printBanner();
+
         var service = new Handler();
         new GrpcServer(port, service)
                 .startServer();
+
+        return 0;
     }
 }

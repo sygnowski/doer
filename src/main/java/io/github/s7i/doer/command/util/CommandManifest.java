@@ -8,6 +8,7 @@ import io.github.s7i.doer.command.SinkCommand;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.domain.ConfigProcessor;
 import io.github.s7i.doer.util.Banner;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -57,6 +58,8 @@ public class CommandManifest implements Runnable, Banner {
         final String name;
         final Command coreTask;
         Duration duration;
+        @Getter
+        boolean failed;
 
         @Override
         public void run() {
@@ -66,14 +69,16 @@ public class CommandManifest implements Runnable, Banner {
                 try {
                     coreTask.call();
                 } catch (Exception e) {
-                    log.error("fatal error", e);
+                    log.error("[TASK FAILURE]", e);
+                    failed = true;
                 }
             } finally {
                 duration = Duration.between(begin, Instant.now());
             }
         }
+
         public String getSummary() {
-            return String.format("Task %s ends in %s", name, duration);
+            return String.format("%sTask %s ends in %s", failed ? "[FAILED] " : "", name, duration);
         }
     }
 
