@@ -34,7 +34,6 @@ class IngestRecordTest extends Specification {
         expect:
         manifest.getKind() == 'ingest'
         records.size() == 3
-
+        (records[2] as Output.Load).getKey() == "key-record 3"
     }
-
 }

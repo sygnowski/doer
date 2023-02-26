@@ -1,7 +1,6 @@
 package io.github.s7i.doer.pipeline.grcp;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.domain.Mappers;
 import io.github.s7i.doer.pipeline.BlockingPipe;
 import io.github.s7i.doer.pipeline.PipePuller;
@@ -49,7 +48,7 @@ public class GrpcInboundConnection extends GrpcConnection {
 
             @Override
             public void onError(Throwable t) {
-                log.error("oops", t);
+                log.error("subscribe", t);
             }
 
             @Override
@@ -61,7 +60,7 @@ public class GrpcInboundConnection extends GrpcConnection {
 
     private void unload(PipelineLoad value) {
         try {
-            Doer.console().info("unpack {}", value);
+           log.debug("unpack {}", value);
 
             if (value.hasLoad()) {
                 var load = Mappers.mapFrom(value);

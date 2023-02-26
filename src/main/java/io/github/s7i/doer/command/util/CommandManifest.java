@@ -132,7 +132,9 @@ public class CommandManifest implements Callable<Integer>, Banner {
 
         try {
             pool.shutdown();
-            pool.awaitTermination(24, TimeUnit.HOURS);
+            if(!pool.awaitTermination(24, TimeUnit.HOURS)) {
+                log.warn("Timeout...");
+            }
 
             log.info("All task finished.");
             log.info("Summary:");
@@ -149,6 +151,14 @@ public class CommandManifest implements Callable<Integer>, Banner {
             log.info("Total time: {}.", Duration.ofNanos(sum));
 
             Globals.INSTANCE.stopAllSilent();
+
+            var hasFailed = tasks.stream()
+                    .filter(TaskWrapper.class::isInstance)
+                    .anyMatch(t -> ((TaskWrapper) t).isFailed());
+
+            if (hasFailed) {
+                return Doer.EC_ERROR;
+            }
 
         } catch (InterruptedException e) {
             log.error("oops", e);
