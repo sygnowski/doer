@@ -15,6 +15,7 @@ import spock.lang.Specification
 
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.concurrent.Future
 
 class KafkaDumpTest extends Specification {
 
@@ -144,7 +145,7 @@ class KafkaDumpTest extends Specification {
 
         def prodFactory = Mock(KafkaProducerFactory) {
             1 * createProducer(_, _) >> Mock(Producer) {
-                10 * send(_)
+                10 * send(_, _) >> Mock(Future)
             }
         }
 
