@@ -6,6 +6,9 @@ import io.github.s7i.doer.manifest.SinkManifest;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.util.Collections;
+
+import static java.util.Objects.isNull;
 
 @CommandLine.Command(name = "sink")
 public class SinkCommand extends CommandWithContext<SinkManifest> {
@@ -22,6 +25,7 @@ public class SinkCommand extends CommandWithContext<SinkManifest> {
 
     @Override
     public void onExecuteCommand(Context context, SinkManifest manifest) {
-        new SinkProcessor(context).execute(manifest.getSpec().stream().findFirst().orElseThrow());
+        var list = manifest.getSpec();
+        new SinkProcessor(context).execute(isNull(list) ? Collections.emptyList() : list);
     }
 }

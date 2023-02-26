@@ -69,9 +69,7 @@ public class Pipeline {
         }
     }
 
-    public PipeConnection connect(String name) {
-        log.debug("connect {}", name);
-
+    public PipeConnection connect() {
         return register.values().stream().findFirst().orElseThrow().create();
     }
 

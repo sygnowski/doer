@@ -2,6 +2,7 @@ package io.github.s7i.doer.pipeline.grcp;
 
 import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.pipeline.PipeConnection;
+import io.github.s7i.doer.pipeline.Protocol;
 import io.github.s7i.doer.pipeline.proto.MetaOp;
 import io.github.s7i.doer.pipeline.proto.PipelineServiceGrpc;
 import io.grpc.Grpc;
@@ -81,7 +82,7 @@ public abstract class GrpcConnection implements PipeConnection, AutoCloseable {
 
     static MetaOp metaNewConnection() {
         return MetaOp.newBuilder()
-                .setRequest(MetaOp.Request.newBuilder().setName("add-new-pipeline-client"))
+                .setRequest(MetaOp.Request.newBuilder().setName(Protocol.OP_ADD_NEW))
                 .build();
     }
 

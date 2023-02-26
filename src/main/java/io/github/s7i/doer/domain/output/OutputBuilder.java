@@ -19,7 +19,7 @@ public class OutputBuilder {
         FileOutputCreator foc = () -> context.getBaseDir().resolve(outputProvider.getOutput());
         HttpOutputCreator http = outputProvider::getOutput;
         KafkaOutputCreator kafka = new KafkaUri(outputProvider, context);
-        PipelineOutputCreator pipeline = () -> Globals.INSTANCE.getPipeline().connect(outputProvider.getOutput());
+        PipelineOutputCreator pipeline = () -> Globals.INSTANCE.getPipeline().connect();
 
 
         final var factory = context.getOutputFactory();

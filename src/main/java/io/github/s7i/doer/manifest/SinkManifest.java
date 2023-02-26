@@ -11,7 +11,8 @@ import java.util.List;
 public class SinkManifest extends Base {
     @Data
     public static class SinkSpec {
-        String output;
+        String output = "";
+        boolean enabled = true;
     }
 
     @JsonProperty("spec")
