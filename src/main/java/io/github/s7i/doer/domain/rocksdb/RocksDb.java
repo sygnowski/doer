@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import io.github.s7i.doer.domain.rocksdb.dataview.KeyView;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -88,14 +90,14 @@ public class RocksDb {
     }
 
     @RequiredArgsConstructor
-    class DbIterator implements Iterator<KeyValue<String, String>>, Iterable<KeyValue<String, String>>, OnRocksDbOpenComplete {
+    class DbIterator implements Iterator<KeyValue<Key, String>>, Iterable<KeyValue<Key, String>>, OnRocksDbOpenComplete {
 
         final String column;
         private RocksIterator iterator;
         Complete complete;
 
         @Override
-        public Iterator<KeyValue<String, String>> iterator() {
+        public Iterator<KeyValue<Key, String>> iterator() {
             open(listColumns(), this);
             return this;
         }
@@ -128,22 +130,22 @@ public class RocksDb {
         }
 
         @Override
-        public KeyValue<String, String> next() {
-            var kv = new KeyValue<String, String>();
-            kv.setKey(new String(iterator.key()));
+        public KeyValue<Key, String> next() {
+            var kv = new KeyValue<Key, String>();
+            kv.setKey(new KeyView());
             kv.setValue(new String(iterator.value()));
 
             return kv;
         }
     }
 
-    public Iterable<KeyValue<String, String>> iterableOnAll(String column) {
+    public Iterable<KeyValue<Key, String>> iterableOnAll(String column) {
         return new DbIterator(column);
     }
 
-    public List<KeyValue<String, String>> readAsString(String column) {
+    public List<KeyValue<Key, String>> readAsString(String column) {
 
-        var fetched = new ArrayList<KeyValue<String, String>>();
+        var fetched = new ArrayList<KeyValue<Key, String>>();
         open(listColumns(), (db, h) -> {
             try {
                 var hnd = RocksDbUtil.findHandler(h, column);
@@ -153,8 +155,8 @@ public class RocksDb {
                         var key = new String(it.key());
                         var val = new String(it.value());
 
-                        var kv = new KeyValue<String, String>();
-                        kv.setKey(key);
+                        var kv = new KeyValue<Key, String>();
+                        kv.setKey(new KeyView());
                         kv.setValue(val);
                         fetched.add(kv);
                     }

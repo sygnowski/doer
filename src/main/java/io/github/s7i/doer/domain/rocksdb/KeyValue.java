@@ -5,7 +5,7 @@ import lombok.ToString;
 
 @Data
 @ToString
-public class KeyValue<K, V> {
+public class KeyValue <K extends Key, V> {
     K key;
     V value;
 }
