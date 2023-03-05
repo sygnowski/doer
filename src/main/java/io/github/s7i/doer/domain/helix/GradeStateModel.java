@@ -1,7 +1,9 @@
 package io.github.s7i.doer.domain.helix;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
+import org.apache.helix.model.LiveInstance;
 import org.apache.helix.model.Message;
 import org.apache.helix.participant.statemachine.StateModel;
 import org.apache.helix.participant.statemachine.StateModelFactory;
@@ -32,6 +34,38 @@ public class GradeStateModel extends StateModel {
         @Override
         public GradeStateModel getStateModel(String resourceName, String partitionKey) {
             return register.get(asKey(resourceName, partitionKey));
+        }
+    }
+
+    @Data
+    public static class GoldInfo {
+
+        public GoldInfo(LiveInstance li) {
+            instance = li;
+            var resourceCapacityMap = li.getResourceCapacityMap();
+            if (resourceCapacityMap != null && resourceCapacityMap.containsKey("gold")) {
+                goldLeve = Long.parseLong(resourceCapacityMap.get("gold"));
+            }
+        }
+
+        public boolean hasGoldLevel() {
+            return goldLeve != null;
+        }
+
+        LiveInstance instance;
+        Long goldLeve;
+    }
+
+    @Data
+    public static class MaxGold {
+        GoldInfo max;
+
+        public void offer(GoldInfo goldInfo) {
+            if (max == null) {
+                max = goldInfo;
+            } else if (goldInfo.getGoldLeve() > max.getGoldLeve()) {
+                max = goldInfo;
+            }
         }
     }
 

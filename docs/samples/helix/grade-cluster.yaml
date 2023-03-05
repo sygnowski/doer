@@ -44,7 +44,7 @@ resources:
       state:
         counts:
           - name: ALPHA
-            count: "1"
+            count: "-1"
           - name: BETA
             count: "-1"
           - name: GAMMA

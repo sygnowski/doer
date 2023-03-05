@@ -13,6 +13,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -59,6 +60,9 @@ public class Helix implements Callable<Integer> {
     @Option(names = "--help", usageHelp = true)
     boolean help;
 
+    @Option(names = "-f")
+    Map<String, String> flags = Collections.emptyMap();
+
     @SneakyThrows
     @Override
     public Integer call() {
@@ -100,15 +104,15 @@ public class Helix implements Callable<Integer> {
     }
 
     private void runController() throws Exception {
-        new Controller(instanceName, clusterName, server);
+        new Controller(instanceName, clusterName, server).flags(flags).enable();
     }
 
     private void runParticipant() throws Exception {
-        new Participant(instanceName, clusterName, server);
+        new Participant(instanceName, clusterName, server).flags(flags).enable();
     }
 
     private void runSpectator() throws Exception {
-        new Spectator(instanceName, clusterName, server);
+        new Spectator(instanceName, clusterName, server).flags(flags).enable();
     }
 
     private Admin admin() {

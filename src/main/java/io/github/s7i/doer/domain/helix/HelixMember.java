@@ -3,7 +3,9 @@ package io.github.s7i.doer.domain.helix;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.HelixManager;
 import org.apache.helix.HelixManagerFactory;
@@ -11,11 +13,14 @@ import org.apache.helix.InstanceType;
 import org.apache.helix.NotificationContext;
 import org.apache.helix.model.ExternalView;
 import org.apache.helix.model.IdealState;
+import org.apache.helix.model.LiveInstance;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-@RequiredArgsConstructor
+
 @Slf4j(topic = "doer.console")
 public abstract class HelixMember {
 
@@ -23,19 +28,33 @@ public abstract class HelixMember {
     protected final String clusterName;
     protected final String server;
 
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    protected Map<String, String> flags = Collections.emptyMap();
+
     protected HelixManager helixManager;
+    protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
 
     {
         Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup, "helix-shutdown"));
     }
 
-    protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
+    public HelixMember(String instanceName, String clusterName, String server) {
+        var pr = new PropertyResolver();
+
+        this.instanceName = pr.resolve(instanceName);
+        this.clusterName = pr.resolve(clusterName);
+        this.server = pr.resolve(server);
+    }
+
+    public abstract void enable() throws Exception;
 
     protected HelixManager connect(InstanceType instanceType) throws Exception {
-        var pr = new PropertyResolver();
+
         helixManager = HelixManagerFactory.getZKHelixManager(
-                pr.resolve(clusterName),
-                pr.resolve(instanceName),
+                clusterName,
+                instanceName,
                 instanceType,
                 server);
         onBefore(helixManager);
@@ -87,6 +106,28 @@ public abstract class HelixMember {
             helixManager.disconnect();
         }
         log.info("cleanup...");
+    }
+
+    public void updateResource(String res, String value) {
+        var dataAccessor = helixManager.getHelixDataAccessor();
+        var key = dataAccessor.keyBuilder().liveInstance(instanceName);
+
+        LiveInstance li = dataAccessor.getProperty(key);
+        if (null != li) {
+            li.setResourceCapacityMap(Map.of(res, value));
+
+            var result = dataAccessor.updateProperty(key, li);
+
+            log.debug("resource {} update ok: {}", key, result);
+        }
+    }
+
+    public Optional<LiveInstance> getLiveInstance(String name) {
+        var dataAccessor = helixManager.getHelixDataAccessor();
+        var key = dataAccessor.keyBuilder().liveInstance(name);
+
+        LiveInstance li = dataAccessor.getProperty(key);
+        return Optional.ofNullable(li);
     }
 
 }

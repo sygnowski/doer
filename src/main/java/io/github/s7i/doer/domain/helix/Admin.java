@@ -3,6 +3,7 @@ package io.github.s7i.doer.domain.helix;
 import io.github.s7i.doer.Doer;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -145,13 +146,14 @@ public class Admin {
         return 0;
     }
 
+    @SneakyThrows
     public Integer updateIdealState() {
         check();
 
         var updater = new IdealStateUpdater(instanceName, clusterName, server);
         updater.setResource(resource);
         updater.setSimpleFields(simpleFields);
-        updater.update();
+        updater.enable();
 
         return 0;
     }

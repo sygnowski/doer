@@ -1,7 +1,6 @@
 package io.github.s7i.doer.domain.helix;
 
 import lombok.Setter;
-import lombok.SneakyThrows;
 import org.apache.helix.InstanceType;
 
 import java.util.Map;
@@ -19,8 +18,9 @@ public class IdealStateUpdater extends HelixMember {
         super(instanceName, clusterName, server);
     }
 
-    @SneakyThrows
-    public void update() {
+
+    @Override
+    public void enable() throws Exception {
 
         connect(InstanceType.ADMINISTRATOR);
         var admin = helixManager.getClusterManagmentTool();

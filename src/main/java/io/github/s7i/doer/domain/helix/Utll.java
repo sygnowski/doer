@@ -4,6 +4,7 @@ import org.apache.helix.Criteria;
 import org.apache.helix.HelixManager;
 import org.apache.helix.InstanceType;
 import org.apache.helix.NotificationContext;
+import org.apache.helix.controller.dataproviders.ResourceControllerDataProvider;
 import org.apache.helix.messaging.AsyncCallback;
 import org.apache.helix.messaging.handling.MessageHandler;
 import org.apache.helix.messaging.handling.MessageHandlerFactory;
@@ -63,6 +64,23 @@ public class Utll {
         };
 
         messaging.sendAndWait(criteria, msg, callback, 30_000);
+
+    }
+
+
+    /**
+     * https://github.com/apache/helix/blob/d9e9dcaa29357573b356c7d3f601dca612958731/helix-core/src/main/java/org/apache/helix/util/HelixUtil.java#L279
+     */
+    public void info(HelixManager helixManager, String clusterName) {
+        var dataAccessor = helixManager.getHelixDataAccessor();
+
+        dataAccessor.getChildNames(dataAccessor.keyBuilder().liveInstances());
+
+        var dataProvider = new ResourceControllerDataProvider(clusterName);
+
+        dataProvider.requireFullRefresh();
+        dataProvider.refresh(dataAccessor);
+        dataProvider.getLiveInstances();
 
     }
 }
