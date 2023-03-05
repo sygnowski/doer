@@ -9,9 +9,10 @@ import org.apache.helix.participant.statemachine.StateModel;
 import org.apache.helix.participant.statemachine.StateModelFactory;
 import org.apache.helix.participant.statemachine.StateModelInfo;
 import org.apache.helix.participant.statemachine.Transition;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.github.s7i.doer.domain.helix.Utll.asKey;
 
@@ -38,7 +39,7 @@ public class GradeStateModel extends StateModel {
     }
 
     @Data
-    public static class GoldInfo {
+    public static class GoldInfo implements Comparable<GoldInfo> {
 
         public GoldInfo(LiveInstance li) {
             instance = li;
@@ -53,19 +54,39 @@ public class GradeStateModel extends StateModel {
         }
 
         LiveInstance instance;
-        Long goldLeve;
+        Long goldLeve = 0L;
+
+        @Override
+        public int compareTo(@NotNull GoldInfo goldInfo) {
+            return goldLeve.compareTo(goldInfo.getGoldLeve());
+        }
     }
 
     @Data
     public static class MaxGold {
-        GoldInfo max;
+        TreeSet<GoldInfo> set = new TreeSet<>();
+        Long lvl = 50L;
 
         public void offer(GoldInfo goldInfo) {
-            if (max == null) {
-                max = goldInfo;
-            } else if (goldInfo.getGoldLeve() > max.getGoldLeve()) {
-                max = goldInfo;
-            }
+            set.add(goldInfo);
+        }
+
+        public Optional<GoldInfo> getAlpha() {
+            return set.descendingSet()
+                    .stream()
+                    .filter(i -> i.getGoldLeve() > lvl)
+                    .peek(beta -> log.info("selected alpha: {}", beta))
+                    .findFirst();
+        }
+
+        public List<GoldInfo> getBeta(int limit) {
+            return set.descendingSet()
+                    .stream()
+                    .filter(i -> i.getGoldLeve() > lvl)
+                    .skip(1)
+                    .limit(limit)
+                    .peek(beta -> log.info("selected beta: {}", beta))
+                    .collect(Collectors.toList());
         }
     }
 

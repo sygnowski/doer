@@ -81,9 +81,14 @@ public class Controller extends HelixMember {
                     .filter(GradeStateModel.GoldInfo::hasGoldLevel)
                     .forEach(maxGold::offer);
 
-            if (maxGold.getMax() != null) {
-                remapped.put(maxGold.getMax().getInstance().getInstanceName(), "ALPHA");
-            }
+
+            maxGold.getAlpha().ifPresent(alpha -> {
+                remapped.put(alpha.getInstance().getInstanceName(), "ALPHA");
+            });
+
+            maxGold.getBeta(2).forEach(beta -> {
+                remapped.put(beta.getInstance().getInstanceName(), "BETA");
+            });
 
         }
 
