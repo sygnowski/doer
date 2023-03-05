@@ -1,9 +1,6 @@
 package io.github.s7i.doer.domain.helix;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.s7i.doer.util.Utils;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
@@ -14,7 +11,10 @@ import org.apache.helix.participant.statemachine.StateModelFactory;
 import org.apache.helix.participant.statemachine.StateModelInfo;
 import org.apache.helix.participant.statemachine.Transition;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static io.github.s7i.doer.domain.helix.Utll.asKey;
 
 @RequiredArgsConstructor
 @Slf4j(topic = "doer.console")
@@ -25,42 +25,36 @@ public class MasterSlaveModel extends StateModel {
     public static final String MODEL = MasterSlaveSMD.name;
 
     public static class Factory extends StateModelFactory<MasterSlaveModel> {
+
+        Map<String, MasterSlaveModel> register = new LinkedHashMap<>();
+
         @Override
         public MasterSlaveModel createNewStateModel(String resourceName, String partitionName) {
             var model = new MasterSlaveModel(resourceName, partitionName);
             log.info("model created: {}", model);
             return model;
         }
+
+        @Override
+        public MasterSlaveModel getStateModel(String resourceName, String partitionKey) {
+            return register.get(asKey(resourceName, partitionKey));
+        }
     }
 
     final String resourceName;
     final String partitionName;
 
-    protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
-
+    final SwitchStateLogger stateLogger = new SwitchStateLogger();
 
     @Transition(from = "OFFLINE", to = "SLAVE")
     public void toSlaveFromOffline(Message msg, NotificationContext context) {
-        logSwitchState(msg, context);
+        stateLogger.logSwitchState(msg, context);
 
     }
 
     @Transition(from = "SLAVE", to = "MASTER")
     public void toMasterFromSlave(Message msg, NotificationContext context) {
-        logSwitchState(msg, context);
+        stateLogger.logSwitchState(msg, context);
 
     }
-
-    @SneakyThrows
-    void logSwitchState(Message msg, NotificationContext context) {
-        var changeType = context.getChangeType();
-        var type = context.getType();
-        var event = Map.of(
-                "type", type.name(),
-                "changeType", changeType.name(),
-                "msg", msg
-        );
-        log.info("switch-state: {}\n", objectMapper.writeValueAsString(event));
-    }
-
 }

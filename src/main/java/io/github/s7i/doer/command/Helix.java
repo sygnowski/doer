@@ -1,5 +1,6 @@
 package io.github.s7i.doer.command;
 
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.domain.helix.Admin;
 import io.github.s7i.doer.domain.helix.Controller;
 import io.github.s7i.doer.domain.helix.Participant;
@@ -25,7 +26,7 @@ public class Helix implements Callable<Integer> {
     @Option(names = "-s", defaultValue = "localhost:2181")
     String server;
 
-    @Option(names = "-c", required = true)
+    @Option(names = "-c")
     String clusterName;
 
     @Option(names = "-n", defaultValue = "doer")
@@ -65,6 +66,7 @@ public class Helix implements Callable<Integer> {
             return admin().setupCluster(helixModel);
         }
 
+        requireNonNull(clusterName, "missing: cluster name");
         requireNonNull(type, "type");
         switch (type) {
             case "uis":
@@ -94,7 +96,7 @@ public class Helix implements Callable<Integer> {
             case "rebalance":
                 return admin().rebalance();
         }
-        return 0;
+        return Doer.EC_INVALID_USAGE;
     }
 
     private void runController() throws Exception {

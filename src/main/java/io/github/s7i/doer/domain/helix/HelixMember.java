@@ -1,6 +1,7 @@
 package io.github.s7i.doer.domain.helix;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,17 +26,18 @@ public abstract class HelixMember {
     protected HelixManager helixManager;
 
     {
-        Runtime.getRuntime().addShutdownHook( new Thread(this::cleanup, "helix-shutdown"));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup, "helix-shutdown"));
     }
 
     protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
 
     protected HelixManager connect(InstanceType instanceType) throws Exception {
+        var pr = new PropertyResolver();
         helixManager = HelixManagerFactory.getZKHelixManager(
-              clusterName,
-              instanceName,
-              instanceType,
-              server);
+                pr.resolve(clusterName),
+                pr.resolve(instanceName),
+                instanceType,
+                server);
         onBefore(helixManager);
         helixManager.connect();
         onAfter(helixManager);
@@ -55,9 +57,9 @@ public abstract class HelixMember {
             var changeType = changeContext.getChangeType();
             var type = changeContext.getType();
             var event = Map.of(
-                  "type", type.name(),
-                  "changeType", changeType.name(),
-                  "externalViewList", externalViewList
+                    "type", type.name(),
+                    "changeType", changeType.name(),
+                    "externalViewList", externalViewList
             );
             log.info("onExternalViewChange: \n{}", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
@@ -70,9 +72,9 @@ public abstract class HelixMember {
             var changeType = changeContext.getChangeType();
             var type = changeContext.getType();
             var event = Map.of(
-                  "type", type.name(),
-                  "changeType", changeType.name(),
-                  "idealStateList", idealState
+                    "type", type.name(),
+                    "changeType", changeType.name(),
+                    "idealStateList", idealState
             );
             log.info("onIdealStateChange: \n{}", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
