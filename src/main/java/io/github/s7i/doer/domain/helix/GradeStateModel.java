@@ -17,9 +17,12 @@ import java.util.stream.Collectors;
 import static io.github.s7i.doer.domain.helix.Utll.asKey;
 
 @Slf4j
-@StateModelInfo(initialState = "OFFLINE", states = {"OFFLINE", "ALPHA", "BETA", "GAMMA"})
+@StateModelInfo(initialState = "OFFLINE", states = {"OFFLINE", GradeStateModel.ALPHA, GradeStateModel.BETA, GradeStateModel.GAMMA})
 public class GradeStateModel extends StateModel {
     public static final String MODEL = "GradeModel";
+    public static final String ALPHA = "ALPHA";
+    public static final String BETA = "BETA";
+    public static final String GAMMA = "GAMMA";
 
     public static class Factory extends StateModelFactory<GradeStateModel> {
         Map<String, GradeStateModel> register = new LinkedHashMap<>();
@@ -63,7 +66,7 @@ public class GradeStateModel extends StateModel {
     }
 
     @Data
-    public static class MaxGold {
+    public static class GoldScore {
         TreeSet<GoldInfo> set = new TreeSet<>();
         Long lvl = 50L;
 
@@ -92,17 +95,17 @@ public class GradeStateModel extends StateModel {
 
     final SwitchStateLogger stateLogger = new SwitchStateLogger();
 
-    @Transition(from = "OFFLINE", to = "GAMMA")
+    @Transition(from = "OFFLINE", to = GAMMA)
     public void toGammaFromOffline(Message msg, NotificationContext context) {
         stateLogger.logSwitchState(msg, context);
     }
 
-    @Transition(from = "GAMMA", to = "BETA")
+    @Transition(from = GAMMA, to = BETA)
     public void toBetaFromGamma(Message msg, NotificationContext context) {
         stateLogger.logSwitchState(msg, context);
     }
 
-    @Transition(from = "BETA", to = "ALPHA")
+    @Transition(from = BETA, to = ALPHA)
     public void toAlphaFromBeta(Message msg, NotificationContext context) {
         stateLogger.logSwitchState(msg, context);
     }

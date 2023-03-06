@@ -83,4 +83,9 @@ public class Utll {
         dataProvider.getLiveInstances();
 
     }
+
+    public void clusterConfig(HelixManager helixManage) {
+        var clusterConfig = helixManage.getConfigAccessor().getClusterConfig(helixManage.getClusterName());
+        clusterConfig.setDelayRebalaceEnabled(true);
+    }
 }

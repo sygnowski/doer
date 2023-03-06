@@ -1,5 +1,6 @@
 package io.github.s7i.doer.domain.helix;
 
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.DoerException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.HelixManager;
@@ -72,6 +73,7 @@ public class Participant extends HelixMember {
             goldLevel += incVal;
 
             updateResource("gold", Long.toString(goldLevel));
+            Doer.console().info("{} gold level: {}", instanceName, goldLevel);
             try {
                 TimeUnit.SECONDS.sleep(sleep);
             } catch (InterruptedException e) {

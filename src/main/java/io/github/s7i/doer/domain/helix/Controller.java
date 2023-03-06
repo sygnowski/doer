@@ -68,10 +68,10 @@ public class Controller extends HelixMember {
                 .flatMap(Optional::stream)
                 .forEach(liveInstance -> log.info("[{}] resources: {}", liveInstance.getInstanceName(), liveInstance.getResourceCapacityMap()));
 
-        if (instanceMapping.entrySet().stream().noneMatch(e -> e.getValue().equals("ALPHA"))) {
+        if (instanceMapping.entrySet().stream().noneMatch(e -> e.getValue().equals(GradeStateModel.ALPHA))) {
 
 
-            GradeStateModel.MaxGold maxGold = new GradeStateModel.MaxGold();
+            GradeStateModel.GoldScore goldScore = new GradeStateModel.GoldScore();
 
             instanceMapping.keySet()
                     .stream()
@@ -79,15 +79,15 @@ public class Controller extends HelixMember {
                     .flatMap(Optional::stream)
                     .map(GradeStateModel.GoldInfo::new)
                     .filter(GradeStateModel.GoldInfo::hasGoldLevel)
-                    .forEach(maxGold::offer);
+                    .forEach(goldScore::offer);
 
 
-            maxGold.getAlpha().ifPresent(alpha -> {
-                remapped.put(alpha.getInstance().getInstanceName(), "ALPHA");
+            goldScore.getAlpha().ifPresent(alpha -> {
+                remapped.put(alpha.getInstance().getInstanceName(), GradeStateModel.ALPHA);
             });
 
-            maxGold.getBeta(2).forEach(beta -> {
-                remapped.put(beta.getInstance().getInstanceName(), "BETA");
+            goldScore.getBeta(2).forEach(beta -> {
+                remapped.put(beta.getInstance().getInstanceName(), GradeStateModel.BETA);
             });
 
         }
