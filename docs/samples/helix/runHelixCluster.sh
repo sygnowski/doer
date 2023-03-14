@@ -19,7 +19,7 @@ helix () {
 }
 
 
-main() {
+run_main() {
 
   rm -rf ${SCRIPT_DIR}/logs
 
@@ -54,4 +54,44 @@ main() {
 }
 
 
-main "${args[@]}"
+run_grade_model_cluster() {
+
+  CLUSTER_NAME="grade-model-demo"
+  NODES=(participant-{1..5})
+
+  echo "Making cluster..."
+  helix --model ./grade-cluster.yaml
+
+  helix -t controller -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-ctl&
+
+  nodeFct=50
+  idx=0
+
+  for prt in "${NODES[@]}"; do
+    gold=((nodeFct - idx * 10))
+    echo "Running $part with gold.start=$gold"
+    helix -t participant -c ${CLUSTER_NAME} -n prt -f gold.start=$gold &
+    ((idx++))
+  done
+
+}
+
+usage() {
+    (lolcat || cat) << EOF 2> /dev/null
+Usage:
+main     -  Master Slave Model.
+grade    -  Grade State Model.
+EOF
+}
+
+
+case $1 in
+  main)
+    run_main "${args[@]:1}"
+    ;;
+  grade)
+    run_grade_model_cluster "${args[@]:1}"
+    ;;
+  *)
+  usage
+esac

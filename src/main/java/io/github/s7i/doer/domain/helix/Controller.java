@@ -71,7 +71,8 @@ public class Controller extends HelixMember {
         if (instanceMapping.entrySet().stream().noneMatch(e -> e.getValue().equals(GradeStateModel.ALPHA))) {
 
 
-            GradeStateModel.GoldScore goldScore = new GradeStateModel.GoldScore();
+            var goldMin = Long.parseLong(flags().getOrDefault("gold.min", "50"));
+            var goldScore = new GradeStateModel.GoldScore(goldMin);
 
             instanceMapping.keySet()
                     .stream()

@@ -1,6 +1,7 @@
 package io.github.s7i.doer.domain.helix;
 
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
 import org.apache.helix.model.LiveInstance;
@@ -66,9 +67,10 @@ public class GradeStateModel extends StateModel {
     }
 
     @Data
+    @RequiredArgsConstructor
     public static class GoldScore {
         TreeSet<GoldInfo> set = new TreeSet<>();
-        Long lvl = 50L;
+        final Long lvl;
 
         public void offer(GoldInfo goldInfo) {
             set.add(goldInfo);
