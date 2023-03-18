@@ -29,9 +29,10 @@ public class MasterSlaveModel extends StateModel {
         Map<String, MasterSlaveModel> register = new LinkedHashMap<>();
 
         @Override
-        public MasterSlaveModel createNewStateModel(String resourceName, String partitionName) {
-            var model = new MasterSlaveModel(resourceName, partitionName);
+        public MasterSlaveModel createAndAddStateModel(String resourceName, String partitionKey) {
+            var model = new MasterSlaveModel(resourceName, partitionKey);
             log.info("model created: {}", model);
+            register.put(asKey(resourceName, partitionKey), model);
             return model;
         }
 
