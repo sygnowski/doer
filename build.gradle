@@ -40,7 +40,7 @@ dependencies {
             'com.fasterxml.jackson.core:jackson-databind:2.14.0',
             'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.0',
             "org.jeasy:easy-rules-mvel:4.1.0",
-            "org.apache.helix:helix-core:1.0.4",
+            "org.apache.helix:helix-core:1.1.0",
             'org.fusesource.jansi:jansi:2.4.0'
     // Rocks DB compile only
     //compileOnly 'org.rocksdb:rocksdbjni:7.6.0'
