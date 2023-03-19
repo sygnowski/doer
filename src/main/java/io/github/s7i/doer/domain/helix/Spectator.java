@@ -2,17 +2,14 @@ package io.github.s7i.doer.domain.helix;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.InstanceType;
-import org.apache.helix.NotificationContext;
-import org.apache.helix.api.listeners.ExternalViewChangeListener;
-import org.apache.helix.api.listeners.IdealStateChangeListener;
-import org.apache.helix.model.ExternalView;
-import org.apache.helix.model.IdealState;
 
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import static io.github.s7i.doer.domain.helix.Utll.LISTENERS;
+import static io.github.s7i.doer.domain.helix.Utll.LISTENERS_ALL;
+
 @Slf4j(topic = "doer.console")
-public class Spectator extends HelixMember implements ExternalViewChangeListener, IdealStateChangeListener {
+public class Spectator extends HelixMember {
 
 
     CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -23,22 +20,11 @@ public class Spectator extends HelixMember implements ExternalViewChangeListener
 
     @Override
     public void enable() throws Exception {
-        var helix = connect(InstanceType.SPECTATOR);
-        //helix.addExternalViewChangeListener(this);
-        helix.addIdealStateChangeListener(this);
+        connect(InstanceType.SPECTATOR);
+        performEnableListeners(flags.getOrDefault(LISTENERS, LISTENERS_ALL));
 
         countDownLatch.await();
         log.info("Spectator ends.");
-    }
-
-    @Override
-    public void onExternalViewChange(List<ExternalView> externalViewList, NotificationContext changeContext) {
-        logEv(externalViewList, changeContext);
-    }
-
-    @Override
-    public void onIdealStateChange(List<IdealState> idealState, NotificationContext changeContext) throws InterruptedException {
-        logIs(idealState, changeContext);
     }
 
     @Override

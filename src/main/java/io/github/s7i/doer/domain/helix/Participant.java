@@ -23,6 +23,8 @@ public class Participant extends HelixMember {
 
     @Override
     public void enable() throws Exception {
+        super.enable();
+
         connect(InstanceType.PARTICIPANT);
 
         countDownLatch.await();
@@ -38,11 +40,11 @@ public class Participant extends HelixMember {
     protected void onBefore(HelixManager manager) {
         var engine = manager.getStateMachineEngine();
 
-        if (!engine.registerStateModelFactory(MasterSlaveModel.MODEL, new MasterSlaveModel.Factory())) {
+        if (!engine.registerStateModelFactory(MasterSlaveModel.MODEL, new MasterSlaveModel.Factory(this))) {
             throw new DoerException("model not registered");
         }
 
-        if (!engine.registerStateModelFactory(GradeStateModel.MODEL, new GradeStateModel.Factory())) {
+        if (!engine.registerStateModelFactory(GradeStateModel.MODEL, new GradeStateModel.Factory(this))) {
             throw new DoerException("model not registered");
         }
 

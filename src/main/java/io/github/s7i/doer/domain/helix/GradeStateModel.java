@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import static io.github.s7i.doer.domain.helix.Utll.asKey;
 
+@RequiredArgsConstructor
 @Slf4j
 @StateModelInfo(initialState = "OFFLINE", states = {"OFFLINE", GradeStateModel.ALPHA, GradeStateModel.BETA, GradeStateModel.GAMMA})
 public class GradeStateModel extends StateModel {
@@ -25,12 +26,14 @@ public class GradeStateModel extends StateModel {
     public static final String BETA = "BETA";
     public static final String GAMMA = "GAMMA";
 
+    @RequiredArgsConstructor
     public static class Factory extends StateModelFactory<GradeStateModel> {
-        Map<String, GradeStateModel> register = new LinkedHashMap<>();
+        final HelixMember member;
+        final Map<String, GradeStateModel> register = new LinkedHashMap<>();
 
         @Override
         public GradeStateModel createAndAddStateModel(String resourceName, String partitionKey) {
-            var model = new GradeStateModel();
+            var model = new GradeStateModel(member);
             register.put(asKey(resourceName, partitionKey), model);
             return model;
         }
@@ -95,21 +98,21 @@ public class GradeStateModel extends StateModel {
         }
     }
 
-    final SwitchStateLogger stateLogger = new SwitchStateLogger();
+    final HelixMember member;
 
     @Transition(from = "OFFLINE", to = GAMMA)
     public void toGammaFromOffline(Message msg, NotificationContext context) {
-        stateLogger.logSwitchState(msg, context);
+        member.getEventLogger().logSwitchState(msg, context);
     }
 
     @Transition(from = GAMMA, to = BETA)
     public void toBetaFromGamma(Message msg, NotificationContext context) {
-        stateLogger.logSwitchState(msg, context);
+        member.getEventLogger().logSwitchState(msg, context);
     }
 
     @Transition(from = BETA, to = ALPHA)
     public void toAlphaFromBeta(Message msg, NotificationContext context) {
-        stateLogger.logSwitchState(msg, context);
+        member.getEventLogger().logSwitchState(msg, context);
     }
 
 

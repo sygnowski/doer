@@ -13,6 +13,8 @@ import org.apache.helix.model.Message;
 import java.util.UUID;
 
 public class Utll {
+    public static final String LISTENERS = "listeners";
+    public static final String LISTENERS_ALL = "all";
 
     public static String asKey(String resourceName, String partitionKey) {
         return resourceName + partitionKey;

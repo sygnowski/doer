@@ -24,13 +24,15 @@ public class MasterSlaveModel extends StateModel {
 
     public static final String MODEL = MasterSlaveSMD.name;
 
+    @RequiredArgsConstructor
     public static class Factory extends StateModelFactory<MasterSlaveModel> {
 
-        Map<String, MasterSlaveModel> register = new LinkedHashMap<>();
+        final HelixMember member;
+        final Map<String, MasterSlaveModel> register = new LinkedHashMap<>();
 
         @Override
         public MasterSlaveModel createAndAddStateModel(String resourceName, String partitionKey) {
-            var model = new MasterSlaveModel(resourceName, partitionKey);
+            var model = new MasterSlaveModel(resourceName, partitionKey, member);
             log.info("model created: {}", model);
             register.put(asKey(resourceName, partitionKey), model);
             return model;
@@ -44,12 +46,13 @@ public class MasterSlaveModel extends StateModel {
 
     final String resourceName;
     final String partitionName;
+    final HelixMember member;
 
-    final SwitchStateLogger stateLogger = new SwitchStateLogger();
+    final EventLogger stateLogger = new EventLogger();
 
     @Transition(from = "OFFLINE", to = "SLAVE")
     public void toSlaveFromOffline(Message msg, NotificationContext context) {
-        stateLogger.logSwitchState(msg, context);
+        member.getEventLogger().logSwitchState(msg, context);
 
     }
 
