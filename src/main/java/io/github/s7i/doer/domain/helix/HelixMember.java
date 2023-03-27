@@ -86,6 +86,8 @@ public abstract class HelixMember {
                     helixManager.addIdealStateChangeListener(eventLogger);
                     helixManager.addExternalViewChangeListener(eventLogger);
                     helixManager.addLiveInstanceChangeListener(eventLogger);
+                    helixManager.addControllerListener(eventLogger);
+                    break;
                 default:
                     log.warn("unknown listener: {}", type);
                     break;
