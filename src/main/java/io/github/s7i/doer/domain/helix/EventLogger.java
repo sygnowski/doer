@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.NotificationContext;
+import org.apache.helix.api.listeners.ControllerChangeListener;
 import org.apache.helix.api.listeners.ExternalViewChangeListener;
 import org.apache.helix.api.listeners.IdealStateChangeListener;
 import org.apache.helix.api.listeners.LiveInstanceChangeListener;
@@ -24,13 +25,24 @@ import java.util.Map;
 import static java.util.Objects.isNull;
 
 @Slf4j(topic = "doer.console")
-public class EventLogger implements ExternalViewChangeListener, IdealStateChangeListener, LiveInstanceChangeListener {
+public class EventLogger implements ExternalViewChangeListener, IdealStateChangeListener, LiveInstanceChangeListener, ControllerChangeListener {
 
     public static class Event {
         protected final Map<String, Object> attributes = new LinkedHashMap<>();
 
         public Event() {
             attributes.put("timestamp", Instant.now().toString());
+        }
+
+        Event onContext(NotificationContext context) {
+            var changeType = context.getChangeType();
+            var type = context.getType();
+
+            attributes.putAll(Map.of(
+                    "type", type.name(),
+                    "changeType", changeType.name()
+            ));
+            return this;
         }
 
         Event on(Message msg, NotificationContext context) {
@@ -85,7 +97,7 @@ public class EventLogger implements ExternalViewChangeListener, IdealStateChange
 
     protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
     @Setter
-    protected Output output;
+    protected volatile Output output;
     private Map<String, String> meta = Collections.emptyMap();
 
     public void setMeta(String instanceName, String clusterName) {
@@ -107,6 +119,11 @@ public class EventLogger implements ExternalViewChangeListener, IdealStateChange
     @Override
     public void onLiveInstanceChange(List<LiveInstance> liveInstances, NotificationContext changeContext) {
         report(new Event().onLive(liveInstances, changeContext));
+    }
+
+    @Override
+    public void onControllerChange(NotificationContext changeContext) {
+        report(new Event().onContext(changeContext));
     }
 
     public void logSwitchState(Message msg, NotificationContext context) {
