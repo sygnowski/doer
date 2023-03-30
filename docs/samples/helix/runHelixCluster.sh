@@ -12,6 +12,10 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 export DOER_HOME=${SCRIPT_DIR}
 
+if [[ "${ESOUT}" == "1" ]]; then
+  echo "Using elasticsearch output."
+  export DOER_OUTPUT="http://localhost:9200/helix/_doc"
+fi
 
 helix () {
   export DOER_CTX_NAME=d$!
@@ -31,6 +35,7 @@ run_main() {
   helix -t create -c ${CLUSTER_NAME} -r ${RESOURCE} --replicas 3
 
   helix -t controller -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-ctl&
+  run_helix_spectator_if_needed
 
   helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-1&
   helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-2&
@@ -70,6 +75,12 @@ run_zk_if_needed() {
   fi
 }
 
+run_helix_spectator_if_needed() {
+  if [[ "${SPECT}" == "1" ]]; then
+    helix -t spectator -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-spectator&
+  fi
+}
+
 run_grade_model_cluster() {
   run_zk_if_needed
 
@@ -82,6 +93,7 @@ run_grade_model_cluster() {
   helix -c ${CLUSTER_NAME} --model ./grade-cluster.yaml
 
   sleep 1
+  run_helix_spectator_if_needed
 
   helix -t controller -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-ctlA&
   helix -t controller -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-ctlB&
@@ -128,6 +140,14 @@ usage() {
 Usage:
 main     -  Master Slave Model.
 grade    -  Grade State Model.
+
+misc:
+ZKON=1   - local zookeeper
+ESOUT=1  - log events into elasticsearch (DOER_OUTPUT="http://localhost:9200/helix/_doc")
+SPECT=1  - run spectator with with 'all' listeners on
+
+sample:
+ZKON=1 ESOUT=1 SPECT=1 ./runHelixCluster.sh grade
 EOF
 }
 

@@ -93,6 +93,15 @@ public class EventLogger implements ExternalViewChangeListener, IdealStateChange
             ));
             return this;
         }
+
+        public Event onRebalance(Object contextData) {
+            attributes.putAll(Map.of(
+                    "type", "REBALANCE_CALLBACK",
+                    "changeType", "REBALANCE",
+                    "rebalance", contextData
+            ));
+            return this;
+        }
     }
 
     protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
@@ -128,6 +137,10 @@ public class EventLogger implements ExternalViewChangeListener, IdealStateChange
 
     public void logSwitchState(Message msg, NotificationContext context) {
         report(new Event().on(msg, context));
+    }
+
+    public void onRebalance(Map<String, Object> context) {
+        report(new Event().onRebalance(context));
     }
 
 

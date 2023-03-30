@@ -93,6 +93,12 @@ public class Controller extends HelixMember {
 
         }
 
+        getEventLogger().onRebalance(Map.of(
+                "context", context,
+                "before", instanceMapping,
+                "after", remapped
+        ));
+
         return remapped;
     }
 }

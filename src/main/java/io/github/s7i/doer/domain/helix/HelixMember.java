@@ -37,7 +37,7 @@ public abstract class HelixMember {
     protected Map<String, String> flags = Collections.emptyMap();
 
     protected HelixManager helixManager;
-    private transient EventLogger eventLogger;
+    private EventLogger eventLogger;
 
     {
         Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup, "helix-shutdown"));
