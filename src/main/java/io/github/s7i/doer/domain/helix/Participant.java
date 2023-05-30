@@ -48,6 +48,7 @@ public class Participant extends HelixMember {
             throw new DoerException("model not registered");
         }
 
+        SimpleMessageHandler.register(manager, getEventLogger());
 
         var record = new ZNRecord(UUID.randomUUID().toString());
         record.setSimpleField("X_TEST", "test of simple field");
@@ -58,9 +59,11 @@ public class Participant extends HelixMember {
     @Override
     protected void onAfter(HelixManager manager) {
 
-        CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS)
-                .execute(this::digGold);
-
+        if (flags().keySet().stream().anyMatch(k -> k.startsWith("gold."))) {
+            log.info("running gold mining task");
+            CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS)
+                    .execute(this::digGold);
+        }
     }
 
     private void digGold() {

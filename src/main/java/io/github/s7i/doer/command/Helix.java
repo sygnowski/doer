@@ -1,10 +1,7 @@
 package io.github.s7i.doer.command;
 
 import io.github.s7i.doer.Doer;
-import io.github.s7i.doer.domain.helix.Admin;
-import io.github.s7i.doer.domain.helix.Controller;
-import io.github.s7i.doer.domain.helix.Participant;
-import io.github.s7i.doer.domain.helix.Spectator;
+import io.github.s7i.doer.domain.helix.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.model.IdealState;
@@ -20,7 +17,7 @@ import java.util.concurrent.Callable;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
-@Command(name = "helix", description = "Helix Toolkit.", showDefaultValues = true)
+@Command(name = "helix", description = "Helix Toolkit.", showDefaultValues = true, subcommands = MessageCmd.class)
 @Slf4j(topic = "doer.console")
 public class Helix implements Callable<Integer> {
 
@@ -45,7 +42,7 @@ public class Helix implements Callable<Integer> {
     @Option(names = "--stateModel", defaultValue = MasterSlaveSMD.name)
     String stateModel;
 
-    @Option(names = "--rebalanceMode", defaultValue = "FULL_AUTO")
+    @Option(names = "--rebalanceMode", defaultValue = "FULL_AUTO", description = "Other options: ${COMPLETION-CANDIDATES}")
     IdealState.RebalanceMode rebalanceMode;
 
     @Option(names = "--num-partition", defaultValue = "1")

@@ -3,6 +3,7 @@ package io.github.s7i.doer.domain.helix;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.util.Utils;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -105,6 +106,8 @@ public class EventLogger implements ExternalViewChangeListener, IdealStateChange
     }
 
     protected final ObjectMapper objectMapper = Utils.preetyObjectMapper();
+    @Getter
+    private final Object lock = new Object();
     @Setter
     protected volatile Output output;
     private Map<String, String> meta = Collections.emptyMap();
@@ -148,14 +151,15 @@ public class EventLogger implements ExternalViewChangeListener, IdealStateChange
     void report(Event event) {
         var attributes = event.attributes;
         attributes.putAll(meta);
-
-        if (isNull(output)) {
-            log.info("helix event: {}", objectMapper.writeValueAsString(attributes));
-        } else {
-            output.emit(Output.Load.builder()
-                    .data(objectMapper.writeValueAsBytes(attributes))
-                    .build()
-            );
+        synchronized (lock) {
+            if (isNull(output)) {
+                log.info("helix event: {}", objectMapper.writeValueAsString(attributes));
+            } else {
+                output.emit(Output.Load.builder()
+                        .data(objectMapper.writeValueAsBytes(attributes))
+                        .build()
+                );
+            }
         }
     }
 }

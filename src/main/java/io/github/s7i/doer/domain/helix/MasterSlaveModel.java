@@ -48,8 +48,6 @@ public class MasterSlaveModel extends StateModel {
     final String partitionName;
     final HelixMember member;
 
-    final EventLogger stateLogger = new EventLogger();
-
     @Transition(from = "OFFLINE", to = "SLAVE")
     public void toSlaveFromOffline(Message msg, NotificationContext context) {
         member.getEventLogger().logSwitchState(msg, context);
@@ -58,7 +56,22 @@ public class MasterSlaveModel extends StateModel {
 
     @Transition(from = "SLAVE", to = "MASTER")
     public void toMasterFromSlave(Message msg, NotificationContext context) {
-        stateLogger.logSwitchState(msg, context);
+        member.getEventLogger().logSwitchState(msg, context);
+    }
 
+    @Transition(from = "SLAVE", to = "OFFLINE")
+    public void toOfflineFromSlave(Message msg, NotificationContext context) {
+        member.getEventLogger().logSwitchState(msg, context);
+
+    }
+
+    @Transition(from = "MASTER", to = "SLAVE")
+    public void toSlaveFromMaster(Message msg, NotificationContext context) {
+        member.getEventLogger().logSwitchState(msg, context);
+    }
+
+    @Transition(from = "OFFLINE", to = "DROPPED")
+    public void toDroppedFromOffline(Message msg, NotificationContext context) {
+        member.getEventLogger().logSwitchState(msg, context);
     }
 }

@@ -98,22 +98,22 @@ public abstract class HelixMember {
         }
     }
 
-    private void initStateLogger() {
-        synchronized (HelixMember.class) {
-            if (isNull(eventLogger)) {
-                eventLogger = new EventLogger();
+    private synchronized void initStateLogger() {
+        if (isNull(eventLogger)) {
+            eventLogger = new EventLogger();
+            synchronized (eventLogger.getLock()) {
                 eventLogger.setMeta(instanceName, clusterName);
-                var output = Stream.of(
+                Stream.of(
                                 flags.get("doer.output"),
                                 System.getenv("DOER_OUTPUT")
                         ).filter(Utils::hasAnyValue)
-                        .findAny().orElse("");
-                if (Utils.hasAnyValue(output)) {
-                    log.info("Using output: {}", output);
-                    var out = new OutputBuilder().context(Globals.INSTANCE).build(() -> output);
-                    out.open();
-                    eventLogger.setOutput(out);
-                }
+                        .findAny()
+                        .ifPresent(outSpec -> {
+                            log.info("Using output: {}", outSpec);
+                            var out = new OutputBuilder().context(Globals.INSTANCE).build(() -> outSpec);
+                            out.open();
+                            eventLogger.setOutput(out);
+                        });
             }
         }
     }

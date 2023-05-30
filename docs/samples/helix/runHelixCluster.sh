@@ -26,7 +26,7 @@ helix () {
 run_main() {
 
   run_zk_if_needed
-  rm -rf ${SCRIPT_DIR}/logs
+  trap 'touch ${SCRIPT_DIR}/.exit' SIGINT SIGTERM EXIT
 
   echo "Doer : Helix testing..."
 
@@ -37,30 +37,13 @@ run_main() {
   helix -t controller -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-ctl&
   run_helix_spectator_if_needed
 
-  helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-1&
-  helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-2&
-  helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-participant-3&
+  helix -t participant -c ${CLUSTER_NAME} -n participant-1&
+  helix -t participant -c ${CLUSTER_NAME} -n participant-2&
+  helix -t participant -c ${CLUSTER_NAME} -n participant-3&
+  helix -t participant -c ${CLUSTER_NAME} -n participant-4&
+  helix -t participant -c ${CLUSTER_NAME} -n participant-5&
 
-#  PRTC=(participant-{1..5})
-#
-#
-#  for prtcName in ${PRTC[@]}; do
-#    helix -t participant -c ${CLUSTER_NAME} -n ${CLUSTER_NAME}-$prtcName&
-#  done
-
-  TOKILL=$(pgrep -P $$ | tr "\n" " ")
-
-  #trap 'kill $TOKILL' SIGINT SIGTERM EXIT
-
-  echo "subprocs:  $TOKILL"
-
-  read
-
-  kill ${TOKILL}
-
-
-
-  sleep 1
+  wait_for_exit
 
   helix -t delete -c ${CLUSTER_NAME}
 
@@ -84,13 +67,15 @@ run_helix_spectator_if_needed() {
 run_grade_model_cluster() {
   run_zk_if_needed
 
+  trap 'touch ${SCRIPT_DIR}/.exit' SIGINT SIGTERM EXIT
+
   CLUSTER_NAME="grade-model-demo"
   NODES=('A' 'B' 'C' 'D' 'E')
 
   echo "Num of nodes: ${#NODES[@]}"
 
   echo "Making cluster..."
-  helix -c ${CLUSTER_NAME} --model ./grade-cluster.yaml
+  helix -c ${CLUSTER_NAME} --model ${SCRIPT_DIR}/grade-cluster.yaml
 
   sleep 1
   run_helix_spectator_if_needed
@@ -118,21 +103,41 @@ run_grade_model_cluster() {
 
   echo "nodes working...."
 
-  # Cleanup....
-
-  TOKILL=$(pgrep -P $$ | tr "\n" " ")
-
-  #trap 'kill $TOKILL' SIGINT SIGTERM EXIT
-
-  echo "subprocs:  $TOKILL"
-
-  read
+  wait_for_exit
 
   helix -t delete -c ${CLUSTER_NAME}
 
-  kill ${TOKILL}
-
   rm -rf ./helix-zoo-data/ ./logs/ 2> /dev/null
+}
+
+run_with_messaging() {
+  CLUSTER_NAME="messaging"
+  RESOURCE="msg-sample"
+
+  trap 'touch ${SCRIPT_DIR}/.exit' SIGINT SIGTERM EXIT
+
+  run_zk_if_needed
+
+  helix -t create -c ${CLUSTER_NAME} -r ${RESOURCE} --replicas 3
+
+  helix -t participant -c ${CLUSTER_NAME} -n pA&
+  helix -t participant -c ${CLUSTER_NAME} -n pB&
+  helix -t participant -c ${CLUSTER_NAME} -n pC&
+
+  sleep 0.5
+
+  helix message -c ${CLUSTER_NAME} --from pA --target pC --content 'hello world'
+  helix message -c ${CLUSTER_NAME} --from pC --target pA --content 'hello world'
+
+  wait_for_exit
+}
+
+wait_for_exit() {
+  while [[ ! -e "${SCRIPT_DIR}/.exit" ]]; do
+    sleep 2;
+  done
+  echo "Exiting."
+  sleep 3
 }
 
 usage() {
@@ -140,6 +145,7 @@ usage() {
 Usage:
 main     -  Master Slave Model.
 grade    -  Grade State Model.
+msgs     -  Helix Messaging test.
 
 misc:
 ZKON=1   - local zookeeper
@@ -158,6 +164,9 @@ case $1 in
     ;;
   grade)
     run_grade_model_cluster "${args[@]:1}"
+    ;;
+  msgs)
+    run_with_messaging "${args[@]:1}"
     ;;
   *)
   usage
