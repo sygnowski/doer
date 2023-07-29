@@ -1,4 +1,10 @@
 <configuration>
-    <root level="OFF">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[TEST] %-5level %logger{36} : %msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

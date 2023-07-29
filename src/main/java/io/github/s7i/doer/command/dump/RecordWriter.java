@@ -6,19 +6,21 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.manifest.dump.Topic;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.Map.Entry;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
+import java.time.Instant;
+import java.util.Base64;
+import java.util.Map.Entry;
+
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RecordWriter {
 
+    @Getter
     final Topic specs;
     @Getter
     final ProtoJsonWriter protoJsonWriter;
@@ -39,6 +41,8 @@ public class RecordWriter {
         kafka.addProperty("topic", record.topic());
         kafka.addProperty("partition", record.partition());
         kafka.addProperty("timestamp", Instant.ofEpochMilli(record.timestamp()).toString());
+        kafka.addProperty("keySize", record.serializedKeySize());
+        kafka.addProperty("valueSize", record.serializedValueSize());
         applyAdditionalKafkaProperties(kafka);
 
         for (var header : record.headers()) {
