@@ -1,6 +1,7 @@
 package io.github.s7i.doer
 
 import io.github.s7i.doer.domain.output.ConsoleOutput
+import io.github.s7i.doer.util.Utils
 import spock.lang.Specification
 
 class UtilsTest extends Specification {
@@ -23,6 +24,13 @@ class UtilsTest extends Specification {
         "kafka://config/topic" | "kafka" | "config"  | "/topic"    | "config"  | "//config/topic"
         ConsoleOutput.CONSOLE  | "doer"  | "console" | ""          | "console" | "//console"
 
+    }
+
+    def "read resource"() {
+        expect:
+        def lines = []
+        Utils.readResource("/simple-ingest.yml", {lines = it.readLines()})
+        lines.size() > 0
     }
 
 }

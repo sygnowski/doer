@@ -1,0 +1,6 @@
+{
+  "zeta" : {
+    "type_url": "type.googleapis.com/google.protobuf.StringValue",
+    "value": "\\nB\\n/type.googleapis.com/google.protobuf.StringValue\\022\\017\\n\\rthis is alpha\\022A\\n/type.googleapis.com/google.protobuf.StringValue\\022\\016\\n\\fthis is beta"
+  }
+}

@@ -1,5 +1,8 @@
 <configuration>
     <property scope="context" name="LOG_DIR" value="${DOER_HOME:-.}"/>
+    <property scope="context" name="CTX_NAME" value="${DOER_CTX_NAME:-doer}"/>
+    <property scope="context" name="LOG_APPENDER" value="${DOER_LOG_APPENDER:-FILE}"/>
+
     <timestamp key="time" datePattern="yyyyMMdd_HHmmss"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -9,7 +12,7 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>${LOG_DIR}/logs/doer-${time}.log</file>
+        <file>${LOG_DIR}/logs/${CTX_NAME}-${time}.log</file>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
@@ -20,9 +23,12 @@
     </logger>
 
     <logger name="io.github.s7i.doer" level="DEBUG"/>
+    <logger name="org.apache.helix" level="WARN"/>
     <logger name="org.apache.kafka" level="INFO"/>
+    <logger name="org.apache.zookeeper" level="WARN"/>
+
 
     <root level="DEBUG">
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="${LOG_APPENDER}"/>
     </root>
 </configuration>

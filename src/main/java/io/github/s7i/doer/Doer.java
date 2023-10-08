@@ -1,11 +1,10 @@
 package io.github.s7i.doer;
 
-import io.github.s7i.doer.command.KafkaFeeder;
-import io.github.s7i.doer.command.ProtoProcessor;
-import io.github.s7i.doer.command.Rocks;
+import io.github.s7i.doer.command.*;
 import io.github.s7i.doer.command.dump.KafkaDump;
-import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.command.util.CommandManifest;
+import io.github.s7i.doer.command.util.Misc;
+import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,16 +17,24 @@ import java.util.Arrays;
       KafkaFeeder.class,
       KafkaDump.class,
       ProtoProcessor.class,
+      Helix.class,
       Rocks.class,
-      ReplaceInFile.class})
-public class Doer implements Runnable {
+      GrpcHealth.class,
+      ZooSrv.class,
+      Misc.class})
+public class Doer implements Runnable, Banner {
 
     static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
     public static final String FLAG_SEND_AND_FORGET = "send-and-forget";
     public static final String FLAG_RAW_DATA = "raw-data";
+    public static final String FLAG_DRY_RUN = "dry-run";
+    public static final int EC_INVALID_USAGE = 1;
     public static final int EC_QUIT = 7;
+    public static final int EC_ERROR = 4;
+
+    public static final String ENV_CONFIG = "DOER_CONFIG";
 
     public static Logger console() {
         return CONSOLE;
@@ -38,6 +45,7 @@ public class Doer implements Runnable {
 
     @Override
     public void run() {
+        printBanner();
         if (showVersion) {
             console().info("version: {}", new GitProps());
         } else {

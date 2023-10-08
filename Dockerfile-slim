@@ -1,20 +1,24 @@
-FROM openjdk:11-jre
+FROM eclipse-temurin:11
 
 ARG VERSION
 ARG VCS_REF
+ARG BUILD_DATE
 
 ENV DOER_VERSION $VERSION
 ENV DOER_VCS_REF $VCS_REF
+ENV BUILD_DATE $BUILD_DATE
 
 ENV DOER_HOME /opt/doer
-RUN mkdir $DOER_HOME
 
 WORKDIR $DOER_HOME
-COPY ./build/libs/doer-all.jar ./doer.jar
-COPY doer.sh doer.sh
+ADD doer.tar /opt
+COPY docs/ /opt/doer/docs
 
-RUN chmod +x ./doer.sh && \
-    ln -s /opt/doer/doer.sh /usr/bin/doer
+RUN ls -la /opt \
+    && ln -s /opt/doer/bin/doer /usr/bin/doer
+
+LABEL build.git.ref=${VCS_REF} build.date=${BUILD_DATE} \
+  org.opencontainers.image.source="https://github.com/sygnowski/doer"
 
 EXPOSE 8080
-EXPOSE 5005
+EXPOSE 5656
