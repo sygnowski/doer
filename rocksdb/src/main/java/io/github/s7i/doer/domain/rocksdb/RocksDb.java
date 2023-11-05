@@ -57,7 +57,7 @@ public class RocksDb {
         ));
     }
 
-    public String getAsString(String colFamilyName, String key) {
+    public Optional<String> getAsString(String colFamilyName, String key) {
         var getter = new OnRocksDbOpen() {
             String val;
 
@@ -66,14 +66,16 @@ public class RocksDb {
                 try {
                     var handler = RocksDbUtil.findHandler(handles, colFamilyName);
                     var byteValue = db.get(handler, key.getBytes());
-                    val = new String(byteValue);
+                    if (byteValue != null) {
+                        val = new String(byteValue);
+                    }
                 } catch (RocksDBException e) {
                     throw new RocksDbRuntimeException(e);
                 }
             }
         };
         open(getter);
-        return getter.val;
+        return Optional.ofNullable(getter.val);
     }
 
     @RequiredArgsConstructor
