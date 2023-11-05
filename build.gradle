@@ -27,6 +27,7 @@ ext {
 
 dependencies {
     implementation project(":proto-doer")
+    implementation project(":rocksdb")
     implementation 'org.slf4j:slf4j-api:2.0.5',
             'ch.qos.logback:logback-classic:1.4.5',
             'info.picocli:picocli:4.7.0',
@@ -47,11 +48,6 @@ dependencies {
             "org.jeasy:easy-rules-mvel:4.1.0",
             "org.apache.helix:helix-core:1.1.0",
             'org.fusesource.jansi:jansi:2.4.0'
-    // Rocks DB compile only
-    //compileOnly 'org.rocksdb:rocksdbjni:7.6.0'
-    // RocksDB implement
-    implementation 'org.rocksdb:rocksdbjni:7.6.0'
-
 
     // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle
     testImplementation 'org.apache.groovy:groovy:4.0.6'
