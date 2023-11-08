@@ -1,0 +1,66 @@
+# Based on build-in model definition parser: org.apache.helix.tools.commandtools.YAMLClusterSetup.YAMLClusterConfig
+#
+# COMMAND: doer helix --model ./grade-cluster.yaml
+
+clusterName: grade-cluster
+autoJoinAllowed: true
+resources:
+  - name: doer-test
+    rebalancer:
+      mode: USER_DEFINED
+      class: io.github.s7i.doer.domain.helix.DoerRebalancer
+    partitions:
+      count: 1
+      replicas: 10
+    stateModel:
+      name: GradeModel
+      states:
+        - ALPHA
+        - BETA
+        - GAMMA
+        - OFFLINE
+        - DROPPED
+      transitions:
+        - name: FromOfflineToGamma
+          from: OFFLINE
+          to: GAMMA
+        - name: FromGammaToBeta
+          from: GAMMA
+          to: BETA
+        - name: FromBetaToAlpha
+          from: BETA
+          to: ALPHA
+        - name: FromAlphaToDropped
+          from: ALPHA
+          to: DROPPED
+        - name: FromBetaToDropped
+          from: BETA
+          to: DROPPED
+        - name: FromGammaToDropped
+          from: GAMMA
+          to: DROPPED
+      initialState: OFFLINE
+    constraints:
+      state:
+        counts:
+          - name: ALPHA
+            count: "-1"
+          - name: BETA
+            count: "-1"
+          - name: GAMMA
+            count: "R"
+          - name: OFFLINE
+            count: "-1"
+        priorityList:
+          - ALPHA
+          - BETA
+          - GAMMA
+          - OFFLINE
+      transition:
+        priorityList:
+          - FromOfflineToGamma
+          - FromGammaToBeta
+          - FromBetaToAlpha
+          - FromAlphaToDropped
+          - FromBetaToDropped
+          - FromGammaToDropped

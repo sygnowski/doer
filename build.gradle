@@ -2,10 +2,15 @@ plugins {
     id 'java'
     id 'application'
     id 'groovy'
+    id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'io.freefair.lombok' version '6.2.0'
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 }
+
+project.group = 'io.github.s7i'
+project.version = '1.0.0-SNAPSHOT'
+
 // build on provided sdk
 //sourceCompatibility = JavaVersion.VERSION_11
 //targetCompatibility = JavaVersion.VERSION_11
@@ -22,6 +27,7 @@ ext {
 
 dependencies {
     implementation project(":proto-doer")
+    implementation project(":rocksdb")
     implementation 'org.slf4j:slf4j-api:2.0.5',
             'ch.qos.logback:logback-classic:1.4.5',
             'info.picocli:picocli:4.7.0',
@@ -40,13 +46,8 @@ dependencies {
             'com.fasterxml.jackson.core:jackson-databind:2.14.0',
             'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.0',
             "org.jeasy:easy-rules-mvel:4.1.0",
-            "org.apache.helix:helix-core:1.0.4",
+            "org.apache.helix:helix-core:1.1.0",
             'org.fusesource.jansi:jansi:2.4.0'
-    // Rocks DB compile only
-    //compileOnly 'org.rocksdb:rocksdbjni:7.6.0'
-    // RocksDB implement
-    implementation 'org.rocksdb:rocksdbjni:7.6.0'
-
 
     // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle
     testImplementation 'org.apache.groovy:groovy:4.0.6'
@@ -75,3 +76,22 @@ tasks.withType(JavaCompile) {
     options.compilerArgs << '-Xlint:unchecked'
     options.deprecation = true
 }
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/sygnowski/doer")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GH_USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GH_TOKEN")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
+

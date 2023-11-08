@@ -1,0 +1,24 @@
+version: "2.2"
+services:
+  helix:
+    image: s7i/doer:0.1.1-helix
+    command: docs/samples/helix/runHelixCluster.sh main
+    environment:
+      - DOER_LOG_APPENDER=CONSOLE
+      - DOER_OUTPUT=http://host.docker.internal:19200/helix-lo/_doc
+      - ZKON=1
+  ui:
+    image: ghcr.io/sygnowski/helix:latest
+    command:
+      - "helix:2181"
+    depends_on:
+      - helix
+    restart: unless-stopped
+    ports:
+      - "4200-4210:4200"
+#  zoonav:
+#    image: elkozmon/zoonavigator
+#    depends_on:
+#      - helix
+#    ports:
+#      - "4211-4320:9000"

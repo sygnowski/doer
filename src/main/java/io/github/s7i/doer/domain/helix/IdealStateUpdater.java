@@ -1,11 +1,11 @@
 package io.github.s7i.doer.domain.helix;
 
-import static java.util.Objects.nonNull;
+import lombok.Setter;
+import org.apache.helix.InstanceType;
 
 import java.util.Map;
-import lombok.Setter;
-import lombok.SneakyThrows;
-import org.apache.helix.InstanceType;
+
+import static java.util.Objects.nonNull;
 
 public class IdealStateUpdater extends HelixMember {
 
@@ -18,18 +18,19 @@ public class IdealStateUpdater extends HelixMember {
         super(instanceName, clusterName, server);
     }
 
-    @SneakyThrows
-    public void update() {
 
-        var helix = connect(InstanceType.ADMINISTRATOR);
-        var admin = helix.getClusterManagmentTool();
+    @Override
+    public void enable() throws Exception {
+
+        connect(InstanceType.ADMINISTRATOR);
+        var admin = helixManager.getClusterManagmentTool();
         var is = admin.getResourceIdealState(clusterName, resource);
         if (nonNull(simpleFields)) {
             is.getRecord().setSimpleFields(simpleFields);
         }
         admin.updateIdealState(clusterName, resource, is);
 
-        helix.disconnect();
+        helixManager.disconnect();
     }
 
 

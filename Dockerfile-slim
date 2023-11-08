@@ -12,6 +12,7 @@ ENV DOER_HOME /opt/doer
 
 WORKDIR $DOER_HOME
 ADD doer.tar /opt
+COPY docs/ /opt/doer/docs
 
 RUN ls -la /opt \
     && ln -s /opt/doer/bin/doer /usr/bin/doer

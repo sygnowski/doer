@@ -1,8 +1,9 @@
 package io.github.s7i.doer.domain.rocksdb;
 
-import java.util.List;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
+
+import java.util.List;
 
 public interface OnRocksDbOpen extends OnRocksDbOpenComplete {
 

@@ -66,7 +66,7 @@ public class Rocks implements Runnable, ConsoleLog {
             list();
         } else {
             readOnly();
-            String value = rocksdb.getAsString(name(), key);
+            String value = rocksdb.getAsString(name(), key).orElse("");
             info("v: {}", value);
         }
     }

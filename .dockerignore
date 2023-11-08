@@ -3,7 +3,6 @@
 .run/
 .git/
 build/
-docs/
 log/
 spec/
 

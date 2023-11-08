@@ -1,3 +1,4 @@
 rootProject.name = 'doer'
 include 'proto-doer'
+include 'rocksdb'
 

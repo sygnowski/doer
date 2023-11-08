@@ -1,18 +1,19 @@
 package io.github.s7i.doer.config;
 
+import io.github.s7i.doer.util.PathResolver;
+
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public interface ProtoDescriptorContainer {
+public interface ProtoDescriptorContainer extends PathResolver {
 
     List<String> getDescriptorSet();
 
     default List<Path> getDescriptorsPaths() {
         return getDescriptorSet()
               .stream()
-              .map(Paths::get)
+              .map(this::resolvePath)
               .collect(Collectors.toList());
     }
 
