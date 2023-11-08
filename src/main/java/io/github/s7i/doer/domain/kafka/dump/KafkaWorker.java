@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
@@ -75,7 +76,7 @@ class KafkaWorker implements Context {
                 var records = consumer.poll(timeout);
                 poolSize = records.count();
                 if (poolSize > 0) {
-                    log.debug("Pool size: {}", poolSize);
+                    showTopicRecordsInfo(records);
                     records.forEach(this::dumpRecord);
                     commitOffset(consumer);
                 }
@@ -85,6 +86,18 @@ class KafkaWorker implements Context {
             log.debug("wakeup", w);
         }
         console().info("Stop dumping from Kafka, saved records: {}", recordCounter);
+    }
+
+    void showTopicRecordsInfo(ConsumerRecords<?, ?> records) {
+        if (log.isDebugEnabled()) {
+
+            var text = records.partitions()
+                    .stream()
+                    .map(tp -> String.format("%s : %d", tp, records.records(tp).size()))
+                    .collect(Collectors.joining(",\n"));
+
+            log.debug("Pool stats: \n" + text);
+        }
     }
 
     private void subscribe(List<String> topics, Consumer<String, byte[]> consumer) {

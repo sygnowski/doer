@@ -1,26 +1,29 @@
 package io.github.s7i.doer.domain.helix;
 
-import org.apache.helix.Criteria;
+import io.github.s7i.doer.Doer;
+import io.github.s7i.doer.DoerException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.helix.HelixManager;
 import org.apache.helix.InstanceType;
-import org.apache.helix.NotificationContext;
-import org.apache.helix.messaging.AsyncCallback;
-import org.apache.helix.messaging.handling.MessageHandler;
-import org.apache.helix.messaging.handling.MessageHandlerFactory;
-import org.apache.helix.model.Message;
-import org.apache.helix.model.Message.MessageState;
-import org.apache.helix.model.Message.MessageType;
 import org.apache.helix.zookeeper.datamodel.ZNRecord;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class Participant extends HelixMember {
 
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    public Participant(String instanceName, String clusterName, String server) throws Exception {
+    public Participant(String instanceName, String clusterName, String server) {
         super(instanceName, clusterName, server);
+    }
+
+    @Override
+    public void enable() throws Exception {
+        super.enable();
 
         connect(InstanceType.PARTICIPANT);
 
@@ -35,9 +38,17 @@ public class Participant extends HelixMember {
 
     @Override
     protected void onBefore(HelixManager manager) {
-        var factory = new MasterSlaveModel.Factory();
-        manager.getStateMachineEngine()
-                .registerStateModelFactory(MasterSlaveModel.MODEL, factory);
+        var engine = manager.getStateMachineEngine();
+
+        if (!engine.registerStateModelFactory(MasterSlaveModel.MODEL, new MasterSlaveModel.Factory(this))) {
+            throw new DoerException("model not registered");
+        }
+
+        if (!engine.registerStateModelFactory(GradeStateModel.MODEL, new GradeStateModel.Factory(this))) {
+            throw new DoerException("model not registered");
+        }
+
+        SimpleMessageHandler.register(manager, getEventLogger());
 
         var record = new ZNRecord(UUID.randomUUID().toString());
         record.setSimpleField("X_TEST", "test of simple field");
@@ -48,54 +59,33 @@ public class Participant extends HelixMember {
     @Override
     protected void onAfter(HelixManager manager) {
 
+        if (flags().keySet().stream().anyMatch(k -> k.startsWith("gold."))) {
+            log.info("running gold mining task");
+            CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS)
+                    .execute(this::digGold);
+        }
     }
 
-    @SuppressWarnings("deprecated")
-    void sendMessage(HelixManager manager) {
+    private void digGold() {
+        final var startLevel = Long.parseLong(flags.getOrDefault("gold.start", "0"));
+        final var incVal = Long.parseLong(flags.getOrDefault("gold.inc", "10"));
+        final var sleep = Long.parseLong(flags.getOrDefault("gold.sleep", "10"));
 
-        var messaging = manager.getMessagingService();
+        long goldLevel = startLevel;
 
-        messaging.registerMessageHandlerFactory("", new MessageHandlerFactory() {
-            @Override
-            public MessageHandler createHandler(Message message, NotificationContext context) {
-                return null;
+        while (!Thread.currentThread().isInterrupted()) {
+
+            goldLevel += incVal;
+
+            updateResource("gold", Long.toString(goldLevel));
+            Doer.console().info("{} gold level: {}", instanceName, goldLevel);
+            try {
+                TimeUnit.SECONDS.sleep(sleep);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-
-            @Override
-            public String getMessageType() {
-                return null;
-            }
-
-            @Override
-            public void reset() {
-
-            }
-        });
-
-        var msg = new Message(MessageType.USER_DEFINE_MSG, UUID.randomUUID().toString());
-        msg.setMsgSubType("myType");
-        msg.setMsgState(MessageState.NEW);
-
-        var criteria = new Criteria();
-        criteria.setInstanceName("%");
-        criteria.setRecipientInstanceType(InstanceType.CONTROLLER);
-        criteria.setResource("");
-        criteria.setPartition("");
-        criteria.setSessionSpecific(true);
-
-        var callback = new AsyncCallback() {
-            @Override
-            public void onTimeOut() {
-
-            }
-
-            @Override
-            public void onReplyMessage(Message message) {
-
-            }
-        };
-
-        messaging.sendAndWait(criteria, msg, callback, 30_000);
-
+        }
+        log.info("gold task end");
     }
+
 }

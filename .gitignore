@@ -6,3 +6,8 @@ build
 out/
 .idea
 logs/
+docs/samples/helix/helix-zoo-data
+.project
+.classpath
+.settings/
+bin/

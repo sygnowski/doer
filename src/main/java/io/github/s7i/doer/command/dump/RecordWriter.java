@@ -41,6 +41,8 @@ public class RecordWriter {
         kafka.addProperty("topic", record.topic());
         kafka.addProperty("partition", record.partition());
         kafka.addProperty("timestamp", Instant.ofEpochMilli(record.timestamp()).toString());
+        kafka.addProperty("keySize", record.serializedKeySize());
+        kafka.addProperty("valueSize", record.serializedValueSize());
         applyAdditionalKafkaProperties(kafka);
 
         for (var header : record.headers()) {
