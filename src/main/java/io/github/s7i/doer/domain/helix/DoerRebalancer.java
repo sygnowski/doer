@@ -1,5 +1,6 @@
 package io.github.s7i.doer.domain.helix;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,9 @@ public class DoerRebalancer extends DelayedAutoRebalancer {
     @Data
     @Accessors(fluent = true)
     public static class Context {
+        @JsonProperty
         StateModelDefinition model;
+        @JsonProperty
         IdealState idealState;
     }
 
