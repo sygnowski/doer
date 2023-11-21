@@ -46,7 +46,7 @@ List of available commands:
 
 - `helix`
 
-  Helix Toolkit.
+  Helix Toolkit, [more info](docs/samples/helix/readme.md)
 
 
 ## Usage
