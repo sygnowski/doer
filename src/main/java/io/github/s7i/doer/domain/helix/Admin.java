@@ -1,19 +1,25 @@
 package io.github.s7i.doer.domain.helix;
 
 import io.github.s7i.doer.Doer;
+import io.github.s7i.doer.util.Utils;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.helix.manager.zk.ZKHelixManager;
 import org.apache.helix.model.HelixConfigScope;
 import org.apache.helix.model.IdealState;
 import org.apache.helix.model.builder.HelixConfigScopeBuilder;
 import org.apache.helix.tools.ClusterSetup;
 import org.apache.helix.tools.commandtools.YAMLClusterSetup;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -48,6 +54,19 @@ public class Admin {
         }
 
         try (var is = Files.newInputStream(model)) {
+
+            if (Utils.hasAnyValue(clusterName)) {
+                var yaml = new Yaml();
+                var config = yaml.loadAs(is, YAMLClusterSetup.YAMLClusterConfig.class);
+                config.clusterName = clusterName;
+                var sw = new StringWriter();
+                yaml.dump(config, sw);
+
+                try (var mis = IOUtils.toInputStream(sw.toString(), Charset.defaultCharset())) {
+                    new YAMLClusterSetup(server).setupCluster(mis);
+                }
+                return 0;
+            }
             new YAMLClusterSetup(server).setupCluster(is);
         } catch (IOException e) {
             log.error("oops", e);
@@ -145,13 +164,14 @@ public class Admin {
         return 0;
     }
 
+    @SneakyThrows
     public Integer updateIdealState() {
         check();
 
         var updater = new IdealStateUpdater(instanceName, clusterName, server);
         updater.setResource(resource);
         updater.setSimpleFields(simpleFields);
-        updater.update();
+        updater.enable();
 
         return 0;
     }

@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Doer kfeed - simple ingest" type="Application" factoryName="Application">
+  <configuration default="false" name="Doer pipeline ingest" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="io.github.s7i.doer.Doer" />
     <module name="doer.main" />
-    <option name="PROGRAM_PARAMETERS" value="kfeed -y src/test/resources/simple-ingest-dry-run.yml" />
+    <option name="PROGRAM_PARAMETERS" value="./docs/pipeline/grpc-backend/ingest.yml" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="io.github.s7i.doer.*" />
+        <option name="PATTERN" value="io.github.s7i.doer.command.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

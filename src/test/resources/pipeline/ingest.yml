@@ -1,0 +1,7 @@
+version: v1
+kind: ingest
+params:
+  doer.pipeline.bind: from-ingest-to-sink
+  doer.pipeline.id: id-ingest1
+spec:
+  - record: my first record

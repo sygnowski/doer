@@ -3,20 +3,23 @@ package io.github.s7i.doer;
 import io.github.s7i.doer.domain.ConfigProcessor;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.domain.output.OutputFactory;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
+import io.github.s7i.doer.pipeline.Pipeline;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+
+/**
+ * <pre>
+ *     "Dependency injection is a kind of globals with configuration."
+ * </pre>
+ */
 @Slf4j
 public enum Globals implements Context {
     INSTANCE;
@@ -26,6 +29,8 @@ public enum Globals implements Context {
     List<Runnable> stopHooks = new ArrayList<>();
     @Getter
     KafkaFactory kafka = new KafkaFactory();
+    @Getter
+    Pipeline pipeline = new Pipeline();
 
     public Scope getScope() {
 

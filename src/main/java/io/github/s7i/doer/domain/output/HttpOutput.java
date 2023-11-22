@@ -1,5 +1,8 @@
 package io.github.s7i.doer.domain.output;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -7,8 +10,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
+import static java.util.Objects.nonNull;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -19,6 +22,9 @@ public class HttpOutput implements Output {
 
     @Override
     public void open() {
+        if (nonNull(httpClient)) {
+            return;
+        }
         httpClient = HttpClient.newBuilder()
               .connectTimeout(Duration.ofSeconds(15))
               .build();

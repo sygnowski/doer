@@ -7,7 +7,22 @@ import "google/protobuf/any.proto";
 option java_multiple_files = true;
 
 service PipelineService {
+  rpc exchangeMeta(MetaOp) returns (MetaOp);
   rpc publish(PipelinePublishRequest) returns (PipelinePublishResponse);
+  rpc subscribe(MetaOp) returns (stream PipelineLoad);
+}
+
+message MetaOp {
+  message Request {
+    string name = 1;
+    map<string, string> parameters = 2;
+  }
+  message Response {
+    string status = 1;
+    map<string, string> parameters = 2;
+  }
+  Request request = 1;
+  Response response = 2;
 }
 
 message PipelinePublishRequest {
