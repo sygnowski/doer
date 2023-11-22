@@ -30,8 +30,8 @@ Commands:
 Small tool for doing big things.
 
 ## Main Goals
-  [x] low code, text based, rich text features like resolvig expressions `kafka://dest/topic`
-  [ ] pipelines and records (WIP: #14)
+  - [x] low code, text based, rich text features like resolvig expressions `kafka://dest/topic`
+  - [ ] pipelines and records (WIP: #14)
 
 ## Commands:
 
