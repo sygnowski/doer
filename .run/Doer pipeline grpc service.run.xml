@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Doer pipeline grpc service" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="io.github.s7i.doer.Doer" />
+    <module name="doer.main" />
+    <option name="PROGRAM_PARAMETERS" value="pipeline" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="io.github.s7i.doer.command.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

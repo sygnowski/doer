@@ -1,6 +1,7 @@
 package io.github.s7i.doer.domain.output;
 
 import io.github.s7i.doer.DoerException;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -28,6 +29,8 @@ public class UriResolver implements OutputKindResolver {
                 return OutputKind.valueOf(authority.toUpperCase());
             case "kafka":
                 return OutputKind.KAFKA;
+            case "pipeline":
+                return OutputKind.PIPELINE;
             default:
                 return OutputKind.FILE;
         }

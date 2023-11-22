@@ -1,0 +1,11 @@
+version: v1
+kind: ingest
+param:
+  doer.output: pipeline://grpc
+  doer.pipeline.backend: grpc
+  doer.pipeline.backend.target: localhost:6565
+ingest:
+  - record: record 1 ${date:yyyy-MM-dd}T${date:HH:mm:ss}+00:00
+  - record: record 2 ${date:yyyy-MM-dd}T${date:HH:mm:ss}+00:00
+  - record: record 3 ${date:yyyy-MM-dd}T${date:HH:mm:ss}+00:00
+    key: key-record 3

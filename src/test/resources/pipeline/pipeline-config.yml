@@ -1,0 +1,7 @@
+version: v1
+kind: Config
+params:
+  doer.pipeline.backend: kafka
+  doer.pipeline.backend.kafka.properties: |+
+    bootstrap.servers=kafka:9093
+  noop.param: random

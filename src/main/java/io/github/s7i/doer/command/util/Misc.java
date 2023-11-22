@@ -6,7 +6,6 @@ import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.domain.output.HttpOutput;
-import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.Clipboard;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
@@ -23,8 +22,6 @@ import org.jeasy.rules.mvel.MVELRuleFactory;
 import org.jeasy.rules.support.reader.YamlRuleDefinitionReader;
 import org.mvel2.MVEL;
 import org.mvel2.compiler.CompiledExpression;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -52,14 +49,12 @@ import static java.util.Objects.nonNull;
         description = "Miscellaneous command set.",
         subcommands = {
                 ReplaceInFile.class,
-                CommandManifest.class,
-                PipelineService.class
+                CommandManifest.class
         }
 )
 @Slf4j(topic = "doer.console")
 public class Misc {
 
-    public static final Logger LOG = LoggerFactory.getLogger(Misc.class);
 
     @Command
     public void time(@Parameters(paramLabel = "time-value") long time,
@@ -240,7 +235,7 @@ public class Misc {
                                 try {
                                     return nonNull(logFile) ? Files.newBufferedReader(logFile) : null;
                                 } catch (IOException e) {
-                                    LOG.error("log file {}", logFile, e);
+                                    log.error("log file {}", logFile, e);
                                     return null;
                                 }
                             },
@@ -253,7 +248,7 @@ public class Misc {
                                         return new BufferedReader(new InputStreamReader(is));
                                     }
                                 } catch (Exception e) {
-                                    LOG.error("exec {}", exec, e);
+                                    log.error("exec {}", exec, e);
 
                                 }
                                 return null;
@@ -261,10 +256,10 @@ public class Misc {
                             () -> {
                                 try {
                                     var clipboard = Clipboard.getString();
-                                    LOG.debug("clipboard data: {}", clipboard);
+                                    log.debug("clipboard data: {}", clipboard);
                                     return new BufferedReader(new StringReader(clipboard));
                                 } catch (Exception e) {
-                                    LOG.error("using clipboard", e);
+                                    log.error("using clipboard", e);
                                     return null;
                                 }
                             })

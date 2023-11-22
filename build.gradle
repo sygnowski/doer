@@ -72,6 +72,11 @@ application {
     mainClass.set('io.github.s7i.doer.Doer')
 }
 
+shadowJar {
+    // https://github.com/grpc/grpc-java/issues/5493#issuecomment-478500418
+    mergeServiceFiles()
+}
+
 tasks.withType(JavaCompile) {
     options.compilerArgs << '-Xlint:unchecked'
     options.deprecation = true

@@ -4,6 +4,9 @@ import io.github.s7i.doer.command.*;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
 import io.github.s7i.doer.command.util.Misc;
+import io.github.s7i.doer.domain.ServiceEntrypoint;
+import io.github.s7i.doer.domain.grpc.GrpcServer;
+import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
 import org.slf4j.Logger;
@@ -11,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 @Command(name = "doer", description = "let's do big things...", subcommands = {
@@ -21,10 +25,12 @@ import java.util.Arrays;
       Rocks.class,
       GrpcHealth.class,
       ZooSrv.class,
+      PipelineService.class,
       Misc.class})
 public class Doer implements Runnable, Banner {
 
-    static final Logger CONSOLE = LoggerFactory.getLogger("doer.console");
+    public static final String DOER_CONSOLE = "doer.console";
+    static final Logger CONSOLE = LoggerFactory.getLogger(DOER_CONSOLE);
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
     public static final String FLAG_SEND_AND_FORGET = "send-and-forget";
@@ -42,6 +48,17 @@ public class Doer implements Runnable, Banner {
 
     @CommandLine.Option(names = {"-v", "--version"})
     private boolean showVersion;
+
+    @Command(name = "srv-grpc")
+    public int service(int port) {
+        try {
+            new GrpcServer(port, new ServiceEntrypoint()).startServer();
+            return 0;
+        } catch (IOException e) {
+            console().error("grpc-server", e);
+            return EC_ERROR;
+        }
+    }
 
     @Override
     public void run() {
@@ -61,8 +78,10 @@ public class Doer implements Runnable, Banner {
               ? new CommandManifest()
               : new Doer();
 
-        new CommandLine(command)
+        var exitCode = new CommandLine(command)
               .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(args);
+
+        System.exit(exitCode);
     }
 }
