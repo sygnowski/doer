@@ -46,6 +46,17 @@ public class RocksDb {
         }
     }
 
+    public void delete(String name, String key) {
+        var columns = initColumnFamilies(name);
+        open(columns, (db, hnds) -> {
+            try {
+                db.delete(hnds.get(columns.indexOf(name)), key.getBytes());
+            } catch (RocksDBException e) {
+                throw new RocksDbRuntimeException(e);
+            }
+        });
+    }
+
     public void put(String name, String key, String value) {
         var columns = initColumnFamilies(name);
 
