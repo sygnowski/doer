@@ -3,6 +3,7 @@ package io.github.s7i.doer;
 import io.github.s7i.doer.command.*;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
+import io.github.s7i.doer.command.util.HmacCommand;
 import io.github.s7i.doer.command.util.Misc;
 import io.github.s7i.doer.domain.ServiceEntrypoint;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
@@ -26,7 +27,9 @@ import java.util.Arrays;
       GrpcHealth.class,
       ZooSrv.class,
       PipelineService.class,
-      Misc.class})
+      Misc.class,
+      HmacCommand.class
+})
 public class Doer implements Runnable, Banner {
 
     public static final String DOER_CONSOLE = "doer.console";
