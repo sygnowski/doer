@@ -77,10 +77,12 @@ List of available commands:
 ## Usage
 ### Working with Kafka
 
-Samples of Doer - Kafka specific command usage
+ - Objective: Collect data from the Kafka topic, starting from offset `2000`, and decode from `Protobuf` into `json` format.
+   Results store in the `directory`. 
 
-Collecting data by using `kdump` command with proto message content. The dump file manifest: `dump.yml`:
+Command: `doer manifest.yml` or `doer kdump -y manifest.yml`
 
+Manifest:
 ```yaml
 # kafka-dump manifest file
 version: "1.0"
@@ -101,12 +103,11 @@ dump:
       output: dump-dir/topicName
 ```
 
-Run a command `doer kdump -y dump.yml` or `doer dump.yml`
+- Objective: Insert into Kafka topic records.
 
-Producing (Feeding) Kafka messages
+Command `doer manifest.yml` or `doer kfeed -y manifest.yml` 
 
-A simple example of ingest manifest `simple-ingest.yml`
-
+Mainfest:
 ```yaml
 version: "1.0"
 kind: kafka-ingest
@@ -121,21 +122,17 @@ ingest:
         - value: no-key-value
 ```
 
-Run a command `doer kfeed -y simple-ingest.yml` or `doer ingest.yml`
+- Objective: Insert into Kafka topic multiple records in the Protobuf format.
 
+Command `doer manifest.yml` or `doer kfeed -y manifest.yml`
 
-An advanced example with proto usage
-
-Ingest file manifest: `ingest-proto.yml` Processing a given manifest will cause production of 3 message with proto encoded content.
-
+Manifest:
 ```yaml
 version: "1.0"
 kind: kafka-ingest
 kafka-properties: kafka.properties #optional 
 kafka: # will override kafka properties 
   bootstrap.servers: "localhost:9092"
-  key.serializer: "org.apache.kafka.common.serialization.StringSerializer"
-  value.serializer: "org.apache.kafka.common.serialization.ByteArraySerializer"
 ingest:
   proto:
     descriptor_set:
