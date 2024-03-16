@@ -1,0 +1,28 @@
+version: '1.0'
+kind: kafka-ingest
+kafka:
+  bootstrap.servers: temp-anomaly:9092
+ingest:
+  templates:
+    - name: measurements.tpl
+      content: |+
+        {
+          "temperature": ${T},
+          "timestamp": 0,
+          "roomId": "room-1",
+          "thermometerId": "dev-01"
+        }
+  value_sets:
+    - name: my-set
+      attributes:
+        - T
+      values:
+        - [ "${rand=-30..60}.${rand=0..100}" ]
+      repeat: 13
+
+  topics:
+    - name: t
+      value_set: my-set
+      entries:
+        - value_template:
+            name: measurements.tpl
