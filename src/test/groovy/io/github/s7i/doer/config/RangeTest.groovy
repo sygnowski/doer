@@ -12,10 +12,11 @@ class RangeTest extends Specification {
         from == range.getFrom()
         to == range.getTo()
         where:
-        exp     | from | to
-        "1..10" | 1    | 10
-        "..15"  | null | 15
-        "5.."   | 5    | null
+        exp       | from | to
+        "1..10"   | 1    | 10
+        "..15"    | null | 15
+        "5.."     | 5    | null
+        "-67..15" | -67  | 15
     }
 
     @Unroll
