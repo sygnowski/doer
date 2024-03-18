@@ -6,10 +6,11 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'io.freefair.lombok' version '6.2.0'
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
+    id "com.palantir.docker" version "0.36.0"
 }
 
 project.group = 'io.github.s7i'
-project.version = '1.0.0-SNAPSHOT'
+project.version = rootProject.file('version').text.trim()
 
 // build on provided sdk
 //sourceCompatibility = JavaVersion.VERSION_11
@@ -98,5 +99,15 @@ publishing {
             from(components.java)
         }
     }
+}
+
+docker {
+    name "s7i/${project.name}"
+    dockerfile = new File("Dockerfile-slim")
+    files(
+            "build/distributions/doer-${project.version}.tar",
+            "doer.sh",
+            "docs"
+    )
 }
 

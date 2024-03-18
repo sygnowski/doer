@@ -8,7 +8,7 @@ args=("$@")
 export DOER_HOME=${DOER_HOME:-"/opt/doer"}
 #export DOER_LOG_APPENDER="CONSOLE"
 
-DOER_LIBS=${DOER_HOME}/libs
+DOER_LIBS=${DOER_HOME}/lib
 
 DOER_CP=""
 
