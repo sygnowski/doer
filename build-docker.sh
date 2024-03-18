@@ -1,18 +1,21 @@
 #!/bin/bash
 
+args=("$@")
+
 TAG=s7i/doer
-VERSION=0.1.1
+VERSION=$(cat ./version)
 VCS_REF=$(git describe --tags --always --dirty)
 
 main() {
     info Docker build helper script
 
     case $1 in
-        slim)
-            slim_build
+        builder)
+
+            with_builder
             ;;
         *)
-        with_builder
+        slim_build
     esac
 }
 
@@ -41,12 +44,12 @@ with_builder () {
 slim_build () {
     ./gradlew test distTar --console=plain
 
-    if [[ ! -e "./build/distributions/doer.tar" ]]; then
+    if [[ ! -e "./build/distributions/doer-${VERSION}.tar" ]]; then
       echo "missing doer.tar"
-      exit -1
+      exit 1
     fi
 
-    cp ./build/distributions/doer.tar ./doer.tar
+    cp ./build/distributions/doer-${VERSION}.tar ./doer.tar
     runBuild "Dockerfile-slim"
     rm ./doer.tar
 }
@@ -63,8 +66,14 @@ runBuild () {
     local tag=$TAG:$(versionTag)
     echo "Docker Tag: $tag"
 
-    docker build --progress=plain -t $tag --build-arg VERSION=$VERSION --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" --build-arg VCS_REF=$VCS_REF $dockerFile .
+    docker build \
+      --progress=plain \
+      -t $tag \
+      --build-arg VERSION=$VERSION \
+      --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" \
+      --build-arg VCS_REF=$VCS_REF \
+      $dockerFile .
 }
 
 # call the main function
-main $@
+main "${args[@]}"

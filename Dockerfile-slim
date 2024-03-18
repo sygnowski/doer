@@ -1,24 +1,24 @@
-FROM eclipse-temurin:11
+FROM eclipse-temurin:17
 
 ARG VERSION
 ARG VCS_REF
 ARG BUILD_DATE
+ARG JAR_FILE_NAME="doer.tar"
 
-ENV DOER_VERSION $VERSION
-ENV DOER_VCS_REF $VCS_REF
-ENV BUILD_DATE $BUILD_DATE
-
-ENV DOER_HOME /opt/doer
+ENV DOER_VERSION=$VERSION \
+  DOER_VCS_REF=$VCS_REF \
+  BUILD_DATE=$BUILD_DATE \
+  DOER_HOME=/opt/doer-$VERSION \
+  DOER_LOG_APPENDER="CONSOLE"
 
 WORKDIR $DOER_HOME
-ADD doer.tar /opt
+ADD ${JAR_FILE_NAME} /opt
 COPY docs/ /opt/doer/docs
-
-RUN ls -la /opt \
-    && ln -s /opt/doer/bin/doer /usr/bin/doer
+ADD doer.sh /opt/doer/doer.sh
 
 LABEL build.git.ref=${VCS_REF} build.date=${BUILD_DATE} \
   org.opencontainers.image.source="https://github.com/sygnowski/doer"
+ENTRYPOINT ["bash", "/opt/doer/doer.sh"]
 
 EXPOSE 8080
 EXPOSE 5656

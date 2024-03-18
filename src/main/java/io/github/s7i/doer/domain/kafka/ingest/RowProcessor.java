@@ -28,8 +28,8 @@ public class RowProcessor {
     RowProcessor updateTemplateProperties(ValueTemplate valueTemplate) {
         requireNonNull(valueTemplate);
         valueTemplate
-              .getProperties()
-              .forEach(this::addProperty);
+                .getProperties()
+                .forEach(this::addProperty);
         return this;
     }
 
@@ -38,7 +38,7 @@ public class RowProcessor {
     }
 
     RowProcessor nextRowValues(List<String> values) {
-        rowState.put(SpecialExpression.ROW_ID, String.valueOf(++rowNum));
+        rowState.put(SpecialExpression.ROW_ID.KEY_WORD, String.valueOf(++rowNum));
         for (int pos = 0; pos < attributes.size(); pos++) {
             var value = resolver.resolve(values.get(pos));
             rowState.put(attributes.get(pos), value);

@@ -5,7 +5,8 @@ plugins {
     id "idea"
 }
 
-version '0.0.2'
+group = "io.github.s7i"
+version = rootProject.file('version').text.trim()
 
 ext {
     grcpVersion= '1.51.0'

@@ -1,8 +1,5 @@
 package io.github.s7i.doer.command;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-
 import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.domain.kafka.Context;
@@ -12,17 +9,19 @@ import io.github.s7i.doer.manifest.ingest.Ingest;
 import io.github.s7i.doer.manifest.ingest.IngestManifest;
 import io.github.s7i.doer.manifest.ingest.Topic;
 import io.github.s7i.doer.proto.Decoder;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 @Command(name = "kfeed")
 @Slf4j
@@ -65,9 +64,7 @@ public class KafkaFeeder extends ManifestFileCommand implements Context, Console
             Consumer<ProducerRecord<String, byte[]>> sender = r -> {
                 if (flagSendAndForget) {
                     try {
-                        //TODO: not async anymore. https://github.com/sygnowski/doer/issues/17
-                        var rm = producer.send(r).get(SEND_TIMEOUT, TimeUnit.SECONDS);
-                        info("record sent {}", rm);
+                        producer.send(r);
                         sentCount++;
                     } catch (Exception e) {
                         log.error("async send", e);

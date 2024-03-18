@@ -34,7 +34,7 @@ public enum Globals implements Context {
 
     public Scope getScope() {
 
-        String contextUid = ThreadLocal.withInitial(() -> Thread.currentThread().getName()).get();
+        String contextUid = InheritableThreadLocal.withInitial(() -> Thread.currentThread().getName()).get();
         return scopeMap.computeIfAbsent(contextUid, uid -> {
             log.debug("new context {}", uid);
             return new Scope();
