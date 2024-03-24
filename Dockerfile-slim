@@ -9,10 +9,12 @@ ENV DOER_VERSION=$VERSION \
   DOER_VCS_REF=$VCS_REF \
   BUILD_DATE=$BUILD_DATE \
   DOER_HOME=/opt/doer-$VERSION \
-  DOER_LOG_APPENDER="CONSOLE"
+  LOGBACK_CONFIG_FILE_LOCATION="/opt/doer/conf/container-logback.xml" \
+  DOER_JVM_OPTS="-Xms128M -Xmx512M -XX:+UnlockExperimentalVMOptions -XX:+UseZGC"
 
 WORKDIR $DOER_HOME
 ADD ${JAR_FILE_NAME} /opt
+ADD src/main/resources/container-logback.xml /opt/doer/conf/container-logback.xml
 COPY docs/ /opt/doer/docs
 ADD doer.sh /opt/doer/doer.sh
 
