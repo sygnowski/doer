@@ -24,6 +24,7 @@ repositories {
 ext {
     grpcVersion = '1.51.0'
     kafkaClient = '2.8.2'
+    vertxVersion = '4.5.11'
 }
 
 dependencies {
@@ -49,6 +50,10 @@ dependencies {
             "org.jeasy:easy-rules-mvel:4.1.0",
             "org.apache.helix:helix-core:1.1.0",
             'org.fusesource.jansi:jansi:2.4.0'
+
+    implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
+    //implementation("io.vertx:vertx-web-sstore-redis")
+    implementation("io.vertx:vertx-mqtt")
 
     // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle
     testImplementation 'org.apache.groovy:groovy:4.0.6'

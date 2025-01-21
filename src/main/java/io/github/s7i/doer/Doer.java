@@ -7,6 +7,7 @@ import io.github.s7i.doer.command.util.HmacCommand;
 import io.github.s7i.doer.command.util.Misc;
 import io.github.s7i.doer.domain.ServiceEntrypoint;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
+import io.github.s7i.doer.domain.mqtt.MqttCommand;
 import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
@@ -27,6 +28,7 @@ import java.util.Arrays;
       GrpcHealth.class,
       ZooSrv.class,
       PipelineService.class,
+      MqttCommand.class,
       Misc.class,
       HmacCommand.class
 })
