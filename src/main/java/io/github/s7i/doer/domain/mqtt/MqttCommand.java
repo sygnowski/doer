@@ -1,5 +1,6 @@
 package io.github.s7i.doer.domain.mqtt;
 
+import io.github.s7i.doer.Doer;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
@@ -14,6 +15,7 @@ import picocli.CommandLine;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 
 import static java.util.Objects.requireNonNull;
 
@@ -72,6 +74,8 @@ public class MqttCommand implements Callable<Integer> {
                             log.info("QoS: {}", s.qosLevel());
                         })
                         .subscribe(topic, QOS);
+                startPromise.complete();
+                log.info("Mqtt running");
             });
         }
 
@@ -84,24 +88,32 @@ public class MqttCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+        try {
+            var latch = new CountDownLatch(1);
 
+            var vertex = Vertx.vertx();
+            var verticle = new MqttClientVerticle()
+                    .serverAddress(serverAddress)
+                    .port(port)
+                    .topic(topic)
+                    .user(user)
+                    .password(password)
+                    .clientId(clientId == null ? "doer" + UUID.randomUUID() : clientId);
+            vertex.deployVerticle(verticle);
 
-        var vertex = Vertx.vertx();
-        var verticle = new MqttClientVerticle()
-                .serverAddress(serverAddress)
-                .port(port)
-                .topic(topic)
-                .user(user)
-                .password(password)
-                .clientId(clientId == null ? "doer" + UUID.randomUUID() : clientId);
-        vertex.deployVerticle(verticle);
+            Runnable cleanup = () -> {
+                log.info("running shutdown");
+                vertex.close().onSuccess(e -> log.info("close success: {}", e));
+                latch.countDown();
+            };
+            Runtime.getRuntime().addShutdownHook(new Thread(cleanup));
 
-        Runnable cleanup = () -> {
-            log.info("running shutdown");
-            vertex.close().onSuccess(e -> log.info("close success: {}", e));
-        };
-        Runtime.getRuntime().addShutdownHook(new Thread(cleanup));
-
+            latch.await();
+            log.info("end");
+        } catch (Exception e) {
+            log.error("oops", e);
+            return Doer.EC_ERROR;
+        }
 
         return 0;
     }
