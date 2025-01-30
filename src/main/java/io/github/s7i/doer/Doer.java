@@ -1,23 +1,27 @@
 package io.github.s7i.doer;
 
-import io.github.s7i.doer.command.*;
+import io.github.s7i.doer.command.GrpcHealth;
+import io.github.s7i.doer.command.Helix;
+import io.github.s7i.doer.command.KafkaFeeder;
+import io.github.s7i.doer.command.MqttCommand;
+import io.github.s7i.doer.command.ProtoProcessor;
+import io.github.s7i.doer.command.Rocks;
+import io.github.s7i.doer.command.ZooSrv;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
 import io.github.s7i.doer.command.util.HmacCommand;
 import io.github.s7i.doer.command.util.Misc;
 import io.github.s7i.doer.domain.ServiceEntrypoint;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
-import io.github.s7i.doer.domain.mqtt.MqttCommand;
 import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
+import java.io.IOException;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 @Command(name = "doer", description = "let's do big things...", subcommands = {
       KafkaFeeder.class,
