@@ -1,7 +1,5 @@
 package io.github.s7i.doer.command;
 
-import static java.util.Objects.requireNonNull;
-
 import io.github.s7i.doer.ConsoleLog;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Context;
@@ -9,14 +7,17 @@ import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
-import java.util.Base64;
-import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
+
+import java.util.Base64;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.Objects.requireNonNull;
 
 @CommandLine.Command(name = "meshradio")
 public class Meshtastic extends VerticleCommand {
@@ -60,7 +61,7 @@ public class Meshtastic extends VerticleCommand {
 
         void callRadio(Long t) {
             var req = client.get(options.port, options.host, "/fromradio?all=false");
-            req.putHeader("")
+            req.putHeader("Content-Type","application/x-protobuf");
             req.send(rep -> {
                 if (rep.succeeded()) {
                     if (rep.result().statusCode() == 200) {
