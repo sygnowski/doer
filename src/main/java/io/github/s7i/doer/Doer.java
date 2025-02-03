@@ -3,6 +3,7 @@ package io.github.s7i.doer;
 import io.github.s7i.doer.command.GrpcHealth;
 import io.github.s7i.doer.command.Helix;
 import io.github.s7i.doer.command.KafkaFeeder;
+import io.github.s7i.doer.command.Meshtastic;
 import io.github.s7i.doer.command.MqttCommand;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.Rocks;
@@ -34,7 +35,8 @@ import picocli.CommandLine.Command;
       PipelineService.class,
       MqttCommand.class,
       Misc.class,
-      HmacCommand.class
+      HmacCommand.class,
+      Meshtastic.class
 })
 public class Doer implements Runnable, Banner {
 
