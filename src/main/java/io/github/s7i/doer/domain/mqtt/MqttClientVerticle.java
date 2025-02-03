@@ -9,6 +9,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.mqtt.MqttClient;
 import io.vertx.mqtt.MqttClientOptions;
+import io.vertx.mqtt.messages.MqttPublishMessage;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -52,12 +53,14 @@ public class MqttClientVerticle extends AbstractVerticle implements ConsoleLog {
     }
 
     private void subscribe() {
-        client.publishHandler(s -> {
-                  info("There are new message in topic: {}", s.topicName());
-                  info("Content(as string) of the message: {}", s.payload().toString());
-                  info("QoS: {}", s.qosLevel());
-              })
+        client.publishHandler(this::onPublishMessage)
               .subscribe(topic, qos);
+    }
+
+    void onPublishMessage(MqttPublishMessage s) {
+        info("There are new message in topic: {}", s.topicName());
+        info("Content(as string) of the message: {}", s.payload().toString());
+        info("QoS: {}", s.qosLevel());
     }
 
     @Override

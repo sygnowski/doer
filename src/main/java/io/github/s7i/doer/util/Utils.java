@@ -44,4 +44,5 @@ public class Utils {
                 .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
                 .configure(SerializationFeature.INDENT_OUTPUT, true);
     }
+
 }
