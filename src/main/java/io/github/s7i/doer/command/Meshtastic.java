@@ -2,21 +2,25 @@ package io.github.s7i.doer.command;
 
 import static java.util.Objects.requireNonNull;
 
+import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.UnknownFieldSet;
 import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
+import io.github.s7i.meshtastic.Proto;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.WorkerExecutor;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +31,10 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
-@Command(name = "meshradio")
+@Command(
+      name = "meshradio",
+      description = "Meshtastic radio support."
+)
 public class Meshtastic extends VerticleCommand {
 
     @Slf4j
@@ -35,14 +42,18 @@ public class Meshtastic extends VerticleCommand {
 
         @Option(names = "-p", description = "port", defaultValue = "80")
         int port;
-        @Option(names = "-h", description = "Radio IP", required = true)
+        @Option(names = {"-h", "--host"}, description = "Radio IP", required = true)
         String host;
-        @Option(names = "--interval", description = "Api call interval.", defaultValue = "5")
+        @Option(names = "--interval", description = "API call interval.", defaultValue = "5")
         int interval;
         @Option(names = "--kafka-config", description = "Kafka properties file.")
         String kafkaConfig;
         @Option(names = "--kafka-topic", defaultValue = "meshtastic-from-radio")
         String kafkaTopic;
+        @Option(names = "--ask-for-config", description = "Send at begin request for config.")
+        boolean askForConfig;
+        @Option(names = "-q", description = "Quiet, less verbose.")
+        boolean quiet;
 
         @Override
         public String getKafkaPropFile() {
@@ -69,6 +80,7 @@ public class Meshtastic extends VerticleCommand {
     public static class MeshWebClient extends AbstractVerticle implements ConsoleLog {
 
         public static final String API_FROM_RADIO = "/api/v1/fromradio?all=false";
+        public static final String API_TO_RADIO = "/api/v1/toradio";
         private final Options options;
         private WebClient client;
         private WorkerExecutor executor;
@@ -88,7 +100,23 @@ public class Meshtastic extends VerticleCommand {
 
         @Override
         public void start() throws Exception {
+            if (options.askForConfig) {
+
+                var configId = new Random().nextInt();
+                client.put(options.port, options.host, API_TO_RADIO)
+                      .sendBuffer(Buffer.buffer(Proto.INSTANCE.getConfiguration(configId).toByteArray()))
+                      .onSuccess(this::extractBody)
+                      .onFailure(expect -> log.error("oops", expect));
+            }
+
             vertx.setPeriodic(TimeUnit.SECONDS.toMillis(options.interval), this::callRadio);
+        }
+
+        private void extractBody(HttpResponse<Buffer> resp) {
+            var body = resp.body();
+            if (body != null) {
+                publish(body.getBytes());
+            }
         }
 
         void callRadio(Long t) {
@@ -97,27 +125,37 @@ public class Meshtastic extends VerticleCommand {
                 if (rep.succeeded()) {
                     var result = rep.result();
                     if (result.statusCode() == 200) {
-                        var body = result.body();
-                        if (body == null) {
-                            return;
-                        }
-                        var payload = body.getBytes();
-                        info("---\n{}\n---", Base64.getEncoder().encodeToString(payload));
-
-                        if (options.kafkaConfig != null) {
-                            publishToKafka(payload).onSuccess(meta -> log.info("payload published: {}", meta));
-                        }
-
-                        try {
-                            info("Proto: \n{}", UnknownFieldSet.parseFrom(payload));
-                        } catch (InvalidProtocolBufferException bpe) {
-                            log.warn("cannot parse proto: {}", payload);
-                        }
+                        extractBody(result);
                     }
                 } else {
                     log.error("oops", rep.cause());
                 }
             });
+        }
+
+        private void verbose(Runnable stmt) {
+            if (!options.quiet) {
+                stmt.run();
+            }
+        }
+
+        private void publish(byte[] payload) {
+            verbose(() -> info("---\n{}\n---", Base64.getEncoder().encodeToString(payload)));
+            try {
+                var fromRadio = FromRadio.parseFrom(payload);
+
+                verbose(() -> info("Proto: \n{}", fromRadio));
+
+                boolean skip = switch (fromRadio.getPayloadVariantCase()) {
+                    case QUEUESTATUS, CONFIG_COMPLETE_ID -> true;
+                    default -> false;
+                };
+                if (options.kafkaConfig != null && !skip) {
+                    publishToKafka(payload).onSuccess(meta -> log.info("payload published: {}", meta));
+                }
+            } catch (InvalidProtocolBufferException bpe) {
+                log.warn("cannot parse proto: {}", payload);
+            }
         }
 
         Future<RecordMetadata> publishToKafka(byte[] data) {
