@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Script for in-container use.
+
 set -e
 
 if [[ "x${DEBUG}" == "xtrue" ]]; then
