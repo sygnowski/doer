@@ -2,7 +2,6 @@ package io.github.s7i.doer.command;
 
 import static java.util.Objects.requireNonNull;
 
-import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
@@ -44,7 +43,7 @@ public class Meshtastic extends VerticleCommand {
         int port;
         @Option(names = {"-h", "--host"}, description = "Radio IP", required = true)
         String host;
-        @Option(names = "--interval", description = "API call interval.", defaultValue = "5")
+        @Option(names = "--interval", description = "API call interval. (milliseconds)", defaultValue = "5000")
         int interval;
         @Option(names = "--kafka-config", description = "Kafka properties file.")
         String kafkaConfig;
@@ -109,7 +108,7 @@ public class Meshtastic extends VerticleCommand {
                       .onFailure(expect -> log.error("oops", expect));
             }
 
-            vertx.setPeriodic(TimeUnit.SECONDS.toMillis(options.interval), this::callRadio);
+            vertx.setPeriodic(TimeUnit.MILLISECONDS.toMillis(options.interval), this::callRadio);
         }
 
         private void extractBody(HttpResponse<Buffer> resp) {
@@ -142,15 +141,10 @@ public class Meshtastic extends VerticleCommand {
         private void publish(byte[] payload) {
             verbose(() -> info("---\n{}\n---", Base64.getEncoder().encodeToString(payload)));
             try {
-                var fromRadio = FromRadio.parseFrom(payload);
+                var fromRadio = Proto.INSTANCE.fromRadioMeta(payload);
 
-                verbose(() -> info("Proto: \n{}", fromRadio));
-
-                boolean skip = switch (fromRadio.getPayloadVariantCase()) {
-                    case QUEUESTATUS, CONFIG_COMPLETE_ID -> true;
-                    default -> false;
-                };
-                if (options.kafkaConfig != null && !skip) {
+                verbose(() -> info("Proto: \n{}", fromRadio.toText().print(payload)));
+                if (options.kafkaConfig != null && fromRadio.interesting()) {
                     publishToKafka(payload).onSuccess(meta -> log.info("payload published: {}", meta));
                 }
             } catch (InvalidProtocolBufferException bpe) {
@@ -159,7 +153,18 @@ public class Meshtastic extends VerticleCommand {
         }
 
         Future<RecordMetadata> publishToKafka(byte[] data) {
-            return executor.executeBlocking(() -> producer.send(new ProducerRecord<>(options.kafkaTopic, data)).get());
+            return executor.executeBlocking(() -> send(data));
+        }
+
+        ProducerRecord<String, byte[]> record(byte[] data) {
+            var topic = options.kafkaTopic;
+            var key = options.host;
+
+            return new ProducerRecord<>(topic, key, data);
+        }
+
+        RecordMetadata send(byte[] data) throws Exception {
+            return producer.send(record(data)).get();
         }
 
         private Producer<String, byte[]> initKafkaProducer() {
