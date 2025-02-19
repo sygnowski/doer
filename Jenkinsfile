@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        GH_USER     = credentials('gh-user')
-        GH_TOKEN    = credentials('gh-token')
+        GH_USERNAME     = credentials('gh-user')
+        GH_TOKEN        = credentials('gh-token')
     }
 
     stages {
