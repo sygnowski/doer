@@ -14,7 +14,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh "chmod u+x ./gradlew"
-                sh "./gradlew ${parms.EXTRA_OPTS} build"
+                sh "./gradlew ${params.EXTRA_OPTS} build"
             }
         }
     }
