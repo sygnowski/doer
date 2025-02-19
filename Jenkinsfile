@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        GH_USER     = credentials('gh-user')
+        GH_TOKEN    = credentials('gh-token')
+    }
+
     stages {
         stage('Build') {
             steps {
