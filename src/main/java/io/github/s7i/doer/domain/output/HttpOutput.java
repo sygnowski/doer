@@ -36,8 +36,9 @@ public class HttpOutput implements Output {
 
         var config = RetryConfig.<Boolean>custom()
               .retryOnResult(success -> !success)
-              .waitDuration(RetrySettings.get().getWait())
-              .maxAttempts(RetrySettings.get().getAttempts())
+              .failAfterMaxAttempts(true)
+              .waitDuration(RetrySettings.get().wait())
+              .maxAttempts(RetrySettings.get().attempts())
               .build();
         registry = RetryRegistry.of(config);
     }
