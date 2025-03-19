@@ -11,3 +11,7 @@ docs/samples/helix/helix-zoo-data
 .classpath
 .settings/
 bin/
+
+*.tar
+#mesh clases
+proto-doer/src/main/java/com/geeksville/mesh/
