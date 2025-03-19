@@ -25,6 +25,7 @@ ext {
     grpcVersion = '1.51.0'
     kafkaClient = '2.8.2'
     vertxVersion = '4.5.11'
+    resilience4jVersion = '2.2.0'
 }
 
 dependencies {
@@ -50,7 +51,8 @@ dependencies {
             "org.jeasy:easy-rules-mvel:4.1.0",
             "org.apache.helix:helix-core:1.3.0",
             'org.fusesource.jansi:jansi:2.4.0',
-            'io.netty:netty-all:4.1.117.Final'
+            'io.netty:netty-all:4.1.117.Final',
+            "io.github.resilience4j:resilience4j-retry:${resilience4jVersion}"
 
     implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
     //implementation("io.vertx:vertx-web-sstore-redis")
