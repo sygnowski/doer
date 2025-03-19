@@ -24,6 +24,9 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 @Command(name = "doer", description = "let's do big things...", subcommands = {
       KafkaFeeder.class,
       KafkaDump.class,
@@ -47,6 +50,7 @@ public class Doer implements Runnable, Banner {
     public static final String FLAG_SEND_AND_FORGET = "send-and-forget";
     public static final String FLAG_RAW_DATA = "raw-data";
     public static final String FLAG_DRY_RUN = "dry-run";
+    public static final String FLAG_FAIL_FAST = "fail-fast";
     public static final int EC_INVALID_USAGE = 1;
     public static final int EC_QUIT = 7;
     public static final int EC_ERROR = 4;
