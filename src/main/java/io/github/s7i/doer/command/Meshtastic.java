@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.github.s7i.doer.ConsoleLog;
+import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.meshtastic.Proto;
@@ -30,6 +31,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
+@Slf4j
 @Command(
       name = "meshradio",
       description = "Meshtastic radio support."
@@ -53,6 +55,8 @@ public class Meshtastic extends VerticleCommand {
         boolean askForConfig;
         @Option(names = "-q", description = "Quiet, less verbose.")
         boolean quiet;
+        @Option(names = "--commit-timeout", description = "Kafka Commit Timeout second.", defaultValue = "30")
+        int kafkaAsyncCommitTimeout;
 
         @Override
         public String getKafkaPropFile() {
@@ -105,7 +109,7 @@ public class Meshtastic extends VerticleCommand {
                 client.put(options.port, options.host, API_TO_RADIO)
                       .sendBuffer(Buffer.buffer(Proto.INSTANCE.getConfiguration(configId).toByteArray()))
                       .onSuccess(this::extractBody)
-                      .onFailure(expect -> log.error("oops", expect));
+                      .onFailure(this::failFast);
             }
 
             vertx.setPeriodic(TimeUnit.MILLISECONDS.toMillis(options.interval), this::callRadio);
@@ -127,7 +131,7 @@ public class Meshtastic extends VerticleCommand {
                         extractBody(result);
                     }
                 } else {
-                    log.error("oops", rep.cause());
+                    failFast(rep.cause());
                 }
             });
         }
@@ -145,7 +149,9 @@ public class Meshtastic extends VerticleCommand {
 
                 verbose(() -> info("Proto: \n{}", fromRadio.toText().print(payload)));
                 if (options.kafkaConfig != null && fromRadio.interesting()) {
-                    publishToKafka(payload).onSuccess(meta -> log.info("payload published: {}", meta));
+                    publishToKafka(payload)
+                          .onSuccess(meta -> log.info("payload published: {}", meta))
+                          .onFailure(this::failFast);
                 }
             } catch (InvalidProtocolBufferException bpe) {
                 log.warn("cannot parse proto: {}", payload);
@@ -164,13 +170,18 @@ public class Meshtastic extends VerticleCommand {
         }
 
         RecordMetadata send(byte[] data) throws Exception {
-            return producer.send(record(data)).get();
+            return producer.send(record(data)).get(options.kafkaAsyncCommitTimeout, TimeUnit.SECONDS);
         }
 
         private Producer<String, byte[]> initKafkaProducer() {
             return new KafkaFactory()
                   .getProducerFactory()
                   .createProducer(options, false);
+        }
+
+        void failFast(Throwable ex) {
+            log.error("FAIL-FAST", ex);
+            System.exit(Doer.EC_ERROR);
         }
     }
 }
