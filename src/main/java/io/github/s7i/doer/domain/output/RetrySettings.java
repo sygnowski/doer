@@ -27,13 +27,13 @@ public class RetrySettings {
     }
 
     private final int attempts;
-    private final Duration wait;
+    private final Duration waitDuration;
 
     private RetrySettings() {
         var params = Globals.INSTANCE.getParams();
 
         attempts = Integer.parseInt(params.getOrDefault(RETRY_MAX_ATTEMPTS, "10"));
-        wait = Duration.of(
+        waitDuration = Duration.of(
               Integer.parseInt(params.getOrDefault(RETRY_WAIT_SEC, "30")),
               ChronoUnit.SECONDS
         );

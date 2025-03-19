@@ -25,7 +25,7 @@ ext {
     grpcVersion = '1.51.0'
     kafkaClient = '2.8.2'
     vertxVersion = '4.5.11'
-    resilience4jVersion = '2.2.0'
+    resilience4jVersion = '2.3.0'
 }
 
 dependencies {
