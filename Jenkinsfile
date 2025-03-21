@@ -17,5 +17,12 @@ pipeline {
                 sh "./gradlew ${params.EXTRA_OPTS} build"
             }
         }
+        stage('Docker Build Image') {
+            agent { label 'docker' }
+            steps {
+                sh "./build-docker.sh"
+            }
+
+        }
     }
 }
