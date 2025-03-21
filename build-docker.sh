@@ -42,7 +42,7 @@ with_builder () {
 }
 
 slim_build () {
-    ./gradlew test distTar --console=plain
+    ./gradlew test distTar --console=plain --no-daemon
 
     if [[ ! -e "./build/distributions/doer-${VERSION}.tar" ]]; then
       echo "missing doer.tar"
