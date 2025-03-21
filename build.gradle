@@ -19,6 +19,12 @@ project.version = rootProject.file('version').text.trim()
 repositories {
     mavenLocal()
     mavenCentral()
+    //Local Maven Repository
+    maven {
+        name = "Nexus"
+        url = uri("http://dwarf.syg:5815/repository/maven-releases/")
+        allowInsecureProtocol = true
+    }
 }
 
 ext {
