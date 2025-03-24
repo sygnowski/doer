@@ -41,8 +41,10 @@ with_builder () {
     runBuild
 }
 
-slim_build () {
-    ./gradlew test distTar --console=plain --no-daemon
+function slim_build () {
+    if [[ -z "${JENKINS_URL}" ]]; then
+      ./gradlew test distTar --console=plain --no-daemon
+    fi
 
     if [[ ! -e "./build/distributions/doer-${VERSION}.tar" ]]; then
       echo "missing doer.tar"
@@ -54,6 +56,10 @@ slim_build () {
     rm ./doer.tar
 }
 
+function docker_tags() {
+      echo "$TAG:${IMAGE_BUILD_TAG:-$(versionTag)}"
+}
+
 runBuild () {
     local dockerFile
 
@@ -63,12 +69,10 @@ runBuild () {
     else
         echo "Using default dockerfile"
     fi
-    local tag=$TAG:$(versionTag)
-    echo "Docker Tag: $tag"
 
     docker build \
       --progress=plain \
-      -t $tag \
+      ${docker_tags} \
       --build-arg VERSION=$VERSION \
       --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" \
       --build-arg VCS_REF=$VCS_REF \
