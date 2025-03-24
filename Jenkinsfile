@@ -9,9 +9,8 @@ pipeline {
     parameters {
         string(name: 'EXTRA_OPTS', defaultValue: '--no-build-cache --no-daemon --console=plain --info', description: 'Gradle Extra Options')
         choice(
-            choices: ['YES', 'NO'],
+            choices: ['NO', 'YES'],
             name: 'OPT_BUILD_DOCKER',
-            defaultValue: 'NO'
         )
     }
 
