@@ -17,8 +17,11 @@ project.version = rootProject.file('version').text.trim()
 //targetCompatibility = JavaVersion.VERSION_11
 
 repositories {
-    mavenLocal()
-    mavenCentral()
+    maven {
+        allowInsecureProtocol = true
+        url = "http://dwarf.syg:5815/repository/maven-public/"
+    }
+    //mavenCentral()
     //Local Maven Repository
     maven {
         name = "Nexus"
