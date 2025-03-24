@@ -78,7 +78,7 @@ runBuild () {
       --build-arg VCS_REF=$VCS_REF \
       $dockerFile .
 
-    if [[ "x${DOCKER_PUBLISH_IMAGE}" == "xYes" ]]; then
+    if [[ "x${DOCKER_PUBLISH_IMAGE}" == "xYES" ]]; then
       echo ${DOCKER_PASSWD} | docker login \
       http://dwarf.syg:5817/repository/docker/ \
       --username mario \
