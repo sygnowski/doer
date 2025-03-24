@@ -51,5 +51,20 @@ pipeline {
                 }
             }
         }
+        stage('Docker Publish Image') {
+            when {
+                expression {
+                    return params.OPT_BUILD_DOCKER == "YES" && env.OPT_PUBLISH_DOCKER == 'YES'
+                }
+            }
+            environment {
+                IMAGE_BUILD_TAG = "ci-${BRANCH_NAME}-${BUILD_NUMBER}"
+            }
+            agent { label 'docker' }
+            steps {
+                sh "echo $env.DOCKER_PASSWD | docker login http://dwarf.syg:5817/repository/docker/ --username mario --password-stdin"
+                sh "dokcer tag $env.IMAGE_BUILD_TAG dwarf.syg:5817/docker/$env.IMAGE_BUILD_TAG"
+            }
+        }
     }
 }
