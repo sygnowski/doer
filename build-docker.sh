@@ -85,7 +85,9 @@ runBuild () {
       --password-stdin
 
       REPO_WITH_TAG="dwarf.syg:5817/docker/${IMAGE_BUILD_TAG}"
-      dokcer tag ${IMAGE_BUILD_TAG} ${REPO_WITH_TAG}
+      docker tag ${IMAGE_BUILD_TAG} ${REPO_WITH_TAG}
+      docker push ${REPO_WITH_TAG}
+      docker image rm ${REPO_WITH_TAG}
     fi
 }
 
