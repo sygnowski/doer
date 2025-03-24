@@ -45,10 +45,10 @@ pipeline {
             steps {
                 println "Env IMAGE_BUILD_TAG: $env.IMAGE_BUILD_TAG"
                 sh "./build-docker.sh"
-                if (env.OPT_PUBLISH_DOCKER == 'YES') {
-                    sh "echo $env.DOCKER_PASSWD | docker login http://dwarf.syg:5817/repository/docker/ --username mario --password-stdin"
-                    sh "dokcer tag $env.IMAGE_BUILD_TAG dwarf.syg:5817/docker/$env.IMAGE_BUILD_TAG"
-                }
+//                 if (env.OPT_PUBLISH_DOCKER == 'YES') {
+//                     sh "echo $env.DOCKER_PASSWD | docker login http://dwarf.syg:5817/repository/docker/ --username mario --password-stdin"
+//                     sh "dokcer tag $env.IMAGE_BUILD_TAG dwarf.syg:5817/docker/$env.IMAGE_BUILD_TAG"
+//                 }
             }
         }
         stage('Docker Publish Image') {
