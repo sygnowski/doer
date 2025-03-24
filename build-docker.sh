@@ -77,6 +77,16 @@ runBuild () {
       --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" \
       --build-arg VCS_REF=$VCS_REF \
       $dockerFile .
+
+    if [[ "x${DOCKER_PUBLISH_IMAGE}" == "xYes" ]]; then
+      echo ${DOCKER_PASSWD} | docker login \
+      http://dwarf.syg:5817/repository/docker/ \
+      --username mario \
+      --password-stdin
+
+      REPO_WITH_TAG="dwarf.syg:5817/docker/${IMAGE_BUILD_TAG}"
+      dokcer tag ${IMAGE_BUILD_TAG} ${REPO_WITH_TAG}
+    fi
 }
 
 # call the main function
