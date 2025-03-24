@@ -32,6 +32,7 @@ pipeline {
             }
             agent { label 'docker' }
             steps {
+                println "Env: $env.IMAGE_BUILD_TAG"
                 sh "./build-docker.sh"
             }
 
