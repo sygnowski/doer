@@ -2,11 +2,13 @@
 
 args=("$@")
 
-NAME=s7i/doer
+NAME="s7i/doer"
 VERSION=$(cat ./version)
 VCS_REF=$(git describe --tags --always --dirty)
 
 REMOTE_REPO=${REMOTE_REPO:-"dwarf.syg:5817/docker"}
+DOCKER_LOGIN_URL=${DOCKER_LOGIN_URL:-"http://dwarf.syg:5817/repository/docker/"}
+DOCKER_USERNAME=${DOCKER_USERNAME:-"mario"}
 
 main() {
     info Docker build helper script
@@ -44,16 +46,16 @@ with_builder () {
 }
 
 function slim_build () {
-    if [[ -z "${JENKINS_URL}" ]]; then
-      ./gradlew test distTar --console=plain --no-daemon
+    DIST_TAR="./build/distributions/doer-${VERSION}.tar"
+    if [[ ! -e ${DIST_TAR} ]]; then
+      ./gradlew distTar --console=plain --no-daemon
+      if [[ ! -e ${DIST_TAR} ]]; then
+        echo "missing doer.tar: (${DIST_TAR})"
+        exit 1
+      fi
     fi
 
-    if [[ ! -e "./build/distributions/doer-${VERSION}.tar" ]]; then
-      echo "missing doer.tar"
-      exit 1
-    fi
-
-    cp ./build/distributions/doer-${VERSION}.tar ./doer.tar
+    ln $DIST_TAR ./doer.tar
     runBuild "Dockerfile-slim"
     rm ./doer.tar
 }
@@ -84,8 +86,8 @@ runBuild () {
       echo "Publishing to remote repository: ${REMOTE_REPO}"
 
       echo ${DOCKER_PASSWD} | docker login \
-      http://dwarf.syg:5817/repository/docker/ \
-      --username mario \
+      ${DOCKER_LOGIN_URL} \
+      --username ${DOCKER_USERNAME} \
       --password-stdin
 
       LOCAL_NAME="${NAME}:${IMAGE_BUILD_TAG}"
