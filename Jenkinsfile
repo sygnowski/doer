@@ -40,7 +40,7 @@ pipeline {
             }
             environment {
                 IMAGE_BUILD_TAG = "ci-${BRANCH_NAME}-${BUILD_NUMBER}"
-                DOCKER_PUBLISH_IMAGE = params.OPT_PUBLISH_DOCKER
+                DOCKER_PUBLISH_IMAGE = "$params.OPT_PUBLISH_DOCKER"
             }
             agent { label 'docker' }
             steps {
