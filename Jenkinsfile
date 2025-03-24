@@ -28,7 +28,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh "chmod u+x ./gradlew"
+                sh "chmod -v u+x ./gradlew"
                 sh "./gradlew ${params.EXTRA_OPTS} build distTar -x distZip -x shadowJar"
             }
         }
@@ -39,7 +39,8 @@ pipeline {
                 }
             }
             environment {
-                IMAGE_BUILD_TAG = "ci-${BRANCH_NAME}-${BUILD_NUMBER}"
+                //IMAGE_BUILD_TAG = "ci-${BRANCH_NAME}-${BUILD_NUMBER}"
+                IMAGE_BUILD_TAG = "${BRANCH_NAME}"
                 DOCKER_PUBLISH_IMAGE = "${params.OPT_PUBLISH_DOCKER}"
             }
             agent { label 'docker' }

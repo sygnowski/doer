@@ -6,6 +6,8 @@ NAME=s7i/doer
 VERSION=$(cat ./version)
 VCS_REF=$(git describe --tags --always --dirty)
 
+REMOTE_REPO=${REMOTE_REPO:-"dwarf.syg:5817/docker"}
+
 main() {
     info Docker build helper script
 
@@ -79,13 +81,15 @@ runBuild () {
       $dockerFile .
 
     if [[ "x${DOCKER_PUBLISH_IMAGE}" == "xYES" ]]; then
+      echo "Publishing to remote repository: ${REMOTE_REPO}"
+
       echo ${DOCKER_PASSWD} | docker login \
       http://dwarf.syg:5817/repository/docker/ \
       --username mario \
       --password-stdin
 
       LOCAL_NAME="${NAME}:${IMAGE_BUILD_TAG}"
-      REMOTE_NAME="dwarf.syg:5817/docker/${LOCAL_NAME}"
+      REMOTE_NAME="${REMOTE_REPO}/${LOCAL_NAME}"
       docker tag ${LOCAL_NAME} ${REMOTE_NAME}
       docker push ${REMOTE_NAME}
       docker image rm ${REMOTE_NAME}
