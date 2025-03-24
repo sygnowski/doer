@@ -57,7 +57,7 @@ function slim_build () {
 }
 
 function docker_tags() {
-      echo "-t $TAG:${IMAGE_BUILD_TAG:-$(versionTag)}"
+      echo "--tag $TAG:${IMAGE_BUILD_TAG:-$(versionTag)}"
 }
 
 runBuild () {
@@ -72,7 +72,7 @@ runBuild () {
 
     docker build \
       --progress=plain \
-      ${docker_tags} \
+      $(docker_tags) \
       --build-arg VERSION=$VERSION \
       --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" \
       --build-arg VCS_REF=$VCS_REF \
