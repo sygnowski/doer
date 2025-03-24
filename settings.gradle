@@ -11,6 +11,7 @@ pluginManagement {
             url = uri("http://dwarf.syg:5815/repository/maven-releases/")
             allowInsecureProtocol = true
         }
+        mavenCentral()
         gradlePluginPortal()
     }
 }
