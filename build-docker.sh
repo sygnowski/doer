@@ -2,7 +2,7 @@
 
 args=("$@")
 
-TAG=s7i/doer
+NAME=s7i/doer
 VERSION=$(cat ./version)
 VCS_REF=$(git describe --tags --always --dirty)
 
@@ -21,7 +21,7 @@ main() {
 
 info() {
     echo
-    echo Tag: $TAG:$VERSION
+    echo Name and version: $NAME:$VERSION
     echo Git-sha: $VCS_REF
     echo
 }
@@ -57,7 +57,7 @@ function slim_build () {
 }
 
 function docker_tags() {
-      echo "--tag $TAG:${IMAGE_BUILD_TAG:-$(versionTag)}"
+      echo "--tag $NAME:${IMAGE_BUILD_TAG:-$(versionTag)}"
 }
 
 runBuild () {
@@ -84,10 +84,11 @@ runBuild () {
       --username mario \
       --password-stdin
 
-      REPO_WITH_TAG="dwarf.syg:5817/docker/${IMAGE_BUILD_TAG}"
-      docker tag ${IMAGE_BUILD_TAG} ${REPO_WITH_TAG}
-      docker push ${REPO_WITH_TAG}
-      docker image rm ${REPO_WITH_TAG}
+      LOCAL_NAME="${NAME}:${IMAGE_BUILD_TAG}"
+      REMOTE_NAME="dwarf.syg:5817/docker/${LOCAL_NAME}"
+      docker tag ${LOCAL_NAME} ${REMOTE_NAME}
+      docker push ${REMOTE_NAME}
+      docker image rm ${REMOTE_NAME}
     fi
 }
 
