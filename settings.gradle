@@ -2,3 +2,37 @@ rootProject.name = 'doer'
 include 'proto-doer'
 include 'rocksdb'
 
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            url = "http://dwarf.syg:5815/repository/maven-public/"
+        }
+
+        //Local Maven Repository
+        maven {
+            name = "Nexus"
+            url = uri("http://dwarf.syg:5815/repository/maven-releases/")
+            allowInsecureProtocol = true
+        }
+        mavenCentral()
+    }
+}
+
+pluginManagement {
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            url = "http://dwarf.syg:5815/repository/maven-public/"
+        }
+
+        //Local Maven Repository
+        maven {
+            name = "Nexus"
+            url = uri("http://dwarf.syg:5815/repository/maven-releases/")
+            allowInsecureProtocol = true
+        }
+        gradlePluginPortal()
+    }
+}

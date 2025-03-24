@@ -7,10 +7,6 @@ plugins {
 group = "io.github.s7i"
 version = rootProject.file('version').text.trim()
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     // Rocks DB compile only
     //compileOnly 'org.rocksdb:rocksdbjni:7.6.0'
