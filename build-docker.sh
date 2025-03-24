@@ -57,7 +57,7 @@ function slim_build () {
 }
 
 function docker_tags() {
-      echo "$TAG:${IMAGE_BUILD_TAG:-$(versionTag)}"
+      echo "-t $TAG:${IMAGE_BUILD_TAG:-$(versionTag)}"
 }
 
 runBuild () {
