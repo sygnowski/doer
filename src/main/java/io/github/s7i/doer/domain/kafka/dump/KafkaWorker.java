@@ -1,5 +1,12 @@
 package io.github.s7i.doer.domain.kafka.dump;
 
+import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
+import static io.github.s7i.doer.Doer.console;
+import static io.github.s7i.doer.util.Utils.hasAnyValue;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.dump.ProtoJsonWriter;
@@ -17,6 +24,17 @@ import io.github.s7i.doer.manifest.dump.Topic;
 import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.util.TopicNameResolver;
 import io.github.s7i.doer.util.TopicWithResolvableName;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,19 +44,8 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.errors.WakeupException;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
-import static io.github.s7i.doer.Doer.console;
-import static io.github.s7i.doer.util.Utils.hasAnyValue;
-import static java.util.Objects.*;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -82,8 +89,8 @@ class KafkaWorker implements Context {
                 }
             } while (notEnds());
             commitOffset(consumer);
-        } catch (WakeupException w) {
-            log.debug("wakeup", w);
+        } catch (WakeupException | InterruptException e) {
+            log.debug("maybe it's shutdown...", e);
         }
         console().info("Stop dumping from Kafka, saved records: {}", recordCounter);
     }
