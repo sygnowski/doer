@@ -12,18 +12,6 @@ ext {
     grcpVersion= '1.51.0'
 }
 
-repositories {
-    maven {
-        url = uri("https://maven.pkg.github.com/nefro85/devbox")
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("GH_USERNAME")
-            password = project.findProperty("gpr.key") ?: System.getenv("GH_TOKEN")
-        }
-    }    
-    mavenCentral()
-    mavenLocal()
-}
-
 dependencies {
     implementation "io.github.s7i.meshtastic.proto:meshtastic-proto:1.0"
     implementation 'com.google.protobuf:protobuf-java:3.21.9'

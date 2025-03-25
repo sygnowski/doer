@@ -16,17 +16,6 @@ project.version = rootProject.file('version').text.trim()
 //sourceCompatibility = JavaVersion.VERSION_11
 //targetCompatibility = JavaVersion.VERSION_11
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-    //Local Maven Repository
-    maven {
-        name = "Nexus"
-        url = uri("http://dwarf.syg:5815/repository/maven-releases/")
-        allowInsecureProtocol = true
-    }
-}
-
 ext {
     grpcVersion = '1.51.0'
     kafkaClient = '2.8.2'

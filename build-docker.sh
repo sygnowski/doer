@@ -2,9 +2,13 @@
 
 args=("$@")
 
-TAG=s7i/doer
+NAME="s7i/doer"
 VERSION=$(cat ./version)
 VCS_REF=$(git describe --tags --always --dirty)
+
+REMOTE_REPO=${REMOTE_REPO:-"dwarf.syg:5817/docker"}
+DOCKER_LOGIN_URL=${DOCKER_LOGIN_URL:-"http://dwarf.syg:5817/repository/docker/"}
+DOCKER_USERNAME=${DOCKER_USERNAME:-"mario"}
 
 main() {
     info Docker build helper script
@@ -21,7 +25,7 @@ main() {
 
 info() {
     echo
-    echo Tag: $TAG:$VERSION
+    echo Name and version: $NAME:$VERSION
     echo Git-sha: $VCS_REF
     echo
 }
@@ -41,17 +45,23 @@ with_builder () {
     runBuild
 }
 
-slim_build () {
-    ./gradlew test distTar --console=plain
-
-    if [[ ! -e "./build/distributions/doer-${VERSION}.tar" ]]; then
-      echo "missing doer.tar"
-      exit 1
+function slim_build () {
+    DIST_TAR="./build/distributions/doer-${VERSION}.tar"
+    if [[ ! -e ${DIST_TAR} ]]; then
+      ./gradlew distTar --console=plain --no-daemon
+      if [[ ! -e ${DIST_TAR} ]]; then
+        echo "missing doer.tar: (${DIST_TAR})"
+        exit 1
+      fi
     fi
 
-    cp ./build/distributions/doer-${VERSION}.tar ./doer.tar
+    ln $DIST_TAR ./doer.tar
     runBuild "Dockerfile-slim"
     rm ./doer.tar
+}
+
+function docker_tags() {
+      echo "--tag $NAME:${IMAGE_BUILD_TAG:-$(versionTag)}"
 }
 
 runBuild () {
@@ -63,16 +73,29 @@ runBuild () {
     else
         echo "Using default dockerfile"
     fi
-    local tag=$TAG:$(versionTag)
-    echo "Docker Tag: $tag"
 
     docker build \
       --progress=plain \
-      -t $tag \
+      $(docker_tags) \
       --build-arg VERSION=$VERSION \
       --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%S%z")" \
       --build-arg VCS_REF=$VCS_REF \
       $dockerFile .
+
+    if [[ "x${DOCKER_PUBLISH_IMAGE}" == "xYES" ]]; then
+      echo "Publishing to remote repository: ${REMOTE_REPO}"
+
+      echo ${DOCKER_PASSWD} | docker login \
+      ${DOCKER_LOGIN_URL} \
+      --username ${DOCKER_USERNAME} \
+      --password-stdin
+
+      LOCAL_NAME="${NAME}:${IMAGE_BUILD_TAG}"
+      REMOTE_NAME="${REMOTE_REPO}/${LOCAL_NAME}"
+      docker tag ${LOCAL_NAME} ${REMOTE_NAME}
+      docker push ${REMOTE_NAME}
+      docker image rm ${REMOTE_NAME}
+    fi
 }
 
 # call the main function
