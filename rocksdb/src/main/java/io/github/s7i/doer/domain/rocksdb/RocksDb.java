@@ -1,13 +1,26 @@
 package io.github.s7i.doer.domain.rocksdb;
 
+import static java.util.Objects.nonNull;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.rocksdb.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.nonNull;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.DBOptions;
+import org.rocksdb.InfoLogLevel;
+import org.rocksdb.Options;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 
 @RequiredArgsConstructor
 public class RocksDb {
@@ -27,6 +40,8 @@ public class RocksDb {
     private boolean createMissingColumnFamilies = true;
     @Setter
     private boolean readOnly;
+    @Setter
+    private DbOptionHandler optionHandler;
 
     public List<String> listColumns() {
         return listColumns(false);
@@ -220,9 +235,17 @@ public class RocksDb {
     }
 
     private DBOptions newOptions() {
-        return new DBOptions()
+        var options = new DBOptions()
+              .setInfoLogLevel(InfoLogLevel.ERROR_LEVEL)
+              .setStatsDumpPeriodSec(60)
               .setCreateIfMissing(createIfMissing)
               .setCreateMissingColumnFamilies(createMissingColumnFamilies);
+
+        if (optionHandler != null) {
+            options = optionHandler.handleOptions(options);
+        }
+
+        return options;
     }
 
     private ColumnFamilyDescriptor newDescriptor(String name) {
