@@ -1,5 +1,7 @@
 package io.github.s7i.doer.command.util;
 
+import static java.util.Objects.nonNull;
+
 import com.google.gson.Gson;
 import com.google.protobuf.TextFormat;
 import io.github.s7i.doer.Doer;
@@ -10,6 +12,24 @@ import io.github.s7i.doer.util.Clipboard;
 import io.github.s7i.doer.util.GitProps;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.Utils;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
@@ -27,23 +47,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.io.*;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static java.util.Objects.nonNull;
-
 @Command(
         name = "misc",
         description = "Miscellaneous command set.",
@@ -54,6 +57,13 @@ import static java.util.Objects.nonNull;
 )
 @Slf4j(topic = "doer.console")
 public class Misc {
+
+    @Command
+    public void chk() {
+        Stream.of(Utils.Emoji.values())
+              .map(e -> e.name() + ": " + e.get())
+              .forEach(System.out::println);
+    }
 
 
     @Command

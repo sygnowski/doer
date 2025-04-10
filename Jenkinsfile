@@ -32,6 +32,14 @@ pipeline {
                 sh "./gradlew ${params.EXTRA_OPTS} build distTar -x distZip -x shadowJar"
             }
         }
+        stage('Doer Play') {
+            steps {
+                sh """
+                ./gradlew --console=plain --info shadowJar
+                ./dev.sh play
+                """
+            }
+        }
         stage('Docker Build Image') {
             when {
                 expression {

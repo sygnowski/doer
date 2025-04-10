@@ -1,10 +1,10 @@
 package io.github.s7i.doer.domain.kafka.ingest;
 
 import com.google.protobuf.Descriptors.Descriptor;
+import io.github.s7i.doer.domain.proto.Decoder;
 import io.github.s7i.doer.manifest.ingest.Entry;
 import io.github.s7i.doer.manifest.ingest.TemplateProp;
 import io.github.s7i.doer.manifest.ingest.ValueSet;
-import io.github.s7i.doer.proto.Decoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;

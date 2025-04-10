@@ -17,7 +17,7 @@ class PipelineTest extends Specification {
         ]
         def pipeline = Mock(Pipeline) {
         }
-        Globals.INSTANCE.pipeline = pipeline
+        Globals.INSTANCE.pipeline(pipeline)
 
         when:
         new ConfigProcessor(Path.of("src/test/resources/pipeline/pipeline-config.yml").toFile()).processConfig()

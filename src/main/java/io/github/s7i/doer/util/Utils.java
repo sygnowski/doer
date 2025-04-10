@@ -1,20 +1,33 @@
 package io.github.s7i.doer.util;
 
+import static java.util.Objects.nonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Objects;
 import java.util.function.Consumer;
-
-import static java.util.Objects.nonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 @UtilityClass
 @Slf4j
 public class Utils {
+
+    public static final String COMMON_ERROR = Emoji.BOOP.get() + " oops... ";
+
+    @RequiredArgsConstructor
+    public enum Emoji {
+        RAINBOW("1F308"),
+        BOOP("1f4a9");
+
+        public String get() {
+            return Character.toString(Integer.parseInt(this.utfCode, 16));
+        }
+        private final String utfCode;
+    }
 
     public static boolean hasAnyValue(String str) {
         return nonNull(str) && !str.isBlank();
@@ -33,7 +46,7 @@ public class Utils {
         try (var br = resource(path)) {
             brConsumer.accept(br);
         } catch (Exception e) {
-            log.error("oops", e);
+            log.error(COMMON_ERROR, e);
             return false;
         }
         return true;
