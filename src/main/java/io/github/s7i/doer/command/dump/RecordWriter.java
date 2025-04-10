@@ -6,15 +6,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.manifest.dump.Topic;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.Map.Entry;
+import java.util.function.BiFunction;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-
-import java.time.Instant;
-import java.util.Base64;
-import java.util.Map.Entry;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -23,7 +23,7 @@ public class RecordWriter {
     @Getter
     final Topic specs;
     @Getter
-    final ProtoJsonWriter protoJsonWriter;
+    final BiFunction<String, byte[], String> makeJson;
     private Gson gson = new GsonBuilder()
           .setPrettyPrinting()
           .create();
@@ -52,7 +52,7 @@ public class RecordWriter {
             json.addProperty("base64", Base64.getEncoder().encodeToString(record.value()));
         }
         if (specs.hasProto()) {
-            var proto = protoJsonWriter.toJson(record.topic(), record.value());
+            var proto = makeJson.apply(record.topic(), record.value());
             var jsProto = gson.fromJson(proto, JsonObject.class);
             jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
         } else if (specs.isJson()) {

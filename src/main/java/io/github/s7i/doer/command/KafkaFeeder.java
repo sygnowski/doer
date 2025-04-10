@@ -1,27 +1,26 @@
 package io.github.s7i.doer.command;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.domain.kafka.Context;
 import io.github.s7i.doer.domain.kafka.ingest.FeedRecord;
 import io.github.s7i.doer.domain.kafka.ingest.TemplateResolver;
+import io.github.s7i.doer.domain.proto.Decoder;
 import io.github.s7i.doer.manifest.ingest.Ingest;
 import io.github.s7i.doer.manifest.ingest.IngestManifest;
 import io.github.s7i.doer.manifest.ingest.Topic;
-import io.github.s7i.doer.proto.Decoder;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @Command(name = "kfeed")
 @Slf4j

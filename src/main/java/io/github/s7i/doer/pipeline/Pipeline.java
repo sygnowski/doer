@@ -1,17 +1,16 @@
 package io.github.s7i.doer.pipeline;
 
+import static java.util.Objects.nonNull;
+
 import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.pipeline.grcp.GrpcInboundConnection;
 import io.github.s7i.doer.pipeline.grcp.GrpcOutboundConnection;
 import io.github.s7i.doer.util.Mark;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.nonNull;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Pipeline {
@@ -30,7 +29,7 @@ public class Pipeline {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (!setup.isEmpty()) {
-            Globals.INSTANCE.getPipeline().init(setup);
+            Globals.INSTANCE.pipeline().init(setup);
         }
     }
 

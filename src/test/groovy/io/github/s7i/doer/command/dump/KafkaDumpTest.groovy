@@ -20,7 +20,7 @@ import java.util.concurrent.Future
 class KafkaDumpTest extends Specification {
 
     def cleanup() {
-        Globals.INSTANCE.kafka = null
+        Globals.INSTANCE.kafka  null
     }
     def "Dump Test"() {
         given:
@@ -51,8 +51,8 @@ class KafkaDumpTest extends Specification {
             })
         }
 
-        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        Globals.INSTANCE.getScope().outputFactory = outputFactory
+        Globals.INSTANCE.kafka(new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory))
+        Globals.INSTANCE.getScope().outputFactory(outputFactory)
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/simple-dump.yml")
@@ -106,8 +106,8 @@ class KafkaDumpTest extends Specification {
             resolve {_} >> Optional.of(out)
         }
 
-        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        Globals.INSTANCE.getScope().outputFactory = outputFactory
+        Globals.INSTANCE.kafka new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+        Globals.INSTANCE.getScope().outputFactory outputFactory
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/dump-with-rule.yml")
@@ -149,8 +149,8 @@ class KafkaDumpTest extends Specification {
             }
         }
 
-        Globals.INSTANCE.kafka = new KafkaFactory(prodFactory, consumerFactory)
-        Globals.INSTANCE.getScope().outputFactory = Spy(new OutputFactory())
+        Globals.INSTANCE.kafka new KafkaFactory(prodFactory, consumerFactory)
+        Globals.INSTANCE.getScope().outputFactory Spy(new OutputFactory())
 
 
         def dump = new KafkaDump()
@@ -191,8 +191,8 @@ class KafkaDumpTest extends Specification {
             1 * createConsumer(_, _) >> consumer
         }
 
-        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        Globals.INSTANCE.getScope().outputFactory = Spy(new OutputFactory())
+        Globals.INSTANCE.kafka new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+        Globals.INSTANCE.getScope().outputFactory Spy(new OutputFactory())
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/dump-from-time.yml")
@@ -247,8 +247,8 @@ class KafkaDumpTest extends Specification {
                 consumer
             }
         }
-        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        Globals.INSTANCE.getScope().outputFactory = Spy(new OutputFactory())
+        Globals.INSTANCE.kafka new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+        Globals.INSTANCE.getScope().outputFactory Spy(new OutputFactory())
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/dump-with-offset-commit-control.yml")
@@ -315,8 +315,8 @@ class KafkaDumpTest extends Specification {
             }
         }
 
-        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        Globals.INSTANCE.getScope().outputFactory = Spy(new OutputFactory())
+        Globals.INSTANCE.kafka new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+        Globals.INSTANCE.getScope().outputFactory Spy(new OutputFactory())
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/dump-with-offset-commit-control-kind-async.yml")
@@ -369,8 +369,8 @@ class KafkaDumpTest extends Specification {
             }
         }
 
-        Globals.INSTANCE.kafka = new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
-        Globals.INSTANCE.getScope().outputFactory = Spy(new OutputFactory())
+        Globals.INSTANCE.kafka new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory)
+        Globals.INSTANCE.getScope().outputFactory Spy(new OutputFactory())
 
         def dump = new KafkaDump()
         dump.yaml = new File("src/test/resources/dump-with-offset-commit-control-kind-off.yml")

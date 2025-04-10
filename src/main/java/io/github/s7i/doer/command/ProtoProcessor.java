@@ -1,23 +1,24 @@
 package io.github.s7i.doer.command;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.UnknownFieldSet;
-import io.github.s7i.doer.*;
+import io.github.s7i.doer.ConsoleLog;
+import io.github.s7i.doer.Doer;
+import io.github.s7i.doer.DoerException;
+import io.github.s7i.doer.Globals;
+import io.github.s7i.doer.HandledRuntimeException;
 import io.github.s7i.doer.domain.output.Output.Load;
 import io.github.s7i.doer.domain.output.OutputKind;
 import io.github.s7i.doer.domain.output.UriResolver;
-import io.github.s7i.doer.proto.Decoder;
+import io.github.s7i.doer.domain.proto.Decoder;
 import io.github.s7i.doer.session.Input;
 import io.github.s7i.doer.session.InteractiveSession;
 import io.github.s7i.doer.util.PropertyResolver;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,10 +34,12 @@ import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @Slf4j(topic = "doer.console")
 @Command(name = "proto", description = "Protocol buffers decoder/encoder.")
