@@ -47,13 +47,14 @@ with_builder () {
 
 function slim_build () {
     DIST_TAR="./build/distributions/doer-${VERSION}.tar"
-    if [[ ! -e ${DIST_TAR} ]]; then
-      ./gradlew distTar --console=plain --no-daemon
-      if [[ ! -e ${DIST_TAR} ]]; then
-        echo "missing doer.tar: (${DIST_TAR})"
-        exit 1
-      fi
-    fi
+#    if [[ ! -e ${DIST_TAR} ]]; then
+#      ./gradlew distTar --console=plain --no-daemon
+#      if [[ ! -e ${DIST_TAR} ]]; then
+#        echo "missing doer.tar: (${DIST_TAR})"
+#        exit 1
+#      fi
+#    fi
+    ./gradlew distTar --console=plain --no-daemon
 
     ln $DIST_TAR ./doer.tar
     runBuild "Dockerfile-slim"
