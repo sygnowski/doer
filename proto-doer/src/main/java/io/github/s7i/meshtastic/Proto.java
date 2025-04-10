@@ -75,22 +75,28 @@ public enum Proto {
 
                 var packet = fromRadio.getPacket();
                 var decoded = packet.getDecoded();
-                Message unroll = switch (decoded.getPortnum()) {
-                    case POSITION_APP -> Position.parseFrom(decoded.getPayload());
-                    case TELEMETRY_APP -> Telemetry.parseFrom(decoded.getPayload());
-                    case NEIGHBORINFO_APP -> NeighborInfo.parseFrom(decoded.getPayload());
-                    case ROUTING_APP -> Routing.parseFrom(decoded.getPayload());
-                    case NODEINFO_APP -> NodeInfo.parseFrom(decoded.getPayload());
-                    default -> null;
-                };
-                if (unroll != null) {
-                    var json = new JsonObject();
+                try {
+                    Message unroll = switch (decoded.getPortnum()) {
+                        case POSITION_APP -> Position.parseFrom(decoded.getPayload());
+                        case TELEMETRY_APP -> Telemetry.parseFrom(decoded.getPayload());
+                        case NEIGHBORINFO_APP -> NeighborInfo.parseFrom(decoded.getPayload());
+                        case ROUTING_APP -> Routing.parseFrom(decoded.getPayload());
+                        case NODEINFO_APP -> NodeInfo.parseFrom(decoded.getPayload());
+                        default -> null;
+                    };
+                    if (unroll != null) {
+                        var json = new JsonObject();
 
-                    root.add("ext", json);
+                        root.add("ext", json);
 
-                    var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
-                    jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
+                        var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
+                        jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
+                    }
+                } catch (InvalidProtocolBufferException e) {
+                    root.addProperty("doer.error", e.getMessage());
+
                 }
+
             }
             return gson.toJson(root);
 
