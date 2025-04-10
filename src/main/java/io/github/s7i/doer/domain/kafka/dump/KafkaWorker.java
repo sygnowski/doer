@@ -9,6 +9,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.Doer;
+import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.command.dump.RecordWriter;
 import io.github.s7i.doer.config.KafkaConfig;
 import io.github.s7i.doer.config.Range;
@@ -62,15 +63,18 @@ class KafkaWorker implements Context {
     Map<String, TopicContext> contexts = new HashMap<>();
     boolean useRawData;
 
-    final BiFunction<String, byte[], String> jsonWriter = (topic, data) -> {
+    final BiFunction<String, byte[], String> jsonWriter = this::makeJson;
+
+    private String makeJson(String topic, byte[] data) {
         TopicContext topicContext = contexts.get(topic);
         var desc = topicContext.getDescriptor();
 
         if (desc == null) {
-            return ProtoToJsonWrite.from(KafkaWorker.this).toProto(data);
+            log.debug("Using XXX");
+            return ProtoToJsonWrite.from(Globals.INSTANCE).toProto(data);
         }
         return toJsonWriter.toJson(desc, data, true);
-    };
+    }
 
     boolean keepRunning;
     OffsetCommitter committer;
