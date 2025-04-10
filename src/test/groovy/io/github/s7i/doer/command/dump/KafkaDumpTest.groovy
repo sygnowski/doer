@@ -1,6 +1,7 @@
 package io.github.s7i.doer.command.dump
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import io.github.s7i.doer.Globals
 import io.github.s7i.doer.config.KafkaConfig
 import io.github.s7i.doer.domain.kafka.KafkaConsumerFactory
@@ -8,6 +9,7 @@ import io.github.s7i.doer.domain.kafka.KafkaFactory
 import io.github.s7i.doer.domain.kafka.KafkaProducerFactory
 import io.github.s7i.doer.domain.output.Output
 import io.github.s7i.doer.domain.output.OutputFactory
+import io.github.s7i.doer.domain.proto.SimpleJsonWriter
 import org.apache.kafka.clients.consumer.*
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.common.TopicPartition
@@ -382,5 +384,51 @@ class KafkaDumpTest extends Specification {
 
         kafka.get(ConsumerConfig.MAX_POLL_RECORDS_CONFIG) == "150"
         kafka.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG) == "false"
+    }
+
+    def "Dump Proto Test"() {
+        given:
+        def protoInBytes = Base64.decoder.decode("MssBCj90eXBlLmdvb2dsZWFwaXMuY29tL2lvLmdpdGh1Yi5zN2kuZG9lci5wcm90by5kdW1teS5HcmVla1N5bWJvbHMShwEK" +
+                "QgovdHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUucHJvdG9idWYuU3RyaW5nVmFsdWUSDwoNdGhpcyBpcyBhbHBoYRJBCi90eXBlLmdvb2dsZWFwaXMuY29tL2dvb2dsZS5wcm90b" +
+                "2J1Zi5TdHJpbmdWYWx1ZRIOCgx0aGlzIGlzIGJldGE")
+        def outputSingleRow;
+        def recordList = []
+        def cr = new ConsumerRecord<>("topicName", 0, 1, "my-key".toString(), protoInBytes)
+        recordList << cr
+        def records = Mock(ConsumerRecords) {
+            count() >> recordList.size()
+            forEach(_) >> { args ->
+                recordList.forEach(args[0])
+            }
+        }
+        def consumer = Mock(Consumer) {
+            1 * subscribe(["topicName"], _)
+            poll(_) >> records
+            1 * close()
+
+        }
+        def consumerFactory = Mock(KafkaConsumerFactory) {
+            1 * createConsumer(_, _) >> consumer
+        }
+
+        def outputFactory = Mock(OutputFactory) {
+            resolve {_} >> Optional.of(Mock(Output) {
+                1 * emit(_, _) >> { args ->
+                    def json = new String(args[1])
+                    outputSingleRow = new Gson().fromJson(json, JsonObject.class)
+
+                }
+            })
+        }
+
+        Globals.INSTANCE.kafka(new KafkaFactory(Mock(KafkaProducerFactory), consumerFactory))
+        Globals.INSTANCE.getScope().outputFactory(outputFactory)
+
+        def dump = new KafkaDump()
+        dump.yaml = new File("src/test/resources/simple-dump-with-proto-but-no-descriptors.yml")
+
+        expect:
+        dump.onExecuteCommand()
+        (outputSingleRow as JsonObject).has(SimpleJsonWriter.TEXT_PROTO)
     }
 }
