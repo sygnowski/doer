@@ -70,7 +70,6 @@ class KafkaWorker implements Context {
         var desc = topicContext.getDescriptor();
 
         if (desc == null) {
-            log.debug("Using XXX");
             return ProtoToJsonWrite.from(Globals.INSTANCE).toProto(data);
         }
         return toJsonWriter.toJson(desc, data, true);
