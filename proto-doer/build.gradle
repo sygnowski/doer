@@ -10,11 +10,13 @@ version = rootProject.file('version').text.trim()
 
 ext {
     grcpVersion= '1.51.0'
+    proto = '3.21.9'
 }
 
 dependencies {
     implementation "io.github.s7i.meshtastic.proto:meshtastic-proto:1.0"
-    implementation 'com.google.protobuf:protobuf-java:3.21.9'
+    implementation "com.google.protobuf:protobuf-java:${proto}"
+    implementation "com.google.protobuf:protobuf-java-util:${proto}"
     implementation "io.grpc:grpc-stub:$grcpVersion"
     implementation "io.grpc:grpc-protobuf:$grcpVersion"
     if (JavaVersion.current().isJava9Compatible()) {
