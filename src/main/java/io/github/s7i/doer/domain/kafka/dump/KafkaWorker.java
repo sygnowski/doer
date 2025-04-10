@@ -1,5 +1,12 @@
 package io.github.s7i.doer.domain.kafka.dump;
 
+import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
+import static io.github.s7i.doer.Doer.console;
+import static io.github.s7i.doer.util.Utils.hasAnyValue;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.command.dump.RecordWriter;
@@ -39,19 +46,8 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.errors.WakeupException;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
-import static io.github.s7i.doer.Doer.console;
-import static io.github.s7i.doer.util.Utils.hasAnyValue;
-import static java.util.Objects.*;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -113,9 +109,9 @@ class KafkaWorker implements Context {
         if (log.isDebugEnabled()) {
 
             var text = records.partitions()
-                    .stream()
-                    .map(tp -> String.format("%s : %d", tp, records.records(tp).size()))
-                    .collect(Collectors.joining(",\n"));
+                  .stream()
+                  .map(tp -> String.format("%s : %d", tp, records.records(tp).size()))
+                  .collect(Collectors.joining(",\n"));
 
             log.debug("Pool stats: \n" + text);
         }
@@ -208,7 +204,7 @@ class KafkaWorker implements Context {
 
             if (settings.canMakeCommits()) {
                 console().info("Offset commit control enabled.\n" +
-                        "Settings: {}", settings);
+                      "Settings: {}", settings);
 
                 ccs.configureMaxPool(settings.getMaxPollSize());
 
@@ -222,7 +218,7 @@ class KafkaWorker implements Context {
     void commitOffset(Consumer<?, ?> consumer) {
         requireNonNull(consumer, "consumer");
         if (nonNull(committer)) {
-            if(!committer.commit(consumer)) {
+            if (!committer.commit(consumer)) {
                 console().info("Unsuccessful offset commit!");
             }
         }
