@@ -4,10 +4,11 @@ import com.geeksville.mesh.MeshProtos;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
 import com.geeksville.mesh.MeshProtos.NeighborInfo;
-import com.geeksville.mesh.MeshProtos.NodeInfo;
 import com.geeksville.mesh.MeshProtos.Position;
+import com.geeksville.mesh.MeshProtos.RouteDiscovery;
 import com.geeksville.mesh.MeshProtos.Routing;
 import com.geeksville.mesh.MeshProtos.ToRadio;
+import com.geeksville.mesh.MeshProtos.User;
 import com.geeksville.mesh.TelemetryProtos;
 import com.geeksville.mesh.TelemetryProtos.Telemetry;
 import com.google.gson.Gson;
@@ -81,7 +82,8 @@ public enum Proto {
                         case TELEMETRY_APP -> Telemetry.parseFrom(decoded.getPayload());
                         case NEIGHBORINFO_APP -> NeighborInfo.parseFrom(decoded.getPayload());
                         case ROUTING_APP -> Routing.parseFrom(decoded.getPayload());
-                        case NODEINFO_APP -> NodeInfo.parseFrom(decoded.getPayload());
+                        case NODEINFO_APP -> User.parseFrom(decoded.getPayload());
+                        case TRACEROUTE_APP -> RouteDiscovery.parseFrom(decoded.getPayload());
                         default -> null;
                     };
                     if (unroll != null) {
