@@ -3,6 +3,7 @@ package io.github.s7i.meshtastic;
 import com.geeksville.mesh.MeshProtos;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
+import com.geeksville.mesh.MeshProtos.MeshPacket;
 import com.geeksville.mesh.MeshProtos.NeighborInfo;
 import com.geeksville.mesh.MeshProtos.Position;
 import com.geeksville.mesh.MeshProtos.RouteDiscovery;
@@ -65,6 +66,23 @@ public enum Proto {
               });
     }
 
+    public String asJsonTextPacket(byte[] data) {
+
+        try {
+            var packet = MeshPacket.parseFrom(data);
+
+            var root = new JsonObject();
+            var jsPacketEnvelop = new JsonObject();
+            root.add("packet", jsPacketEnvelop);
+            jsonifyPacket(packet, jsPacketEnvelop);
+
+            return gson.toJson(root);
+
+        } catch (InvalidProtocolBufferException e) {
+            return gson.toJson(Map.of("error", "Meshtastic :: MeshPacket :: Unable to decode: " + e.getMessage()));
+        }
+    }
+
     public String asJsonTextFromRadio(byte[] data) {
 
         try {
@@ -73,37 +91,37 @@ public enum Proto {
             var root = gson.fromJson(printer.print(fromRadio), JsonObject.class);
 
             if (fromRadio.getPayloadVariantCase() == PayloadVariantCase.PACKET) {
-
-                var packet = fromRadio.getPacket();
-                var decoded = packet.getDecoded();
-                try {
-                    Message unroll = switch (decoded.getPortnum()) {
-                        case POSITION_APP -> Position.parseFrom(decoded.getPayload());
-                        case TELEMETRY_APP -> Telemetry.parseFrom(decoded.getPayload());
-                        case NEIGHBORINFO_APP -> NeighborInfo.parseFrom(decoded.getPayload());
-                        case ROUTING_APP -> Routing.parseFrom(decoded.getPayload());
-                        case NODEINFO_APP -> User.parseFrom(decoded.getPayload());
-                        case TRACEROUTE_APP -> RouteDiscovery.parseFrom(decoded.getPayload());
-                        default -> null;
-                    };
-                    if (unroll != null) {
-                        var json = new JsonObject();
-
-                        root.add("ext", json);
-
-                        var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
-                        jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
-                    }
-                } catch (InvalidProtocolBufferException e) {
-                    root.addProperty("doer.error", e.getMessage());
-
-                }
-
+                jsonifyPacket(fromRadio.getPacket(), root);
             }
             return gson.toJson(root);
 
         } catch (InvalidProtocolBufferException e) {
             return gson.toJson(Map.of("error", "Meshtastic :: FromRadio :: Unable to decode: " + e.getMessage()));
+        }
+    }
+
+    private void jsonifyPacket(MeshPacket packet, JsonObject root) {
+        var decoded = packet.getDecoded();
+        try {
+            Message unroll = switch (decoded.getPortnum()) {
+                case POSITION_APP -> Position.parseFrom(decoded.getPayload());
+                case TELEMETRY_APP -> Telemetry.parseFrom(decoded.getPayload());
+                case NEIGHBORINFO_APP -> NeighborInfo.parseFrom(decoded.getPayload());
+                case ROUTING_APP -> Routing.parseFrom(decoded.getPayload());
+                case NODEINFO_APP -> User.parseFrom(decoded.getPayload());
+                case TRACEROUTE_APP -> RouteDiscovery.parseFrom(decoded.getPayload());
+                default -> null;
+            };
+            if (unroll != null) {
+                var json = new JsonObject();
+
+                root.add("ext", json);
+
+                var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
+                jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
+            }
+        } catch (InvalidProtocolBufferException e) {
+            root.addProperty("doer.error", e.getMessage());
         }
     }
 }
