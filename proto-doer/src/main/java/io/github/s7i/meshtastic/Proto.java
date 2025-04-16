@@ -19,6 +19,8 @@ import com.google.protobuf.Message;
 import com.google.protobuf.TypeRegistry;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.Printer;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Map;
 
 /**
@@ -116,6 +118,15 @@ public enum Proto {
                 var json = new JsonObject();
 
                 root.add("ext", json);
+
+                var sec = packet.getRxTime();
+                if (sec > 0) {
+                    var rxTime = Instant.ofEpochSecond(sec)
+                          .atZone(ZoneOffset.systemDefault())
+                          .toLocalDateTime();
+
+                    json.addProperty("rxTimestamp", rxTime.toString());
+                }
 
                 var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
                 jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
