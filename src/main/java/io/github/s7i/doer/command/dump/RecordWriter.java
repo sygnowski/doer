@@ -70,9 +70,10 @@ public class RecordWriter {
               .map(Entry::getValue)
               .findFirst()
               .ifPresent(tags -> {
+                  var pr = Globals.INSTANCE.getPropertyResolver();
                   var tagsArr = new JsonArray();
                   for (var tag : tags.split("\\,")) {
-                      tagsArr.add(tag);
+                      tagsArr.add(pr.resolve(tag));
                   }
                   kafka.add("tags", tagsArr);
               });
