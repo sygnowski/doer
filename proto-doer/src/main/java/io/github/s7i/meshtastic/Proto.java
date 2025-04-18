@@ -13,7 +13,9 @@ import com.geeksville.mesh.MeshProtos.User;
 import com.geeksville.mesh.TelemetryProtos;
 import com.geeksville.mesh.TelemetryProtos.Telemetry;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.TypeRegistry;
@@ -22,6 +24,8 @@ import com.google.protobuf.util.JsonFormat.Printer;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Gateway class to Meshtastic Protobuf classes.
@@ -105,8 +109,25 @@ public enum Proto {
     private void jsonifyPacket(MeshPacket packet, JsonObject root) {
         var decoded = packet.getDecoded();
         try {
+            AtomicReference<JsonElement> distance = new AtomicReference<>();
             Message unroll = switch (decoded.getPortnum()) {
-                case POSITION_APP -> Position.parseFrom(decoded.getPayload());
+                case POSITION_APP -> {
+                    var pos = Position.parseFrom(decoded.getPayload());
+
+                    Optional.ofNullable(System.getenv("MY_LOC")).ifPresent(myLoc -> {
+                        var myLatLLong = myLoc.split("\\:");
+                        var myLat = Double.parseDouble(myLatLLong[0]);
+                        var myLong = Double.parseDouble(myLatLLong[1]);
+
+                        var posLat = pos.getLatitudeI() * 1e-7;
+                        var posLong = pos.getLongitudeI() * 1e-7;
+
+                        var kmUnit = GeoUtils.latLongToMeter(myLat, myLong, posLat, posLong) / 1000;
+
+                        distance.set(new JsonPrimitive(String.format("%.1f km", kmUnit)));
+                    });
+                    yield pos;
+                }
                 case TELEMETRY_APP -> Telemetry.parseFrom(decoded.getPayload());
                 case NEIGHBORINFO_APP -> NeighborInfo.parseFrom(decoded.getPayload());
                 case ROUTING_APP -> Routing.parseFrom(decoded.getPayload());
@@ -132,6 +153,10 @@ public enum Proto {
                 signalQuality.addProperty("snr", SignalQuality.snr(packet.getRxSnr()).toString());
                 signalQuality.addProperty("signal", SignalQuality.determineSignalQuality(packet.getRxSnr(), packet.getRxRssi()).toString());
                 json.add("signalQuality", signalQuality);
+
+                if (distance.get() != null) {
+                    json.add("distance", distance.get());
+                }
 
                 var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
                 jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
