@@ -42,10 +42,14 @@ public enum Proto {
 
     private final Double[] myLocation = Optional.ofNullable(System.getenv("MY_LOC"))
           .map(myLoc -> {
-              var myLatLLong = myLoc.split("\\:");
-              var myLat = Double.parseDouble(myLatLLong[0]);
-              var myLong = Double.parseDouble(myLatLLong[1]);
-              return new Double[]{myLat, myLong};
+              try {
+                  var myLatLLong = myLoc.split("\\:");
+                  var myLat = Double.parseDouble(myLatLLong[0]);
+                  var myLong = Double.parseDouble(myLatLLong[1]);
+                  return new Double[]{myLat, myLong};
+              } catch (Exception e) {
+                  throw new IllegalStateException("Invalid location, use:MY_LOC=xx.xxx:xx.xxx", e);
+              }
           }).orElse(new Double[0]);
 
     public interface ToText {
@@ -169,9 +173,13 @@ public enum Proto {
                 }
                 case TELEMETRY_APP -> Telemetry.parseFrom(decoded.getPayload());
                 case NEIGHBORINFO_APP -> NeighborInfo.parseFrom(decoded.getPayload());
+                case TRACEROUTE_APP -> RouteDiscovery.parseFrom(decoded.getPayload());
                 case ROUTING_APP -> Routing.parseFrom(decoded.getPayload());
                 case NODEINFO_APP -> User.parseFrom(decoded.getPayload());
-                case TRACEROUTE_APP -> RouteDiscovery.parseFrom(decoded.getPayload());
+                case TEXT_MESSAGE_APP -> {
+                    extJson.addProperty("textMessage", decoded.getPayload().toStringUtf8());
+                    yield null;
+                }
                 default -> {
                     var msg = UnknownFieldSet.parseFrom(decoded.getPayload());
                     extJson.addProperty("other", msg.toString());
@@ -183,7 +191,7 @@ public enum Proto {
                 unrollJson.keySet().forEach(key -> extJson.add(key, unrollJson.get(key)));
             }
         } catch (InvalidProtocolBufferException e) {
-            root.addProperty("doer.error", e.getMessage());
+            root.addProperty("doer.error", "invalid proto");
         }
     }
 }
