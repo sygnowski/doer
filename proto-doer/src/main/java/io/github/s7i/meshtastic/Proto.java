@@ -107,6 +107,24 @@ public enum Proto {
     }
 
     private void jsonifyPacket(MeshPacket packet, JsonObject root) {
+        var extJson = new JsonObject();
+
+        root.add("ext", extJson);
+
+        var sec = packet.getRxTime();
+        if (sec > 0) {
+            var rxTime = Instant.ofEpochSecond(sec)
+                  .atZone(ZoneOffset.systemDefault())
+                  .toLocalDateTime();
+
+            extJson.addProperty("rxTimestamp", rxTime.toString());
+        }
+        var signalQuality = new JsonObject();
+        signalQuality.addProperty("rssi", SignalQuality.rssi(packet.getRxRssi()).toString());
+        signalQuality.addProperty("snr", SignalQuality.snr(packet.getRxSnr()).toString());
+        signalQuality.addProperty("signal", SignalQuality.determineSignalQuality(packet.getRxSnr(), packet.getRxRssi()).toString());
+        extJson.add("signalQuality", signalQuality);
+
         var decoded = packet.getDecoded();
         try {
             AtomicReference<JsonElement> distance = new AtomicReference<>();
@@ -136,30 +154,11 @@ public enum Proto {
                 default -> null;
             };
             if (unroll != null) {
-                var json = new JsonObject();
-
-                root.add("ext", json);
-
-                var sec = packet.getRxTime();
-                if (sec > 0) {
-                    var rxTime = Instant.ofEpochSecond(sec)
-                          .atZone(ZoneOffset.systemDefault())
-                          .toLocalDateTime();
-
-                    json.addProperty("rxTimestamp", rxTime.toString());
-                }
-                var signalQuality = new JsonObject();
-                signalQuality.addProperty("rssi", SignalQuality.rssi(packet.getRxRssi()).toString());
-                signalQuality.addProperty("snr", SignalQuality.snr(packet.getRxSnr()).toString());
-                signalQuality.addProperty("signal", SignalQuality.determineSignalQuality(packet.getRxSnr(), packet.getRxRssi()).toString());
-                json.add("signalQuality", signalQuality);
-
                 if (distance.get() != null) {
-                    json.add("distance", distance.get());
+                    extJson.add("distance", distance.get());
                 }
-
-                var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
-                jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
+                var unrollJson = gson.fromJson(printer.print(unroll), JsonObject.class);
+                unrollJson.keySet().forEach(key -> extJson.add(key, unrollJson.get(key)));
             }
         } catch (InvalidProtocolBufferException e) {
             root.addProperty("doer.error", e.getMessage());
