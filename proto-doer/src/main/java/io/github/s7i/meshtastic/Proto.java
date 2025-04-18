@@ -127,6 +127,11 @@ public enum Proto {
 
                     json.addProperty("rxTimestamp", rxTime.toString());
                 }
+                var signalQuality = new JsonObject();
+                signalQuality.addProperty("rssi", SignalQuality.rssi(packet.getRxRssi()).toString());
+                signalQuality.addProperty("snr", SignalQuality.snr(packet.getRxSnr()).toString());
+                signalQuality.addProperty("signal", SignalQuality.determineSignalQuality(packet.getRxSnr(), packet.getRxRssi()).toString());
+                json.add("signalQuality", signalQuality);
 
                 var jsProto = gson.fromJson(printer.print(unroll), JsonObject.class);
                 jsProto.keySet().forEach(key -> json.add(key, jsProto.get(key)));
