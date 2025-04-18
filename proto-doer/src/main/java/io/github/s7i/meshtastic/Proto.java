@@ -181,8 +181,12 @@ public enum Proto {
                     yield null;
                 }
                 default -> {
-                    var msg = UnknownFieldSet.parseFrom(decoded.getPayload());
-                    extJson.addProperty("other", msg.toString());
+                    try {
+                        var msg = UnknownFieldSet.parseFrom(decoded.getPayload());
+                        extJson.addProperty("other", msg.toString());
+                    } catch (InvalidProtocolBufferException e) {
+                        //expected
+                    }
                     yield null;
                 }
             };
