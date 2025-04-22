@@ -7,6 +7,7 @@ import io.github.s7i.doer.command.Meshtastic;
 import io.github.s7i.doer.command.MqttCommand;
 import io.github.s7i.doer.command.ProtoProcessor;
 import io.github.s7i.doer.command.Rocks;
+import io.github.s7i.doer.command.TcpCommand;
 import io.github.s7i.doer.command.ZooSrv;
 import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
@@ -24,9 +25,6 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 @Command(name = "doer", description = "let's do big things...", subcommands = {
       KafkaFeeder.class,
       KafkaDump.class,
@@ -39,7 +37,8 @@ import java.util.Arrays;
       MqttCommand.class,
       Misc.class,
       HmacCommand.class,
-      Meshtastic.class
+      Meshtastic.class,
+      TcpCommand.class
 })
 public class Doer implements Runnable, Banner {
 
