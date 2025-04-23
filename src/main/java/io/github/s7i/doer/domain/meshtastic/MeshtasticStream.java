@@ -28,14 +28,21 @@ public class MeshtasticStream {
     private final OutputStream os;
 
     private final ByteBuffer rxPacket = ByteBuffer.allocate(MAX_TO_FROM_RADIO_SIZE).mark();
-    private ThreadGroup tg;
+    private final ThreadGroup tg;
     private final ArrayBlockingQueue<byte[]> pool;
+    private final Thread[] threads;
 
     public MeshtasticStream(InputStream is, OutputStream os) {
         this.is = is;
         this.os = os;
 
         pool = new ArrayBlockingQueue<>(100);
+        tg = new ThreadGroup("Meshtastic Radio");
+
+        threads = new Thread[]{
+              new Thread(tg, this::handleRadioRx, "FromRadio"),
+              new Thread(tg, this::handleHeartBeat, "HeartBeat")
+        };
     }
 
     public ArrayBlockingQueue<byte[]> getPool() {
@@ -69,14 +76,10 @@ public class MeshtasticStream {
 
         sendToRadio(Proto.INSTANCE.getConfiguration(configId).toByteArray());
 
-        tg = new ThreadGroup("Meshtastic Radio");
-        var thrFromRadio = new Thread(tg, this::handleRadioRx, "FromRadio");
-        thrFromRadio.setDaemon(true);
-        thrFromRadio.start();
-
-        var thrHeartbeat = new Thread(tg, this::handleHeartBeat, "HeartBeat");
-        thrHeartbeat.setDaemon(true);
-        thrHeartbeat.start();
+        for (var thr : threads) {
+            thr.setDaemon(true);
+            thr.start();
+        }
     }
 
     void handleRadioRx() {
@@ -226,6 +229,6 @@ public class MeshtasticStream {
     }
 
     public boolean isRunning() {
-        return tg.activeCount() == 2;
+        return tg.activeCount() == threads.length;
     }
 }
