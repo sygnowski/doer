@@ -1,6 +1,10 @@
-package io.github.s7i.doer.domain.meshtastic;
+package io.github.s7i.meshtastic;
 
-import io.github.s7i.meshtastic.Proto;
+import com.geeksville.mesh.MeshProtos.FromRadio;
+import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
+import com.geeksville.mesh.MeshProtos.Heartbeat;
+import com.geeksville.mesh.MeshProtos.ToRadio;
+import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,12 +35,13 @@ public class MeshtasticStream {
     private final ThreadGroup tg;
     private final ArrayBlockingQueue<byte[]> pool;
     private final Thread[] threads;
+    private int queueFree;
 
     public MeshtasticStream(InputStream is, OutputStream os) {
         this.is = is;
         this.os = os;
 
-        pool = new ArrayBlockingQueue<>(100);
+        pool = new ArrayBlockingQueue<>(1000);
         tg = new ThreadGroup("Meshtastic Radio");
 
         threads = new Thread[]{
@@ -73,8 +78,11 @@ public class MeshtasticStream {
 
         TimeUnit.MILLISECONDS.sleep(100);
         var configId = withNodes ? new Random().nextInt() : NODELESS_WANT_CONFIG_ID;
+        var msg = ToRadio.newBuilder()
+              .setWantConfigId(configId)
+              .build();
 
-        sendToRadio(Proto.INSTANCE.getConfiguration(configId).toByteArray());
+        sendToRadio(msg.toByteArray());
 
         for (var thr : threads) {
             thr.setDaemon(true);
@@ -114,8 +122,12 @@ public class MeshtasticStream {
     }
 
     void handleHeartBeat() {
+        byte[] hbData = ToRadio.newBuilder()
+              .setHeartbeat(Heartbeat.newBuilder().build())
+              .build().toByteArray();
+
         while (!Thread.currentThread().isInterrupted()) {
-            sendToRadio(Proto.INSTANCE.heartbea().toByteArray());
+            sendToRadio(hbData);
             try {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
@@ -139,21 +151,30 @@ public class MeshtasticStream {
         int msb, lsb;
         boolean hasPacket;
 
-        // Deliver our current packet and restart our reader
         void deliverPacket() {
-//            val buf = rxPacket.copyOf(packetLen)
-//            service.handleFromRadio(buf)
-
             if (packetLen > 0) {
 
                 byte[] dst = new byte[packetLen];
                 rxPacket.get(dst, 0, packetLen);
 
+                boolean skip = false;
                 try {
-                    pool.put(dst);
-                } catch (InterruptedException e) {
-                    LOGGER.warn("while adding to the pool", e);
-                    Thread.currentThread().interrupt();
+                    var rx = FromRadio.parseFrom(dst);
+                    if (rx.getPayloadVariantCase() == PayloadVariantCase.QUEUESTATUS) {
+                        skip = true;
+                        queueFree = rx.getQueueStatus().getFree();
+                    }
+                } catch (InvalidProtocolBufferException e) {
+                    LOGGER.warn(e.getMessage());
+                }
+
+                if (!skip) {
+                    try {
+                        pool.put(dst);
+                    } catch (InterruptedException e) {
+                        LOGGER.warn("while adding to the pool", e);
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
             rxPacket.reset();

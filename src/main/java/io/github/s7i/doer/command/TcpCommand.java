@@ -6,7 +6,7 @@ import com.google.protobuf.UnknownFieldSet;
 import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
-import io.github.s7i.doer.domain.meshtastic.MeshtasticStream;
+import io.github.s7i.meshtastic.MeshtasticStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Map;
