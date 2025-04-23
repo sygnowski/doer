@@ -3,6 +3,7 @@ package io.github.s7i.meshtastic;
 import com.geeksville.mesh.MeshProtos;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
+import com.geeksville.mesh.MeshProtos.Heartbeat;
 import com.geeksville.mesh.MeshProtos.MeshPacket;
 import com.geeksville.mesh.MeshProtos.NeighborInfo;
 import com.geeksville.mesh.MeshProtos.Position;
@@ -64,6 +65,12 @@ public enum Proto {
     public Message getConfiguration(int configId) {
         return ToRadio.newBuilder()
               .setWantConfigId(configId)
+              .build();
+    }
+
+    public Message heartbea() {
+        return ToRadio.newBuilder()
+              .setHeartbeat(Heartbeat.newBuilder().build())
               .build();
     }
 
