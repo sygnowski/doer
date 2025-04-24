@@ -25,7 +25,8 @@ public class TcpInterface implements MeshtasticInterface {
     private MeshtasticStream stream;
     private InputStream is;
     private OutputStream os;
-    private Consumer<byte[]> handler;
+    private volatile Consumer<byte[]> handler;
+    private volatile Runnable onStop;
 
     public TcpInterface(int port, String host) {
         this.port = port;
@@ -48,6 +49,7 @@ public class TcpInterface implements MeshtasticInterface {
 
             stream = new MeshtasticStream(is, os);
             stream.setHandler(this::onRx);
+            stream.onStop(this::onStop);
             stream.startReadFromRadio(true);
 
         } catch (Exception e) {
@@ -91,5 +93,15 @@ public class TcpInterface implements MeshtasticInterface {
     @Override
     public void handleFromRadio(Consumer<byte[]> fromRadio) {
         handler = fromRadio;
+    }
+
+    public void setOnStop(Runnable onStop) {
+        this.onStop = onStop;
+    }
+
+    private void onStop() {
+        if (onStop != null) {
+            onStop.run();
+        }
     }
 }

@@ -150,6 +150,9 @@ public class TcpCommand extends Command {
             Runtime.getRuntime().addShutdownHook(new Thread(endTrigger::countDown));
 
             var meshtastic = new TcpInterface(port, host);
+
+            meshtastic.setOnStop(endTrigger::countDown);
+
             meshtastic.handleFromRadio(data -> {
                 try {
                     sender.send(data);

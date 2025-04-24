@@ -33,6 +33,7 @@ public class MeshtasticStream {
 
     private final ByteBuffer rxPacket = ByteBuffer.allocate(MAX_TO_FROM_RADIO_SIZE).mark();
     private final AtomicReference<Consumer<FromRadio>> fromRadioHandler = new AtomicReference<>();
+    private final AtomicReference<Runnable> onRxStop = new AtomicReference<>();
     private final ThreadGroup tg;
     private final ArrayBlockingQueue<FromRadio> pool;
     private final Thread[] threads;
@@ -65,6 +66,11 @@ public class MeshtasticStream {
 
     public void setHandler(Consumer<FromRadio> fromRadioConsumer) {
         fromRadioHandler.set(fromRadioConsumer);
+    }
+
+    public MeshtasticStream onStop(Runnable onStop) {
+        onRxStop.set(onStop);
+        return this;
     }
 
     public void send(ToRadio toSend) {
@@ -135,6 +141,11 @@ public class MeshtasticStream {
             }
         }
         LOGGER.debug("stopping rx");
+
+        var onStop = onRxStop.get();
+        if (onStop != null) {
+            onStop.run();
+        }
     }
 
     private void nap() {
