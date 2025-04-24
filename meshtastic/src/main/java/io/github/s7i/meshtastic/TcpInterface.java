@@ -1,5 +1,6 @@
 package io.github.s7i.meshtastic;
 
+import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.ToRadio;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.BufferedInputStream;
@@ -24,6 +25,7 @@ public class TcpInterface implements MeshtasticInterface {
     private MeshtasticStream stream;
     private InputStream is;
     private OutputStream os;
+    private Consumer<byte[]> handler;
 
     public TcpInterface(int port, String host) {
         this.port = port;
@@ -45,6 +47,7 @@ public class TcpInterface implements MeshtasticInterface {
             os = new BufferedOutputStream(socket.getOutputStream());
 
             stream = new MeshtasticStream(is, os);
+            stream.setHandler(this::onRx);
             stream.startReadFromRadio(true);
 
         } catch (Exception e) {
@@ -79,8 +82,14 @@ public class TcpInterface implements MeshtasticInterface {
 
     }
 
+    private void onRx(FromRadio fromRadio) {
+        if (handler != null) {
+            handler.accept(fromRadio.toByteArray());
+        }
+    }
+
     @Override
     public void handleFromRadio(Consumer<byte[]> fromRadio) {
-        stream.setHandler(rx -> fromRadio.accept(rx.toByteArray()));
+        handler = fromRadio;
     }
 }
