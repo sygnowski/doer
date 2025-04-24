@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.errors.InterruptException;
 import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -116,6 +117,8 @@ public class TcpCommand extends Command {
                                 }
                             });
                         }
+                    } catch (InterruptException e) {
+                        log.info("kafka interrupted...");
                     } catch (Exception e) {
                         log.error("kafka to radio", e);
                     } finally {
