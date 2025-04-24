@@ -115,7 +115,6 @@ public class TcpCommand extends Command {
                                     sender.accept(r.value());
                                 }
                             });
-                            consumer.close();
                         }
                     } catch (Exception e) {
                         log.error("kafka to radio", e);
