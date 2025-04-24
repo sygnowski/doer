@@ -129,16 +129,20 @@ public class MeshtasticStream {
             } catch (SocketTimeoutException e) {
                 errorCount++;
 
-                try {
-                    TimeUnit.MILLISECONDS.sleep(options.delayMillis());
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                }
+                nap();
             } catch (IOException e) {
                 LOGGER.error("while reding from socket", e);
             }
         }
         LOGGER.debug("stopping rx");
+    }
+
+    private void nap() {
+        try {
+            TimeUnit.MILLISECONDS.sleep(options.delayMillis());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     void handleHeartBeat() {
@@ -294,6 +298,8 @@ public class MeshtasticStream {
     }
 
     public void stop() {
+        sendToRadio(ToRadio.newBuilder().setDisconnect(true).build().toByteArray());
+        nap();
         tg.interrupt();
     }
 
