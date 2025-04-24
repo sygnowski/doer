@@ -13,6 +13,8 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,19 +27,25 @@ public class MeshtasticStream {
     public static final int HEADER_LEN = 4;
     public static final int NODELESS_WANT_CONFIG_ID = 69420;
     public static final int MAX_TO_FROM_RADIO_SIZE = 512;
-    private static final int TOO_MANY_ERROR = 100;
-
 
     private final InputStream is;
     private final OutputStream os;
 
     private final ByteBuffer rxPacket = ByteBuffer.allocate(MAX_TO_FROM_RADIO_SIZE).mark();
+    private final AtomicReference<Consumer<FromRadio>> fromRadioHandler = new AtomicReference<>();
     private final ThreadGroup tg;
-    private final ArrayBlockingQueue<byte[]> pool;
+    private final ArrayBlockingQueue<FromRadio> pool;
     private final Thread[] threads;
-    private int queueFree;
+    private final Options options;
+    private int queueFree = Integer.MAX_VALUE;
+
 
     public MeshtasticStream(InputStream is, OutputStream os) {
+        this(is, os, Options.fromSystem());
+    }
+
+    public MeshtasticStream(InputStream is, OutputStream os, Options options) {
+        this.options = options;
         this.is = is;
         this.os = os;
 
@@ -46,15 +54,27 @@ public class MeshtasticStream {
 
         threads = new Thread[]{
               new Thread(tg, this::handleRadioRx, "FromRadio"),
-              new Thread(tg, this::handleHeartBeat, "HeartBeat")
+              new Thread(tg, this::handleHeartBeat, "HeartBeat"),
+              new Thread(tg, this::handlePool, "FromRadio Fetcher")
         };
     }
 
-    public ArrayBlockingQueue<byte[]> getPool() {
-        return pool;
+    public Options getOptions() {
+        return options;
     }
 
-    public void sendToRadio(byte[] data) {
+    public void setHandler(Consumer<FromRadio> fromRadioConsumer) {
+        fromRadioHandler.set(fromRadioConsumer);
+    }
+
+    public void send(ToRadio toSend) {
+        if (queueFree <= 0) {
+            throw new RuntimeException("too may to send");
+        }
+        sendToRadio(toSend.toByteArray());
+    }
+
+    private void sendToRadio(byte[] data) {
         var len = data.length;
 
         var header = ByteBuffer.allocate(HEADER_LEN)
@@ -76,7 +96,7 @@ public class MeshtasticStream {
         os.write(radioWakeup());
         os.flush();
 
-        TimeUnit.MILLISECONDS.sleep(100);
+        TimeUnit.MILLISECONDS.sleep(options.smallDelay());
         var configId = withNodes ? new Random().nextInt() : NODELESS_WANT_CONFIG_ID;
         var msg = ToRadio.newBuilder()
               .setWantConfigId(configId)
@@ -94,7 +114,7 @@ public class MeshtasticStream {
         FromRadioReader reader = new FromRadioReader();
         LOGGER.debug("starting rx");
         int errorCount = 0;
-        while (errorCount < TOO_MANY_ERROR && !Thread.currentThread().isInterrupted()) {
+        while (errorCount < options.socketTimeoutRetry() && !Thread.currentThread().isInterrupted()) {
             try {
                 int c = is.read();
 
@@ -110,12 +130,12 @@ public class MeshtasticStream {
                 errorCount++;
 
                 try {
-                    TimeUnit.SECONDS.sleep(1);
+                    TimeUnit.MILLISECONDS.sleep(options.delayMillis());
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                LOGGER.error("while reding from socket", e);
             }
         }
         LOGGER.debug("stopping rx");
@@ -135,6 +155,51 @@ public class MeshtasticStream {
             }
         }
     }
+
+    private void handlePool() {
+        while (!Thread.currentThread().isInterrupted()) {
+            var consumer = fromRadioHandler.get();
+            if (consumer != null) {
+                try {
+                    var data = pool.poll(options.smallDelay(), TimeUnit.MILLISECONDS);
+                    if (data != null) {
+                        consumer.accept(data);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (Exception e) {
+                    LOGGER.error("handing from radio", e);
+                }
+            } else {
+                try {
+                    LOGGER.warn("no FromRadio handler");
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
+    private void handleDelivery(byte[] dst) {
+        try {
+            var rx = FromRadio.parseFrom(dst);
+            if (rx.getPayloadVariantCase() == PayloadVariantCase.QUEUESTATUS) {
+                queueFree = rx.getQueueStatus().getFree();
+                LOGGER.debug("queue status: {}", rx.getQueueStatus());
+            } else {
+                try {
+                    pool.put(rx);
+                } catch (InterruptedException e) {
+                    LOGGER.warn("while adding to the pool", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        } catch (InvalidProtocolBufferException e) {
+            LOGGER.error("{} on data: {}", e.getMessage(), dst);
+        }
+    }
+
 
     private byte[] radioWakeup() {
         byte[] wakeup = new byte[4];
@@ -157,30 +222,13 @@ public class MeshtasticStream {
                 byte[] dst = new byte[packetLen];
                 rxPacket.get(dst, 0, packetLen);
 
-                boolean skip = false;
-                try {
-                    var rx = FromRadio.parseFrom(dst);
-                    if (rx.getPayloadVariantCase() == PayloadVariantCase.QUEUESTATUS) {
-                        skip = true;
-                        queueFree = rx.getQueueStatus().getFree();
-                    }
-                } catch (InvalidProtocolBufferException e) {
-                    LOGGER.warn(e.getMessage());
-                }
-
-                if (!skip) {
-                    try {
-                        pool.put(dst);
-                    } catch (InterruptedException e) {
-                        LOGGER.warn("while adding to the pool", e);
-                        Thread.currentThread().interrupt();
-                    }
-                }
+                handleDelivery(dst);
             }
             rxPacket.reset();
             reset();
             hasPacket = false;
         }
+
 
         int reset() {
             ptr = 0;
