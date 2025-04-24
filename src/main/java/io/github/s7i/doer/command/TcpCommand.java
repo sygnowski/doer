@@ -2,17 +2,18 @@ package io.github.s7i.doer.command;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.UnknownFieldSet;
 import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
-import io.github.s7i.meshtastic.MeshtasticStream;
-import java.net.InetAddress;
-import java.net.Socket;
+import io.github.s7i.meshtastic.TcpInterface;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,11 @@ public class TcpCommand extends Command {
         String kafkaTopic;
         @Option(names = "--commit-timeout", description = "Kafka Commit Timeout second.", defaultValue = "30")
         int kafkaAsyncCommitTimeout;
+        @Option(names = "--pool-duration", defaultValue = "1")
+        int poolDuration;
+
+        @Option(names = "--kafka-rx-topic", defaultValue = "meshtastic-to-radio")
+        String kafkaToRadioTopic;
 
         @Override
         public String getKafkaPropFile() {
@@ -61,13 +67,14 @@ public class TcpCommand extends Command {
     private Options options;
 
 
-    @Parameters(arity = "1..*")
+    @Parameters(arity = "1..2")
     String[] args;
 
 
     private class KafkaSender {
 
         private final Producer<String, byte[]> producer = initKafkaProducer();
+        private Thread cthx;
 
         ProducerRecord<String, byte[]> record(byte[] data) {
             var topic = options.kafkaTopic();
@@ -92,6 +99,41 @@ public class TcpCommand extends Command {
                   .getProducerFactory()
                   .createProducer(options, false);
         }
+
+        public void bind(Consumer<byte[]> sender) {
+            if (options.kafkaToRadioTopic != null && options.kafkaConfig != null) {
+                var consumer = new KafkaFactory().getConsumerFactory().createConsumer(options, false);
+                cthx = new Thread(() -> {
+                    consumer.subscribe(List.of(options.kafkaToRadioTopic));
+                    try {
+                        while (!Thread.currentThread().isInterrupted()) {
+                            var result = consumer.poll(Duration.of(options.poolDuration, ChronoUnit.SECONDS));
+                            result.forEach(r -> {
+                                if (r.key() == null) {
+                                    sender.accept(r.value());
+                                } else if (args[0].equals(r.key())) {
+                                    sender.accept(r.value());
+                                }
+                            });
+                            consumer.close();
+                        }
+                    } catch (Exception e) {
+                        log.error("kafka to radio", e);
+                    } finally {
+                        consumer.close();
+                    }
+
+                }, "ToRadio Consumer");
+                cthx.setDaemon(true);
+                cthx.start();
+            }
+        }
+
+        private void close() throws InterruptedException {
+            cthx.interrupt();
+            TimeUnit.SECONDS.sleep(options.poolDuration);
+
+        }
     }
 
     @Override
@@ -100,50 +142,26 @@ public class TcpCommand extends Command {
             var sender = new KafkaSender();
             String host = args[0];
 
-            InetAddress inetAddress = InetAddress.getByName(host);
-
             int port = Integer.parseInt(args[1]);
 
             var endTrigger = new CountDownLatch(1);
             Runtime.getRuntime().addShutdownHook(new Thread(endTrigger::countDown));
 
-            try (var socket = new Socket(inetAddress, port)) {
-                socket.setTcpNoDelay(true);
-                socket.setSoTimeout(500);
-
-                log.debug("is connected {}", socket.isConnected());
-
-                try (var is = socket.getInputStream()) {
-                    try (var os = socket.getOutputStream()) {
-                        var ms = new MeshtasticStream(is, os);
-                        ms.startReadFromRadio(options.configWithNodes);
-
-                        new Thread(() -> {
-
-                            while (ms.isRunning() && !Thread.currentThread().isInterrupted()) {
-                                try {
-                                    var data = ms.getPool().poll(100, TimeUnit.MILLISECONDS);
-                                    if (data != null) {
-
-                                        var proto = UnknownFieldSet.parseFrom(data).toString();
-                                        log.info(proto);
-
-                                        sender.send(data).ifPresent(rmt -> {
-                                            log.info("record sent: {}", rmt);
-                                        });
-
-                                    }
-                                } catch (Exception e) {
-                                }
-                            }
-                            endTrigger.countDown();
-                        }
-                              , "Package Fetcher").start();
-
-                        endTrigger.await();
-                    }
+            var meshtastic = new TcpInterface(port, host);
+            meshtastic.handleFromRadio(data -> {
+                try {
+                    sender.send(data);
+                } catch (Exception e) {
+                    log.error("while send", e);
                 }
-            }
+            });
+            meshtastic.connect();
+            sender.bind(meshtastic::sendToRadio);
+
+            endTrigger.await();
+            sender.close();
+            meshtastic.disconnect();
+
         } catch (Exception e) {
             throw new DoerException(e);
         }
