@@ -306,4 +306,23 @@ public class Misc {
 
         log.info("Total number of lines:  {}", lines.get());
     }
+
+    @Command(name = "mvel")
+    public void mvel(
+          @Option(names = "-e", defaultValue = "System.out.println(\"Hello, MVEL\"); new GitProps();")
+          String expr
+    ) {
+        try {
+            var cache = new HashMap<>();
+            var imports = new HashMap<String, Object>();
+            imports.put("GitProps", GitProps.class);
+
+            var ce = MVEL.compileExpression(expr, imports);
+            var result = MVEL.executeExpression(ce, cache);
+
+            log.info("Result = {}", result);
+        } catch (Exception e) {
+            throw new HandledRuntimeException(e);
+        }
+    }
 }
