@@ -1,6 +1,8 @@
 package io.github.s7i.meshtastic;
 
 import com.geeksville.mesh.MeshProtos;
+import com.geeksville.mesh.MeshProtos.Constants;
+import com.geeksville.mesh.MeshProtos.Data;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
 import com.geeksville.mesh.MeshProtos.MeshPacket;
@@ -10,10 +12,12 @@ import com.geeksville.mesh.MeshProtos.RouteDiscovery;
 import com.geeksville.mesh.MeshProtos.Routing;
 import com.geeksville.mesh.MeshProtos.ToRadio;
 import com.geeksville.mesh.MeshProtos.User;
+import com.geeksville.mesh.Portnums.PortNum;
 import com.geeksville.mesh.TelemetryProtos;
 import com.geeksville.mesh.TelemetryProtos.Telemetry;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.TypeRegistry;
@@ -25,6 +29,7 @@ import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Gateway class to Meshtastic Protobuf classes.
@@ -36,6 +41,8 @@ public enum Proto {
           .add(MeshProtos.getDescriptor().getMessageTypes())
           .add(TelemetryProtos.getDescriptor().getMessageTypes())
           .build());
+
+    private PacketIdGenerator packetIdGenerator = new PacketIdGenerator();
     private final Gson gson = new Gson();
 
     private final Map<Long, String> nodeNameMap = new ConcurrentHashMap<>();
@@ -197,5 +204,25 @@ public enum Proto {
         } catch (InvalidProtocolBufferException e) {
             root.addProperty("doer.error", "invalid proto");
         }
+    }
+
+    public Message textMessage(Supplier<Integer> from, Supplier<Integer> to, String message) {
+        var payload = ByteString.copyFromUtf8(message);
+
+        if (payload.size() > Constants.DATA_PAYLOAD_LEN_VALUE) {
+            throw new IllegalStateException("payload too big");
+        }
+
+        return ToRadio.newBuilder()
+              .setPacket(MeshPacket.newBuilder()
+                    .setId(packetIdGenerator.generatePacketId())
+                    .setFrom(from.get())
+                    .setTo(to.get())
+                    .setRxTime((int) Instant.now().getEpochSecond())
+                    .setChannel(1)
+                    .setDecoded(Data.newBuilder()
+                          .setPayload(payload)
+                          .setPortnum(PortNum.TEXT_MESSAGE_APP)))
+              .build();
     }
 }

@@ -3,7 +3,7 @@ package io.github.s7i.doer.domain.meshtastic;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.Doer;
-import io.github.s7i.doer.command.Meshtastic.Options;
+import io.github.s7i.doer.command.Meshtastic.WebRadioApi.Options;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.meshtastic.Proto;
 import io.vertx.core.AbstractVerticle;
