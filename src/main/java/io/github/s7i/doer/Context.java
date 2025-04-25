@@ -4,6 +4,7 @@ import static io.github.s7i.doer.Doer.console;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
+import io.github.s7i.doer.Globals.ConfigReader;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputBuilder;
 import io.github.s7i.doer.domain.output.OutputFactory;
@@ -13,7 +14,6 @@ import io.github.s7i.doer.util.ParamFlagExtractor;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.QuitWatcher;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +29,7 @@ public interface Context extends ParamFlagExtractor {
 
         Path workDir;
         @Default
-        Map<String, String> params = Collections.emptyMap();
+        Map<String, String> params = new ConfigReader(Map::of).get();
     }
 
     class Initializer {

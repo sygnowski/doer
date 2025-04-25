@@ -79,15 +79,9 @@ public enum Globals implements Context {
 
         @Setter
         private Supplier<Path> root = () -> Path.of(".");
+        @Getter
         @Setter
         private Supplier<Map<String, String>> params = Map::of;
-
-        public Supplier<Map<String, String>> getParams() {
-            if (System.getenv().containsKey(Doer.ENV_CONFIG)) {
-                return new ConfigReader(params);
-            }
-            return params;
-        }
 
         public OutputFactory outputFactory() {
             return refOutputFactory.get();
