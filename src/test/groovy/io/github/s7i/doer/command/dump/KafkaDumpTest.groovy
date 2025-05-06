@@ -186,7 +186,7 @@ class KafkaDumpTest extends Specification {
                 (args[1] as ConsumerRebalanceListener).onPartitionsAssigned([tp])
             }
             1 * poll(_) >> records
-            1 * offsetsForTimes(fromTimeMap)
+            1 * offsetsForTimes(fromTimeMap, _)
 
         }
         def consumerFactory = Mock(KafkaConsumerFactory) {
