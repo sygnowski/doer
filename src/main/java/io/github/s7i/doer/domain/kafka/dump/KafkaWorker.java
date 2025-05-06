@@ -155,7 +155,9 @@ class KafkaWorker implements Context {
             }
         }
         if (!jumpToTime.isEmpty()) {
-            consumer.offsetsForTimes(jumpToTime);
+            log.debug("start seeking to offset of time...");
+            consumer.offsetsForTimes(jumpToTime, Duration.ofMinutes(1));
+            log.debug("done...");
         }
     }
 
