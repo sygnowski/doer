@@ -28,7 +28,7 @@ dependencies {
     implementation project(":rocksdb")
     implementation project(":meshtastic")
     implementation 'org.slf4j:slf4j-api:2.0.5',
-            'ch.qos.logback:logback-classic:1.4.12',
+            'ch.qos.logback:logback-classic:1.5.18',
             'info.picocli:picocli:4.7.0',
             "io.grpc:grpc-protobuf:$grpcVersion",
             "io.grpc:grpc-stub:$grpcVersion",
@@ -53,6 +53,7 @@ dependencies {
     implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
     //implementation("io.vertx:vertx-web-sstore-redis")
     implementation "io.vertx:vertx-mqtt",
+            "io.vertx:vertx-web",
             "io.vertx:vertx-web-client"
 
     // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle

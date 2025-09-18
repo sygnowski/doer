@@ -3,8 +3,10 @@ package io.github.s7i.doer.command;
 import static java.util.Objects.requireNonNull;
 
 import io.github.s7i.doer.Context;
+import io.github.s7i.doer.command.Meshtastic.ServerApi;
 import io.github.s7i.doer.command.Meshtastic.WebRadioApi;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
+import io.github.s7i.doer.domain.meshtastic.ApiVerticle;
 import io.github.s7i.doer.domain.meshtastic.MeshWebClient;
 import io.github.s7i.doer.domain.output.DefaultOutputProvider;
 import io.github.s7i.doer.domain.output.Output.Load;
@@ -25,9 +27,21 @@ import picocli.CommandLine.Option;
 @Command(
       name = "mesh",
       description = "//\\ - Meshtastic",
-      subcommands = WebRadioApi.class
+      subcommands = {
+            WebRadioApi.class, ServerApi.class
+      }
 )
 public class Meshtastic implements DefaultOutputProvider {
+
+
+    @Command(name = "server-api")
+    public static class ServerApi extends VerticleCommand {
+
+        @Override
+        protected Verticle createVerticle() {
+            return new ApiVerticle();
+        }
+    }
 
 
     @Command(name = "txt")
