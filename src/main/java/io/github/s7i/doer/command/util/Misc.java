@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.protobuf.TextFormat;
 import io.github.s7i.doer.Doer;
 import io.github.s7i.doer.HandledRuntimeException;
+import io.github.s7i.doer.command.dump.AvroDump;
 import io.github.s7i.doer.command.file.ReplaceInFile;
 import io.github.s7i.doer.domain.output.HttpOutput;
 import io.github.s7i.doer.util.Clipboard;
@@ -52,7 +53,8 @@ import picocli.CommandLine.Parameters;
         description = "Miscellaneous command set.",
         subcommands = {
                 ReplaceInFile.class,
-                CommandManifest.class
+                CommandManifest.class,
+                AvroDump.class
         }
 )
 @Slf4j(topic = "doer.console")
