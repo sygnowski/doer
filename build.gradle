@@ -27,6 +27,7 @@ dependencies {
     implementation project(":proto-doer")
     implementation project(":rocksdb")
     implementation project(":meshtastic")
+    implementation libs.avro
     implementation 'org.slf4j:slf4j-api:2.0.5',
             'ch.qos.logback:logback-classic:1.5.18',
             'info.picocli:picocli:4.7.0',
