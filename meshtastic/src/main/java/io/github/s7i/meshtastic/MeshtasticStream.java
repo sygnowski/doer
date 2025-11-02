@@ -27,6 +27,7 @@ public class MeshtasticStream {
     public static final int HEADER_LEN = 4;
     public static final int NODELESS_WANT_CONFIG_ID = 69420;
     public static final int MAX_TO_FROM_RADIO_SIZE = 512;
+    public static final int LIMIT = 10;
 
     private final InputStream is;
     private final OutputStream os;
@@ -119,8 +120,9 @@ public class MeshtasticStream {
     void handleRadioRx() {
         FromRadioReader reader = new FromRadioReader();
         LOGGER.debug("starting rx");
+        int generalErr = 0;
         int errorCount = 0;
-        while (errorCount < options.socketTimeoutRetry() && !Thread.currentThread().isInterrupted()) {
+        while (!Thread.currentThread().isInterrupted()) {
             try {
                 int c = is.read();
 
@@ -133,11 +135,18 @@ public class MeshtasticStream {
                     break;
                 }
             } catch (SocketTimeoutException e) {
-                errorCount++;
-
-                nap();
+                if (++errorCount < options.socketTimeoutRetry()) {
+                    nap();
+                } else {
+                    break;
+                }
             } catch (IOException e) {
-                LOGGER.error("while reding from socket", e);
+                if (++generalErr > options.errorRetry()) {
+                    LOGGER.error("while reding from socket", e);
+                    break;
+                } else {
+                    nap(generalErr);
+                }
             }
         }
         LOGGER.debug("stopping rx");
@@ -149,8 +158,12 @@ public class MeshtasticStream {
     }
 
     private void nap() {
+        nap(1L);
+    }
+
+    private void nap(long factor) {
         try {
-            TimeUnit.MILLISECONDS.sleep(options.delayMillis());
+            TimeUnit.MILLISECONDS.sleep(Math.min(factor, LIMIT) * options.delayMillis());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
