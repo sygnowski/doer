@@ -8,20 +8,19 @@ import java.nio.file.Files;
 import java.util.Properties;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 @Slf4j
 public class KafkaPropertiesReader implements PathResolver {
+
+    public static Properties read(KafkaConfig kafkaConfig) {
+        return new KafkaPropertiesReader(kafkaConfig).getProperties();
+    }
 
     @Getter
     private final Properties properties;
 
     public KafkaPropertiesReader(KafkaConfig config) {
-        properties = new Properties();
-        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        properties = KafkaDefaultProperties.defaultProperties();
 
         readPropFile(config);
         assignProps(config);
