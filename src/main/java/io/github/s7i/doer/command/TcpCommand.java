@@ -72,7 +72,7 @@ public class TcpCommand extends Command {
     String[] args;
 
 
-    private class KafkaSender {
+    private class KafkaConnect {
 
         private final Producer<String, byte[]> producer = initKafkaProducer();
         private Thread cthx;
@@ -141,7 +141,7 @@ public class TcpCommand extends Command {
     @Override
     public void onExecuteCommand() {
         try {
-            var sender = new KafkaSender();
+            var kafkaConnect = new KafkaConnect();
             String host = args[0];
 
             int port = Integer.parseInt(args[1]);
@@ -155,16 +155,16 @@ public class TcpCommand extends Command {
 
             meshtastic.handleFromRadio(data -> {
                 try {
-                    sender.send(data);
+                    kafkaConnect.send(data);
                 } catch (Exception e) {
                     log.error("while send", e);
                 }
             });
             meshtastic.connect();
-            sender.bind(meshtastic::sendToRadio);
+            kafkaConnect.bind(meshtastic::sendToRadio);
 
             endTrigger.await();
-            sender.close();
+            kafkaConnect.close();
             meshtastic.disconnect();
 
         } catch (Exception e) {
