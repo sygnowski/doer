@@ -2,6 +2,7 @@ package io.github.s7i.doer.domain.rocksdb;
 
 import static java.util.Objects.nonNull;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -23,6 +25,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 
 @RequiredArgsConstructor
+@Slf4j
 public class RocksDb {
 
     public static final String DEFAULT_COLUMN_FAMILY = new String(RocksDB.DEFAULT_COLUMN_FAMILY);
@@ -105,14 +108,14 @@ public class RocksDb {
     }
 
     @RequiredArgsConstructor
-    class DbIterator implements Iterator<KeyValue<String, String>>, Iterable<KeyValue<String, String>>, OnRocksDbOpenComplete {
+    class DbIterator implements Iterator<KeyValue<ByteBuffer, ByteBuffer>>, Iterable<KeyValue<ByteBuffer, ByteBuffer>>, OnRocksDbOpenComplete {
 
         final String column;
         private RocksIterator iterator;
         Complete complete;
 
         @Override
-        public Iterator<KeyValue<String, String>> iterator() {
+        public Iterator<KeyValue<ByteBuffer, ByteBuffer>> iterator() {
             open(listColumns(), this);
             return this;
         }
@@ -145,16 +148,25 @@ public class RocksDb {
         }
 
         @Override
-        public KeyValue<String, String> next() {
-            var kv = new KeyValue<String, String>();
-            kv.setKey(new String(iterator.key()));
-            kv.setValue(new String(iterator.value()));
+        public KeyValue<ByteBuffer, ByteBuffer> next() {
+            var kv = new KeyValue<ByteBuffer, ByteBuffer>();
+
+            try {
+                kv.setKey(ByteBuffer.wrap(iterator.key()));
+            } catch (Exception e) {
+                log.error("key", e);
+            }
+            try {
+                kv.setValue(ByteBuffer.wrap(iterator.value()));
+            } catch (Exception e) {
+                log.error("value", e);
+            }
 
             return kv;
         }
     }
 
-    public Iterable<KeyValue<String, String>> iterableOnAll(String column) {
+    public Iterable<KeyValue<ByteBuffer, ByteBuffer>> iterableOnAll(String column) {
         return new DbIterator(column);
     }
 

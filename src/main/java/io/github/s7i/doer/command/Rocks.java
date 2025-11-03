@@ -1,18 +1,23 @@
 package io.github.s7i.doer.command;
 
-import io.github.s7i.doer.ConsoleLog;
-import io.github.s7i.doer.domain.rocksdb.RocksDb;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+
+import io.github.s7i.doer.ConsoleLog;
+import io.github.s7i.doer.domain.rocksdb.RocksDb;
+import io.github.s7i.doer.shade.flink.StringValue;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import org.jetbrains.annotations.Nullable;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @Command(name = "rocks")
 public class Rocks implements Runnable, ConsoleLog {
 
     enum Action {
-        PUT, GET, LIST
+        PUT, GET, LIST, SCAN
     }
 
     @Option(names = "-db", required = true)
@@ -45,6 +50,8 @@ public class Rocks implements Runnable, ConsoleLog {
             case LIST:
                 list();
                 break;
+            case SCAN:
+                scan();
             default:
                 info("bad action");
                 break;
@@ -75,6 +82,43 @@ public class Rocks implements Runnable, ConsoleLog {
         rocksdb.setReadOnly(true);
         rocksdb.setCreateIfMissing(false);
         rocksdb.setCreateMissingColumnFamilies(false);
+    }
+
+    private void scan() {
+        readOnly();
+        for (var cfName : rocksdb.listColumns()) {
+            for (var it : rocksdb.iterableOnAll(cfName)) {
+                byte[] data;
+
+                var key = it.getKey();
+                var val = it.getValue();
+
+                if (key != null) {
+                    data = key.array();
+                    System.out.println("KEY RAW: " + new String(data));
+                    System.out.println("KEY FLINK: " + readFlinkString(data));
+                }
+
+                if (val != null) {
+                    data = val.array();
+                    System.out.println("VALUE RAW: " + new String(data));
+                    System.out.println("VALUE FLINK: " + readFlinkString(data));
+                }
+
+                System.out.println("---");
+
+            }
+        }
+
+    }
+
+    @Nullable
+    private static String readFlinkString(byte[] keyData) {
+        try {
+            return StringValue.readString(new DataInputStream(new ByteArrayInputStream(keyData)));
+        } catch (IOException e) {
+            return "";
+        }
     }
 
     private void put() {
