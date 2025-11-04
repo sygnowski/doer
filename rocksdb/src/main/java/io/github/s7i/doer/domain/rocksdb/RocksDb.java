@@ -134,7 +134,6 @@ public class RocksDb {
 
         @Override
         public boolean hasNext() {
-            iterator.next();
             var haxNext = iterator.isValid();
             try {
                 iterator.status();
@@ -161,6 +160,8 @@ public class RocksDb {
             } catch (Exception e) {
                 log.error("value", e);
             }
+
+            iterator.next();
 
             return kv;
         }

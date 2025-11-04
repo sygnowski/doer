@@ -9,6 +9,8 @@ import io.github.s7i.doer.shade.flink.StringValue;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Base64;
+import java.util.function.BiConsumer;
 import org.jetbrains.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -52,6 +54,7 @@ public class Rocks implements Runnable, ConsoleLog {
                 break;
             case SCAN:
                 scan();
+                break;
             default:
                 info("bad action");
                 break;
@@ -86,7 +89,16 @@ public class Rocks implements Runnable, ConsoleLog {
 
     private void scan() {
         readOnly();
+        final var b64enc = Base64.getEncoder();
+
+        BiConsumer<String, byte[]> processor = (kind, data) -> {
+            System.out.println(kind + " RAW: " + new String(data));
+            System.out.println(kind + " BASE64 " + b64enc.encodeToString(data));
+            System.out.println(kind + " FLINK: " + readFlinkString(data));
+        };
+
         for (var cfName : rocksdb.listColumns()) {
+            System.out.println("COLUMN_FAMILY: " + cfName);
             for (var it : rocksdb.iterableOnAll(cfName)) {
                 byte[] data;
 
@@ -95,14 +107,12 @@ public class Rocks implements Runnable, ConsoleLog {
 
                 if (key != null) {
                     data = key.array();
-                    System.out.println("KEY RAW: " + new String(data));
-                    System.out.println("KEY FLINK: " + readFlinkString(data));
+                    processor.accept("KEY", data);
                 }
 
                 if (val != null) {
                     data = val.array();
-                    System.out.println("VALUE RAW: " + new String(data));
-                    System.out.println("VALUE FLINK: " + readFlinkString(data));
+                    processor.accept("VALUE", data);
                 }
 
                 System.out.println("---");
@@ -113,11 +123,11 @@ public class Rocks implements Runnable, ConsoleLog {
     }
 
     @Nullable
-    private static String readFlinkString(byte[] keyData) {
+    private static String readFlinkString(byte[] data) {
         try {
-            return StringValue.readString(new DataInputStream(new ByteArrayInputStream(keyData)));
+            return StringValue.readString(new DataInputStream(new ByteArrayInputStream(data)));
         } catch (IOException e) {
-            return "";
+            return e.getMessage();
         }
     }
 
