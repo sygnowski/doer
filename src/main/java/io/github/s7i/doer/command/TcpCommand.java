@@ -6,6 +6,8 @@ import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.meshtastic.TcpInterface;
+import io.github.s7i.meshtastic.proxy.ProxyServer;
+import io.github.s7i.meshtastic.proxy.StreamProxy;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -51,6 +53,12 @@ public class TcpCommand extends Command {
 
         @Option(names = "--kafka-rx-topic", defaultValue = "meshtastic-to-radio")
         String kafkaToRadioTopic;
+
+        @Option(names = {"-p", "--proxy"})
+        boolean proxy;
+
+        @Option(names = {"--no-kafka"})
+        boolean noKafka;
 
         @Override
         public String getKafkaPropFile() {
@@ -141,30 +149,46 @@ public class TcpCommand extends Command {
     @Override
     public void onExecuteCommand() {
         try {
-            var kafkaConnect = new KafkaConnect();
-            String host = args[0];
+            var kafkaConnect = options.noKafka ? null : new KafkaConnect();
 
+            String host = args[0];
             int port = Integer.parseInt(args[1]);
 
             var endTrigger = new CountDownLatch(1);
             Runtime.getRuntime().addShutdownHook(new Thread(endTrigger::countDown));
 
-            var meshtastic = new TcpInterface(port, host);
+            StreamProxy proxy = null;
+            if (options.proxy) {
+                var proxyServer = new ProxyServer("0.0.0.0", port);
+                proxy = proxyServer.proxy();
+
+                proxyServer.start();
+            }
+
+            var meshtastic = new TcpInterface(port, host, proxy);
 
             meshtastic.setOnStop(endTrigger::countDown);
 
-            meshtastic.handleFromRadio(data -> {
-                try {
-                    kafkaConnect.send(data);
-                } catch (Exception e) {
-                    log.error("while send", e);
-                }
-            });
+            if (kafkaConnect != null) {
+                meshtastic.handleFromRadio(data -> {
+                    try {
+                        kafkaConnect.send(data);
+                    } catch (Exception e) {
+                        log.error("while send", e);
+                    }
+                });
+            }
+
             meshtastic.connect();
-            kafkaConnect.bind(meshtastic::sendToRadio);
+
+            if (kafkaConnect != null) {
+                kafkaConnect.bind(meshtastic::sendToRadio);
+            }
 
             endTrigger.await();
-            kafkaConnect.close();
+            if (kafkaConnect != null) {
+                kafkaConnect.close();
+            }
             meshtastic.disconnect();
 
         } catch (Exception e) {

@@ -1,24 +1,28 @@
-package io.github.s7i.meshtastic;
+package io.github.s7i.meshtastic.proxy;
 
 import static io.github.s7i.meshtastic.MeshtasticStream.HEADER_LEN;
 import static io.github.s7i.meshtastic.MeshtasticStream.MAX_TO_FROM_RADIO_SIZE;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-public class StreamProxy {
+public abstract class AbstractProxy implements StreamProxy {
 
-    OutputStream os;
-    InputStream is;
+    private final ByteFlow byteFlow;
+
+    protected AbstractProxy() {
+        this.byteFlow = initByteFlow();
+    }
+
+    protected abstract ByteFlow initByteFlow();
 
     private final ByteBuffer txBuff = ByteBuffer.allocate(MAX_TO_FROM_RADIO_SIZE + HEADER_LEN);
 
+    @Override
     public void rx(int dat) {
         txBuff.put((byte) dat);
     }
 
+    @Override
     public void rxFlush() {
         txBuff.flip();
 
@@ -27,16 +31,12 @@ public class StreamProxy {
 
         txBuff.compact();
 
-        try {
-            os.write(buff);
-            os.flush();
-        } catch (IOException e) {
-            //throw new RuntimeException(e);
-        }
+        byteFlow.outbound(buff);
     }
 
 
+    @Override
     public byte[] toTx() {
-        return null;
+        return byteFlow.inbound();
     }
 }

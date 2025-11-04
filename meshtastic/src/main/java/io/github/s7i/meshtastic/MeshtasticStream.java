@@ -5,6 +5,7 @@ import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
 import com.geeksville.mesh.MeshProtos.Heartbeat;
 import com.geeksville.mesh.MeshProtos.ToRadio;
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.github.s7i.meshtastic.proxy.StreamProxy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,11 +41,13 @@ public class MeshtasticStream {
     private final Thread[] threads;
     private final Options options;
     private int queueFree = Integer.MAX_VALUE;
+    private StreamProxy proxy;
 
 
     public MeshtasticStream(InputStream is, OutputStream os) {
         this(is, os, Options.fromSystem());
     }
+
 
     public MeshtasticStream(InputStream is, OutputStream os, Options options) {
         this.options = options;
@@ -60,6 +63,11 @@ public class MeshtasticStream {
               new Thread(tg, this::handlePool, "FromRadio Fetcher")
         };
     }
+
+    public void setProxy(StreamProxy proxy) {
+        this.proxy = proxy;
+    }
+
 
     public Options getOptions() {
         return options;
@@ -125,6 +133,10 @@ public class MeshtasticStream {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 int c = is.read();
+
+                if (proxy != null) {
+                    proxy.rx(c);
+                }
 
                 errorCount = 0;
 
@@ -255,6 +267,10 @@ public class MeshtasticStream {
             rxPacket.reset();
             reset();
             hasPacket = false;
+
+            if (proxy != null) {
+                proxy.rxFlush();
+            }
         }
 
 

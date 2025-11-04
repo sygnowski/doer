@@ -1,21 +1,19 @@
-package io.github.s7i.meshtastic;
+package io.github.s7i.meshtastic.proxy;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class StreamProxyTest {
 
-
     @Test
     void testRxAndFlush() throws IOException {
 
-        var prox = new StreamProxy();
-        var tx = new ByteArrayOutputStream(20);
-        prox.os = tx;
+
+        var buff = ByteBuffer.allocate(10);
+        var prox = new BufferProxy();
 
         prox.rx(10);
         prox.rx(11);
@@ -25,7 +23,6 @@ class StreamProxyTest {
 
         prox.rxFlush();
 
-        assertEquals(5, tx.size());
 
         prox.rx(20);
         prox.rx(21);
@@ -35,7 +32,9 @@ class StreamProxyTest {
 
         prox.rxFlush();
 
-        var result = tx.toByteArray();
+        prox.doTx(buff::put);
+
+        var result = buff.array();
         assertArrayEquals(new byte[]{
               10, 11, 12, 13, 14, 20, 21, 22, 23, 24
         }, result);
