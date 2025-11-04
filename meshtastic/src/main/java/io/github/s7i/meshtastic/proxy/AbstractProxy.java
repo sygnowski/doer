@@ -24,13 +24,7 @@ public abstract class AbstractProxy implements StreamProxy {
 
     @Override
     public void rxFlush() {
-        txBuff.flip();
-
-        byte[] buff = new byte[txBuff.remaining()];
-        txBuff.get(buff);
-
-        txBuff.compact();
-
+        byte[] buff = extractRemaining(txBuff);
         byteFlow.outbound(buff);
     }
 
@@ -38,5 +32,15 @@ public abstract class AbstractProxy implements StreamProxy {
     @Override
     public byte[] toTx() {
         return byteFlow.inbound();
+    }
+
+    protected byte[] extractRemaining(ByteBuffer bb) {
+        bb.flip();
+
+        byte[] buff = new byte[bb.remaining()];
+        bb.get(buff);
+
+        bb.compact();
+        return buff;
     }
 }

@@ -1,6 +1,8 @@
 package io.github.s7i.meshtastic.proxy;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -12,6 +14,7 @@ import org.slf4j.LoggerFactory;
 public class ProxyServer {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(ProxyServer.class);
+    public static final int BUFFER_SMALL = Integer.getInteger("buffer.small", 1024);
 
     public ProxyServer(String host, int port) {
         this.host = host;
@@ -80,6 +83,22 @@ public class ProxyServer {
     }
 
     private void read(SocketChannel client) {
+
+        proxy.doRx(rx -> {
+            var buff = ByteBuffer.allocate(BUFFER_SMALL);
+            try {
+                client.read(buff);
+                buff.flip();
+
+                rx.put(buff);
+
+                if (buff.hasRemaining()) {
+                    LOGGER.warn("rx has remaining");
+                }
+            } catch (IOException e) {
+                LOGGER.error("handle rx", e);
+            }
+        });
 
     }
 

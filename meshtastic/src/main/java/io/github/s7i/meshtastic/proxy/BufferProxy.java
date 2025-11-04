@@ -1,15 +1,22 @@
 package io.github.s7i.meshtastic.proxy;
 
+import static io.github.s7i.meshtastic.proxy.ProxyServer.BUFFER_SMALL;
+
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BufferProxy extends AbstractProxy implements ByteFlow {
 
-    private final Object txLock = new Object();
-    private final Object rxLock = new Object();
+    public static final Logger LOGGER = LoggerFactory.getLogger(BufferProxy.class);
 
-    private final ByteBuffer tx = ByteBuffer.allocate(Integer.getInteger("buff.tx", 1024 * 1024));
-    private final ByteBuffer rx = ByteBuffer.allocate(Integer.getInteger("buff.rx", 1024 * 1024));
+    private final Object txLock = new Object();
+    private final ReentrantLock rxLock = new ReentrantLock();
+
+    private final ByteBuffer tx = ByteBuffer.allocate(Integer.getInteger("buff.tx", 1024 * BUFFER_SMALL));
+    private final ByteBuffer rx = ByteBuffer.allocate(Integer.getInteger("buff.rx", 100 * BUFFER_SMALL));
 
     @Override
     protected ByteFlow initByteFlow() {
@@ -19,7 +26,23 @@ public class BufferProxy extends AbstractProxy implements ByteFlow {
     @Override
     public void outbound(byte[] data) {
         synchronized (txLock) {
+
+            if (tx.remaining() < data.length) {
+                LOGGER.debug("discarding TX BUFFER");
+                tx.clear();
+            }
+
             tx.put(data);
+        }
+    }
+
+    @Override
+    public byte[] inbound() {
+        rxLock.lock();
+        try {
+            return extractRemaining(rx);
+        } finally {
+            rxLock.unlock();
         }
     }
 
@@ -28,6 +51,19 @@ public class BufferProxy extends AbstractProxy implements ByteFlow {
             tx.flip();
             onTx.accept(tx);
             tx.compact();
+        }
+    }
+
+    public void doRx(Consumer<ByteBuffer> onRx) {
+        rxLock.lock();
+        try {
+            if (rx.remaining() < BUFFER_SMALL) {
+                LOGGER.debug("discarding RX BUFFER");
+                rx.clear();
+            }
+            onRx.accept(rx);
+        } finally {
+            rxLock.unlock();
         }
     }
 }

@@ -15,6 +15,7 @@ import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public class MeshtasticStream {
     private final Options options;
     private int queueFree = Integer.MAX_VALUE;
     private StreamProxy proxy;
+    private final ReentrantLock sendLock = new ReentrantLock();
 
 
     public MeshtasticStream(InputStream is, OutputStream os) {
@@ -99,11 +101,18 @@ public class MeshtasticStream {
               .put((byte) (len & 0xFF));
 
         try {
-            os.write(header.array());
-            os.write(data);
-            os.flush();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            sendLock.lockInterruptibly();
+            try {
+                os.write(header.array());
+                os.write(data);
+                os.flush();
+            } catch (IOException e) {
+                LOGGER.error("while sending to radio", e);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            sendLock.unlock();
         }
     }
 
@@ -131,6 +140,8 @@ public class MeshtasticStream {
         int generalErr = 0;
         int errorCount = 0;
         while (!Thread.currentThread().isInterrupted()) {
+            sendDataFromProxy();
+
             try {
                 int c = is.read();
 
@@ -166,6 +177,26 @@ public class MeshtasticStream {
         var onStop = onRxStop.get();
         if (onStop != null) {
             onStop.run();
+        }
+    }
+
+    private void sendDataFromProxy() {
+        try {
+            if (proxy != null) {
+                var toTx = proxy.toTx();
+                if (toTx.length > 0) {
+                    sendLock.lock();
+                    try {
+                        os.write(toTx);
+                        os.flush();
+                    } finally {
+                        sendLock.unlock();
+                    }
+                    LOGGER.debug("sent to radio from proxy, len: {}", toTx.length);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("sending data from proxy", e);
         }
     }
 
