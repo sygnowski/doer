@@ -79,7 +79,12 @@ public class ProxyServer {
     }
 
     private void sendToAllClients(ByteBuffer tx) {
-        var sharedBuffer = AbstractProxy.extractRemaining(tx);
+        if (!tx.hasRemaining()) {
+            return;
+        }
+        byte[] sharedBuffer = new byte[tx.remaining()];
+        tx.get(sharedBuffer);
+
         for (var channel : clientsByAddress.values()) {
             var toClient = ByteBuffer.allocate(sharedBuffer.length);
             toClient.put(sharedBuffer);
