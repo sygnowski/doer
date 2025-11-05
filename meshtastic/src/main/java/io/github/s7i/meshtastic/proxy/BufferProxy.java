@@ -1,6 +1,8 @@
 package io.github.s7i.meshtastic.proxy;
 
-import static io.github.s7i.meshtastic.proxy.ProxyServer.BUFFER_SMALL;
+import static io.github.s7i.meshtastic.proxy.BufferConfig.BUFFER_SMALL;
+import static io.github.s7i.meshtastic.proxy.BufferConfig.BUFF_RX;
+import static io.github.s7i.meshtastic.proxy.BufferConfig.BUFF_TX;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,15 +14,27 @@ public class BufferProxy extends AbstractProxy implements ByteFlow {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(BufferProxy.class);
 
+
     private final Object txLock = new Object();
     private final ReentrantLock rxLock = new ReentrantLock();
 
-    private final ByteBuffer tx = ByteBuffer.allocate(Integer.getInteger("buff.tx", 1024 * BUFFER_SMALL));
-    private final ByteBuffer rx = ByteBuffer.allocate(Integer.getInteger("buff.rx", 100 * BUFFER_SMALL));
+    private final ByteBuffer tx = ByteBuffer.allocate(Integer.getInteger("buff.tx", BUFF_TX));
+    private final ByteBuffer rx = ByteBuffer.allocate(Integer.getInteger("buff.rx", BUFF_RX));
 
     @Override
     protected ByteFlow initByteFlow() {
         return this;
+    }
+
+    public void waitForDataForTx() {
+        synchronized (txLock) {
+            try {
+                txLock.wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        LOGGER.debug("wait for tx end for thread: {}", Thread.currentThread().getName());
     }
 
     @Override
@@ -28,11 +42,13 @@ public class BufferProxy extends AbstractProxy implements ByteFlow {
         synchronized (txLock) {
 
             if (tx.remaining() < data.length) {
-                LOGGER.debug("discarding TX BUFFER");
+                LOGGER.debug("discarding TX BUFFER due no proxy transfer");
                 tx.clear();
             }
 
             tx.put(data);
+
+            txLock.notifyAll();
         }
     }
 
@@ -47,6 +63,9 @@ public class BufferProxy extends AbstractProxy implements ByteFlow {
     }
 
     public void doTx(Consumer<ByteBuffer> onTx) {
+        if (tx.position() == 0) {
+            return;
+        }
         synchronized (txLock) {
             tx.flip();
             onTx.accept(tx);
