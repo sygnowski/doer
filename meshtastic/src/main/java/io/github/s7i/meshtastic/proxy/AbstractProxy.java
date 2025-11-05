@@ -34,7 +34,7 @@ public abstract class AbstractProxy implements StreamProxy {
         return byteFlow.inbound();
     }
 
-    protected byte[] extractRemaining(ByteBuffer bb) {
+    public static byte[] extractRemaining(ByteBuffer bb) {
         bb.flip();
 
         byte[] buff = new byte[bb.remaining()];

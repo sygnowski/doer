@@ -73,16 +73,19 @@ public class ProxyServer {
                 }
             } else {
                 proxy.waitForDataForTx();
-                for (var channel : clientsByAddress.values()) {
-                    proxy.doTx(tx -> {
-                        var toClient = ByteBuffer.allocate(tx.remaining());
-                        toClient.put(tx);
-                        toClient.flip();
-
-                        send(channel, toClient);
-                    });
-                }
+                proxy.doTx(this::sendToAllClients);
             }
+        }
+    }
+
+    private void sendToAllClients(ByteBuffer tx) {
+        var sharedBuffer = AbstractProxy.extractRemaining(tx);
+        for (var channel : clientsByAddress.values()) {
+            var toClient = ByteBuffer.allocate(sharedBuffer.length);
+            toClient.put(sharedBuffer);
+            toClient.flip();
+
+            send(channel, toClient);
         }
     }
 
