@@ -29,6 +29,7 @@ public class TcpInterface implements MeshtasticInterface {
     private OutputStream os;
     private volatile Consumer<byte[]> handler;
     private volatile Runnable onStop;
+    private boolean withNodes = true;
 
     public TcpInterface(int port, String host) {
         this(port, host, null);
@@ -38,6 +39,10 @@ public class TcpInterface implements MeshtasticInterface {
         this.port = port;
         this.host = host;
         this.proxy = proxy;
+    }
+
+    public void setWithNodes(boolean withNodes) {
+        this.withNodes = withNodes;
     }
 
     @Override
@@ -58,7 +63,7 @@ public class TcpInterface implements MeshtasticInterface {
             stream.setProxy(proxy);
             stream.setHandler(this::onRx);
             stream.onStop(this::onStop);
-            stream.startReadFromRadio(true);
+            stream.startReadFromRadio(withNodes);
 
         } catch (Exception e) {
             throw new RuntimeException(e);

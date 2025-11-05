@@ -5,6 +5,9 @@ import static java.util.Objects.requireNonNull;
 import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
+import io.github.s7i.doer.util.Utils;
+import io.github.s7i.meshtastic.MeshtasticStream;
+import io.github.s7i.meshtastic.Proto;
 import io.github.s7i.meshtastic.TcpInterface;
 import io.github.s7i.meshtastic.proxy.ProxyServer;
 import io.github.s7i.meshtastic.proxy.StreamProxy;
@@ -59,6 +62,9 @@ public class TcpCommand extends Command {
 
         @Option(names = {"--no-kafka"})
         boolean noKafka;
+
+        @Option(names = {"--json"})
+        boolean meshJson;
 
         @Override
         public String getKafkaPropFile() {
@@ -149,7 +155,9 @@ public class TcpCommand extends Command {
     @Override
     public void onExecuteCommand() {
         try {
-            var kafkaConnect = options.noKafka ? null : new KafkaConnect();
+            var kafkaConnect = options.noKafka || !Utils.hasAnyValue(options.kafkaConfig)
+                  ? null
+                  : new KafkaConnect();
 
             String host = args[0];
             int port = Integer.parseInt(args[1]);
@@ -177,6 +185,12 @@ public class TcpCommand extends Command {
                         log.error("while send", e);
                     }
                 });
+            } else if (options.meshJson) {
+                System.setProperty(MeshtasticStream.SP_DROP_TX, "true");
+                System.setProperty(Proto.GOSN_PRETTY, "true");
+
+                meshtastic.handleFromRadio(data ->
+                      System.out.println(Proto.INSTANCE.asJsonTextFromRadio(data)));
             }
 
             meshtastic.connect();

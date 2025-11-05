@@ -30,6 +30,7 @@ public class MeshtasticStream {
     public static final int NODELESS_WANT_CONFIG_ID = 69420;
     public static final int MAX_TO_FROM_RADIO_SIZE = 512;
     public static final int LIMIT = 10;
+    public static final String SP_DROP_TX = "drop.tx";
 
     private final InputStream is;
     private final OutputStream os;
@@ -44,6 +45,7 @@ public class MeshtasticStream {
     private int queueFree = Integer.MAX_VALUE;
     private StreamProxy proxy;
     private final ReentrantLock sendLock = new ReentrantLock();
+    private final Boolean dropTx = Boolean.getBoolean(SP_DROP_TX);
 
 
     public MeshtasticStream(InputStream is, OutputStream os) {
@@ -79,19 +81,22 @@ public class MeshtasticStream {
         fromRadioHandler.set(fromRadioConsumer);
     }
 
-    public MeshtasticStream onStop(Runnable onStop) {
+    public void onStop(Runnable onStop) {
         onRxStop.set(onStop);
-        return this;
     }
 
     public void send(ToRadio toSend) {
         if (queueFree <= 0) {
-            throw new RuntimeException("too may to send");
+            throw new RuntimeException("too many to send");
         }
         sendToRadio(toSend.toByteArray());
     }
 
     private void sendToRadio(byte[] data) {
+        if (dropTx) {
+            LOGGER.debug("dropping tx data");
+            return;
+        }
         var len = data.length;
 
         var header = ByteBuffer.allocate(HEADER_LEN)
@@ -181,6 +186,10 @@ public class MeshtasticStream {
     }
 
     private void sendDataFromProxy() {
+        if (dropTx) {
+            LOGGER.debug("dropping tx data");
+            return;
+        }
         try {
             if (proxy != null) {
                 var toTx = proxy.toTx();

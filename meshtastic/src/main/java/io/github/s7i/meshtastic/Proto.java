@@ -16,6 +16,7 @@ import com.geeksville.mesh.Portnums.PortNum;
 import com.geeksville.mesh.TelemetryProtos;
 import com.geeksville.mesh.TelemetryProtos.Telemetry;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -30,20 +31,26 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Gateway class to Meshtastic Protobuf classes.
  */
 public enum Proto {
     INSTANCE;
+    public static final String GOSN_PRETTY = "gosn.pretty";
 
     private final Printer printer = JsonFormat.printer().usingTypeRegistry(TypeRegistry.newBuilder()
           .add(MeshProtos.getDescriptor().getMessageTypes())
           .add(TelemetryProtos.getDescriptor().getMessageTypes())
           .build());
 
-    private PacketIdGenerator packetIdGenerator = new PacketIdGenerator();
-    private final Gson gson = new Gson();
+    private final PacketIdGenerator packetIdGenerator = new PacketIdGenerator();
+    private final Gson gson = Stream.of(Boolean.getBoolean(GOSN_PRETTY))
+          .map(pretty ->
+                pretty ? new GsonBuilder().setPrettyPrinting().create() : new Gson()
+          ).findAny()
+          .orElseThrow();
 
     private final Map<Long, String> nodeNameMap = new ConcurrentHashMap<>();
 

@@ -50,6 +50,9 @@ public class ProxyServer {
     }
 
     public void start() {
+        if (proxy == null) {
+            throw new IllegalStateException("call ProxyServer::proxy() before");
+        }
         for (var thr : pool) {
             thr.start();
         }
