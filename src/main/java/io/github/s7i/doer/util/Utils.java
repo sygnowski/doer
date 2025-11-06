@@ -5,17 +5,15 @@ import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.github.s7i.doer.DoerException;
-import io.github.s7i.doer.MissingDependencies;
+import io.github.s7i.doer.command.Loader;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import picocli.CommandLine.Command;
 
 @UtilityClass
 @Slf4j
@@ -66,31 +64,14 @@ public class Utils {
               .configure(SerializationFeature.INDENT_OUTPUT, true);
     }
 
-    public void loadCommand(BiConsumer<String, Object> consumer) {
-
+    public String loadCommand(BiConsumer<String, Object> consumer) {
+        var loader = new Loader();
         try (var cmds = Utils.resource("/cmds/list")) {
             cmds.lines()
-                  .forEach(clazz -> addCommand(clazz, consumer));
+                  .forEach(clazz -> loader.addCommand(clazz, consumer));
         } catch (Exception e) {
             throw new DoerException(e);
         }
-    }
-
-    private static void addCommand(String name, BiConsumer<String, Object> consumer) {
-        try {
-            Class<?> clazz = Class.forName(name);
-            Object instance = clazz.getConstructor().newInstance();
-            var commandName = clazz.getAnnotation(Command.class).name();
-
-            consumer.accept(commandName, instance);
-        } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof MissingDependencies why) {
-                log.debug("{} - skipping command due missing dependencies", name, why);
-            } else {
-                log.warn("loading command", e);
-            }
-        } catch (Throwable e) {
-            log.warn("loading command", e);
-        }
+        return loader.notLoadedRemarks();
     }
 }

@@ -16,6 +16,7 @@ import picocli.CommandLine.Command;
 
 @Command(name = "doer", description = "let's do big things...")
 public class Doer implements Runnable, Banner {
+
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
     public static final String FLAG_SEND_AND_FORGET = "send-and-forget";
@@ -67,8 +68,11 @@ public class Doer implements Runnable, Banner {
         var commandLine = new CommandLine(command);
 
         if (command instanceof Doer doer) {
-            doer.usage = () -> commandLine.usage(System.out);
-            Utils.loadCommand(commandLine::addSubcommand);
+            var remarks = Utils.loadCommand(commandLine::addSubcommand);
+            doer.usage = () -> {
+                commandLine.usage(System.out);
+                System.out.print(remarks);
+            };
         }
         var exitCode = commandLine
               .setCaseInsensitiveEnumValuesAllowed(true)
