@@ -1,24 +1,11 @@
 package io.github.s7i.doer;
 
-import io.github.s7i.doer.command.GrpcHealth;
-import io.github.s7i.doer.command.Helix;
-import io.github.s7i.doer.command.KafkaFeeder;
-import io.github.s7i.doer.command.KafkaUtils;
-import io.github.s7i.doer.command.Meshtastic;
-import io.github.s7i.doer.command.MqttCommand;
-import io.github.s7i.doer.command.ProtoProcessor;
-import io.github.s7i.doer.command.Rocks;
-import io.github.s7i.doer.command.TcpCommand;
-import io.github.s7i.doer.command.ZooSrv;
-import io.github.s7i.doer.command.dump.KafkaDump;
 import io.github.s7i.doer.command.util.CommandManifest;
-import io.github.s7i.doer.command.util.HmacCommand;
-import io.github.s7i.doer.command.util.Misc;
 import io.github.s7i.doer.domain.ServiceEntrypoint;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
-import io.github.s7i.doer.pipeline.PipelineService;
 import io.github.s7i.doer.util.Banner;
 import io.github.s7i.doer.util.GitProps;
+import io.github.s7i.doer.util.Utils;
 import java.io.IOException;
 import java.util.Arrays;
 import org.slf4j.Logger;
@@ -26,22 +13,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
-@Command(name = "doer", description = "let's do big things...", subcommands = {
-      KafkaFeeder.class,
-      KafkaDump.class,
-      ProtoProcessor.class,
-      Helix.class,
-      Rocks.class,
-      GrpcHealth.class,
-      ZooSrv.class,
-      PipelineService.class,
-      MqttCommand.class,
-      Misc.class,
-      HmacCommand.class,
-      Meshtastic.class,
-      TcpCommand.class,
-      KafkaUtils.class
-})
+@Command(name = "doer", description = "let's do big things...")
 public class Doer implements Runnable, Banner {
 
     public static final String DOER_CONSOLE = "doer.console";
@@ -64,6 +36,7 @@ public class Doer implements Runnable, Banner {
 
     @CommandLine.Option(names = {"-v", "--version"})
     private boolean showVersion;
+    Runnable usage;
 
     @Command(name = "srv-grpc")
     public int service(int port) {
@@ -81,8 +54,8 @@ public class Doer implements Runnable, Banner {
         printBanner();
         if (showVersion) {
             console().info("version: {}", new GitProps());
-        } else {
-            new CommandLine(Doer.class).usage(System.out);
+        } else if (usage != null) {
+            usage.run();
         }
     }
 
@@ -93,8 +66,13 @@ public class Doer implements Runnable, Banner {
         var command = onlyCommandManifests
               ? new CommandManifest()
               : new Doer();
+        var commandLine = new CommandLine(command);
 
-        var exitCode = new CommandLine(command)
+        if (command instanceof Doer doer) {
+            doer.usage = () -> commandLine.usage(System.out);
+            Utils.loadCommand(commandLine::addSubcommand);
+        }
+        var exitCode = commandLine
               .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(args);
 
