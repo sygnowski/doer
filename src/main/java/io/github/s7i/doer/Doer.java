@@ -36,6 +36,7 @@ public class Doer implements Runnable, Banner {
 
     @CommandLine.Option(names = {"-v", "--version"})
     private boolean showVersion;
+    Runnable usage;
 
     @Command(name = "srv-grpc")
     public int service(int port) {
@@ -53,8 +54,8 @@ public class Doer implements Runnable, Banner {
         printBanner();
         if (showVersion) {
             console().info("version: {}", new GitProps());
-        } else {
-            new CommandLine(Doer.class).usage(System.out);
+        } else if (usage != null) {
+            usage.run();
         }
     }
 
@@ -65,9 +66,10 @@ public class Doer implements Runnable, Banner {
         var command = onlyCommandManifests
               ? new CommandManifest()
               : new Doer();
+        var commandLine = new CommandLine(command);
 
-        CommandLine commandLine = new CommandLine(command);
-        if (command instanceof Doer) {
+        if (command instanceof Doer doer) {
+            doer.usage = () -> commandLine.usage(System.out);
             Utils.loadCommand(commandLine::addSubcommand);
         }
         var exitCode = commandLine
