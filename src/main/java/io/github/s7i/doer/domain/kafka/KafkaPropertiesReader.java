@@ -12,6 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class KafkaPropertiesReader implements PathResolver {
 
+    public static Properties read(KafkaConfig kafkaConfig) {
+        return new KafkaPropertiesReader(kafkaConfig).getProperties();
+    }
+
     @Getter
     private final Properties properties;
 
