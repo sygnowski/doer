@@ -5,8 +5,10 @@ import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.github.s7i.doer.DoerException;
+import io.github.s7i.doer.MissingDependencies;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -81,9 +83,14 @@ public class Utils {
             var commandName = clazz.getAnnotation(Command.class).name();
 
             consumer.accept(commandName, instance);
-        } catch (Exception e) {
-            log.error("loading command", e);
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof MissingDependencies why) {
+                log.debug("{} - skipping command due missing dependencies", name, why);
+            } else {
+                log.warn("loading command", e);
+            }
+        } catch (Throwable e) {
+            log.warn("loading command", e);
         }
     }
-
 }

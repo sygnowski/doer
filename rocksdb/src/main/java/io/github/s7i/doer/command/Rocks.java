@@ -3,7 +3,7 @@ package io.github.s7i.doer.command;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
-import io.github.s7i.doer.ConsoleLog;
+import io.github.s7i.doer.MissingDependencies;
 import io.github.s7i.doer.domain.rocksdb.RocksDb;
 import io.github.s7i.doer.shade.flink.StringValue;
 import java.io.ByteArrayInputStream;
@@ -11,12 +11,23 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.function.BiConsumer;
-import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "rocks")
-public class Rocks implements Runnable, ConsoleLog {
+public class Rocks implements Runnable {
+
+    public Rocks() {
+        try {
+            RocksDb.init();
+        } catch (Throwable e) {
+            throw new MissingDependencies(e);
+        }
+    }
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(Rocks.class);
 
     enum Action {
         PUT, GET, LIST, SCAN
@@ -56,7 +67,7 @@ public class Rocks implements Runnable, ConsoleLog {
                 scan();
                 break;
             default:
-                info("bad action");
+                LOGGER.info("bad action");
                 break;
         }
     }
@@ -65,9 +76,9 @@ public class Rocks implements Runnable, ConsoleLog {
         readOnly();
         if (nonNull(colFamilyName)) {
             rocksdb.readAsString(colFamilyName)
-                  .forEach(e -> info("k: {}, v: {}", e.getKey(), e.getValue()));
+                  .forEach(e -> LOGGER.info("k: {}, v: {}", e.getKey(), e.getValue()));
         } else {
-            info("columns families: {}", rocksdb.listColumns());
+            LOGGER.info("columns families: {}", rocksdb.listColumns());
         }
     }
 
@@ -77,7 +88,7 @@ public class Rocks implements Runnable, ConsoleLog {
         } else {
             readOnly();
             String value = rocksdb.getAsString(name(), key).orElse("");
-            info("v: {}", value);
+            LOGGER.info("v: {}", value);
         }
     }
 
@@ -122,7 +133,6 @@ public class Rocks implements Runnable, ConsoleLog {
 
     }
 
-    @Nullable
     private static String readFlinkString(byte[] data) {
         try {
             return StringValue.readString(new DataInputStream(new ByteArrayInputStream(data)));

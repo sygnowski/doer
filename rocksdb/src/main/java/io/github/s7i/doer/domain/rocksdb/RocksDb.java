@@ -24,14 +24,13 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 
-@RequiredArgsConstructor
 @Slf4j
 public class RocksDb {
 
     public static final String DEFAULT_COLUMN_FAMILY = new String(RocksDB.DEFAULT_COLUMN_FAMILY);
     public static final ColumnFamilyDescriptor DEFAULT = new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY);
 
-    static {
+    public static void init() {
         RocksDB.loadLibrary();
     }
 
@@ -45,6 +44,11 @@ public class RocksDb {
     private boolean readOnly;
     @Setter
     private DbOptionHandler optionHandler;
+
+    public RocksDb(String dbPath) {
+        init();
+        this.dbPath = dbPath;
+    }
 
     public List<String> listColumns() {
         return listColumns(false);
