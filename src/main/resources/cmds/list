@@ -1,0 +1,13 @@
+io.github.s7i.doer.command.KafkaFeeder
+io.github.s7i.doer.command.dump.KafkaDump
+io.github.s7i.doer.command.ProtoProcessor
+io.github.s7i.doer.command.Helix
+io.github.s7i.doer.command.Rocks
+io.github.s7i.doer.command.GrpcHealth
+io.github.s7i.doer.command.ZooSrv
+io.github.s7i.doer.pipeline.PipelineService
+io.github.s7i.doer.command.MqttCommand
+io.github.s7i.doer.command.util.Misc
+io.github.s7i.doer.command.util.HmacCommand
+io.github.s7i.doer.command.Meshtastic
+io.github.s7i.doer.command.TcpCommand
