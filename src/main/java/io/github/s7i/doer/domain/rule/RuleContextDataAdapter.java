@@ -13,8 +13,8 @@ public interface RuleContextDataAdapter {
 
         String ruleContextData;
         if (rw.getSpecs().hasProto()) {
-            ruleContextData = rw.getProtoJsonWriter()
-                    .toJson(record.topic(), record.value());
+            ruleContextData = rw.getMakeJson()
+                    .apply(record.topic(), record.value());
         } else {
             ruleContextData = new String(record.value());
         }

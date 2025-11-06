@@ -1,4 +1,50 @@
+pluginManagement {
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            url = "http://dwarf.syg:5815/repository/maven-public/"
+        }
+
+        //Local Maven Repository
+        maven {
+            name = "Nexus"
+            url = uri("http://dwarf.syg:5815/repository/maven-releases/")
+            allowInsecureProtocol = true
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            url = "http://dwarf.syg:5815/repository/maven-public/"
+        }
+
+        //Local Maven Repository
+        maven {
+            name = "Nexus"
+            url = uri("http://dwarf.syg:5815/repository/maven-releases/")
+            allowInsecureProtocol = true
+        }
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/sygnowski/doer")
+            credentials {
+                username = System.getenv("GH_USERNAME")
+                password = System.getenv("GH_TOKEN")
+            }
+        }
+        mavenCentral()
+    }
+}
+
+
 rootProject.name = 'doer'
 include 'proto-doer'
 include 'rocksdb'
-
+include 'meshtastic'
+include 'doer-core'

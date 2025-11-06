@@ -32,7 +32,7 @@ class KafkaFeederTest extends Specification {
             createProducer(_, _) >> producer
         }
         def feeder = new KafkaFeeder()
-        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        Globals.INSTANCE.kafka(new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory)))
         feeder.yaml = new File("src/test/resources/simple-ingest.yml")
         expect:
         feeder.onExecuteCommand()
@@ -56,7 +56,7 @@ class KafkaFeederTest extends Specification {
             createProducer(_, _) >> producer
         }
         def feeder = new KafkaFeeder()
-        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        Globals.INSTANCE.kafka(new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory)))
         feeder.yaml = new File("src/test/resources/ingest-with-template.yml")
         expect:
         feeder.onExecuteCommand()
@@ -79,7 +79,7 @@ class KafkaFeederTest extends Specification {
             createProducer(_, _) >> producer
         }
         def feeder = new KafkaFeeder()
-        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        Globals.INSTANCE.kafka(new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory)))
         feeder.yaml = new File("src/test/resources/ingest-with-template-value-set.yml")
         expect:
         feeder.onExecuteCommand()
@@ -112,7 +112,7 @@ class KafkaFeederTest extends Specification {
             createProducer(_, _) >> producer
         }
         def feeder = new KafkaFeeder()
-        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        Globals.INSTANCE.kafka(new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory)))
         feeder.yaml = new File("src/test/resources/ingest-with-template-value-set-repeat.yml")
         expect:
         feeder.onExecuteCommand()
@@ -142,7 +142,7 @@ class KafkaFeederTest extends Specification {
             createProducer(_, _) >> producer
         }
         def feeder = new KafkaFeeder()
-        Globals.INSTANCE.kafka = new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory))
+        Globals.INSTANCE.kafka(new KafkaFactory(producerFactory, Mock(KafkaConsumerFactory)))
         feeder.yaml = new File("src/test/resources/ingest/template-with-random.yml")
         expect:
         feeder.onExecuteCommand()

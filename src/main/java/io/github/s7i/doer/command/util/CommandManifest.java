@@ -1,6 +1,6 @@
 package io.github.s7i.doer.command.util;
 
-import static io.github.s7i.doer.Doer.DOER_CONSOLE;
+import static io.github.s7i.doer.Constrains.DOER_CONSOLE;
 import static io.github.s7i.doer.command.ManifestFileCommand.Builder.fromManifestFile;
 import static java.util.Objects.requireNonNull;
 

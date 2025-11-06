@@ -16,11 +16,6 @@ project.version = rootProject.file('version').text.trim()
 //sourceCompatibility = JavaVersion.VERSION_11
 //targetCompatibility = JavaVersion.VERSION_11
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
-
 ext {
     grpcVersion = '1.51.0'
     kafkaClient = '2.8.2'
@@ -29,20 +24,27 @@ ext {
 }
 
 dependencies {
+    implementation project(":doer-core")
     implementation project(":proto-doer")
     implementation project(":rocksdb")
-    implementation 'org.slf4j:slf4j-api:2.0.5',
-            'ch.qos.logback:logback-classic:1.4.12',
-            'info.picocli:picocli:4.7.0',
-            "io.grpc:grpc-protobuf:$grpcVersion",
-            "io.grpc:grpc-stub:$grpcVersion",
-            "io.grpc:grpc-services:$grpcVersion",
-            "io.grpc:grpc-netty-shaded:$grpcVersion",
+    implementation project(":meshtastic")
+    [ // libs.versions.toml
+            libs.slf4j,
+            libs.cli,
+            libs.avro,
+            libs.proto,
+            libs.proto.util,
+            libs.grpc.protobuf,
+            libs.grpc.stub,
+            libs.grpc.services,
+            libs.grpc.netty.shaded
+    ].each {
+        implementation it
+    }
+    implementation 'ch.qos.logback:logback-classic:1.5.18',
             'io.jaegertracing:jaeger-client:1.8.1',
             'io.opentracing.contrib:opentracing-kafka-client:0.1.15',
             "javax.annotation:javax.annotation-api:1.3.2",
-            'com.google.protobuf:protobuf-java:3.21.9',
-            'com.google.protobuf:protobuf-java-util:3.21.9',
             'org.apache.commons:commons-text:1.10.0',
             "org.apache.kafka:kafka-clients:$kafkaClient",
             'com.fasterxml.jackson.core:jackson-core:2.14.0',
@@ -56,7 +58,9 @@ dependencies {
 
     implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
     //implementation("io.vertx:vertx-web-sstore-redis")
-    implementation("io.vertx:vertx-mqtt")
+    implementation "io.vertx:vertx-mqtt",
+            "io.vertx:vertx-web",
+            "io.vertx:vertx-web-client"
 
     // Spock : https://github.com/spockframework/spock-example/blob/master/build.gradle
     testImplementation 'org.apache.groovy:groovy:4.0.6'

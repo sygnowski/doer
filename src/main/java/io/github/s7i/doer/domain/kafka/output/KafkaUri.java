@@ -1,5 +1,7 @@
 package io.github.s7i.doer.domain.kafka.output;
 
+import static java.util.Objects.nonNull;
+
 import io.github.s7i.doer.Context;
 import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.Globals;
@@ -7,17 +9,14 @@ import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputProvider;
-import lombok.RequiredArgsConstructor;
-import org.apache.kafka.common.TopicPartition;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
-
-import static java.util.Objects.nonNull;
+import lombok.RequiredArgsConstructor;
+import org.apache.kafka.common.TopicPartition;
 
 @RequiredArgsConstructor
 public class KafkaUri implements KafkaOutputCreator {
@@ -79,7 +78,7 @@ public class KafkaUri implements KafkaOutputCreator {
 
     @Override
     public KafkaFactory getKafkaFactory() {
-        return Globals.INSTANCE.getKafka();
+        return Globals.INSTANCE.kafka();
     }
 
     @Override

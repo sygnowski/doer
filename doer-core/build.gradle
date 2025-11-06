@@ -1,0 +1,37 @@
+plugins {
+    id "java"
+    id 'maven-publish'
+    id 'io.freefair.lombok' version '6.2.0'
+}
+
+group = "io.github.s7i"
+version = rootProject.file('version').text.trim()
+
+dependencies {
+    compileOnly libs.cli, libs.slf4j
+}
+
+
+test {
+    useJUnitPlatform()
+}
+
+
+publishing {
+    repositories {
+        maven {
+            name = "Nexus"
+            url = uri("http://dwarf.syg:5815/repository/maven-snapshots/")
+            allowInsecureProtocol = true
+            credentials {
+                username = System.getenv("USER_NAME")
+                password = System.getenv("USER_PASS")
+            }
+        }
+    }
+    publications {
+        nexus(MavenPublication) {
+            from(components.java)
+        }
+    }
+}

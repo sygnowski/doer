@@ -3,7 +3,6 @@ package io.github.s7i.doer.domain.kafka;
 import io.github.s7i.doer.Tracing;
 import io.opentracing.contrib.kafka.TracingKafkaConsumer;
 import io.opentracing.contrib.kafka.TracingKafkaProducer;
-import java.util.Properties;
 import lombok.Getter;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -28,7 +27,7 @@ public class KafkaFactory {
     final KafkaConsumerFactory consumerFactory;
 
     static Producer<String, byte[]> createProducer(KafkaConfig config, boolean useTracing) {
-        var props = getProperties(config);
+        var props = KafkaPropertiesReader.read(config);
         var producer = new KafkaProducer<String, byte[]>(props);
         if (useTracing) {
             return new TracingKafkaProducer<>(producer, Tracing.INSTANCE.getTracer());
@@ -38,16 +37,11 @@ public class KafkaFactory {
     }
 
     static Consumer<String, byte[]> createConsumer(KafkaConfig config, boolean useTracing) {
-        var properties = getProperties(config);
+        var properties = KafkaPropertiesReader.read(config);
         final var consumer = new KafkaConsumer<String, byte[]>(properties);
         if (useTracing) {
             return new TracingKafkaConsumer<>(consumer, Tracing.INSTANCE.getTracer());
         }
         return consumer;
-    }
-
-    static Properties getProperties(KafkaConfig config) {
-        return new KafkaPropertiesReader(config)
-              .getProperties();
     }
 }

@@ -1,8 +1,15 @@
 package io.github.s7i.doer.domain.kafka.dump;
 
+import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
+import static io.github.s7i.doer.Doer.console;
+import static io.github.s7i.doer.util.Utils.hasAnyValue;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.Descriptors.Descriptor;
 import io.github.s7i.doer.Doer;
-import io.github.s7i.doer.command.dump.ProtoJsonWriter;
+import io.github.s7i.doer.Globals;
 import io.github.s7i.doer.command.dump.RecordWriter;
 import io.github.s7i.doer.config.KafkaConfig;
 import io.github.s7i.doer.config.Range;
@@ -10,13 +17,27 @@ import io.github.s7i.doer.domain.kafka.ConsumerConfigSetup;
 import io.github.s7i.doer.domain.kafka.Context;
 import io.github.s7i.doer.domain.output.ConsoleOutput;
 import io.github.s7i.doer.domain.output.Output;
+import io.github.s7i.doer.domain.proto.Decoder;
+import io.github.s7i.doer.domain.proto.ProtoToJsonWrite;
+import io.github.s7i.doer.domain.proto.ProtoToJsonWriteWithDescriptor;
 import io.github.s7i.doer.domain.rule.Rule;
 import io.github.s7i.doer.domain.rule.RuleContextDataAdapter;
 import io.github.s7i.doer.manifest.dump.DumpManifest;
 import io.github.s7i.doer.manifest.dump.Topic;
-import io.github.s7i.doer.proto.Decoder;
 import io.github.s7i.doer.util.TopicNameResolver;
 import io.github.s7i.doer.util.TopicWithResolvableName;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,19 +47,8 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.errors.WakeupException;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.github.s7i.doer.Doer.FLAG_RAW_DATA;
-import static io.github.s7i.doer.Doer.console;
-import static io.github.s7i.doer.util.Utils.hasAnyValue;
-import static java.util.Objects.*;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -49,11 +59,21 @@ class KafkaWorker implements Context {
     final KafkaConfig kafkaConfig;
     long recordCounter;
     int poolSize;
-    Decoder protoDecoder;
+    ProtoToJsonWriteWithDescriptor toJsonWriter;
     Map<String, TopicContext> contexts = new HashMap<>();
     boolean useRawData;
 
-    ProtoJsonWriter jsonWriter = (topic, data) -> protoDecoder.toJson(contexts.get(topic).getDescriptor(), data, true);
+    final BiFunction<String, byte[], String> jsonWriter = this::makeJson;
+
+    private String makeJson(String topic, byte[] data) {
+        TopicContext topicContext = contexts.get(topic);
+        var desc = topicContext.getDescriptor();
+
+        if (desc == null) {
+            return ProtoToJsonWrite.from(Globals.INSTANCE).toProto(data);
+        }
+        return toJsonWriter.toJson(desc, data, true);
+    }
 
     boolean keepRunning;
     OffsetCommitter committer;
@@ -82,8 +102,8 @@ class KafkaWorker implements Context {
                 }
             } while (notEnds());
             commitOffset(consumer);
-        } catch (WakeupException w) {
-            log.debug("wakeup", w);
+        } catch (WakeupException | InterruptException e) {
+            log.debug("maybe it's shutdown...", e);
         }
         console().info("Stop dumping from Kafka, saved records: {}", recordCounter);
     }
@@ -92,9 +112,9 @@ class KafkaWorker implements Context {
         if (log.isDebugEnabled()) {
 
             var text = records.partitions()
-                    .stream()
-                    .map(tp -> String.format("%s : %d", tp, records.records(tp).size()))
-                    .collect(Collectors.joining(",\n"));
+                  .stream()
+                  .map(tp -> String.format("%s : %d", tp, records.records(tp).size()))
+                  .collect(Collectors.joining(",\n"));
 
             log.debug("Pool stats: \n" + text);
         }
@@ -135,7 +155,9 @@ class KafkaWorker implements Context {
             }
         }
         if (!jumpToTime.isEmpty()) {
-            consumer.offsetsForTimes(jumpToTime);
+            log.debug("start seeking to offset of time...");
+            consumer.offsetsForTimes(jumpToTime, Duration.ofMinutes(1));
+            log.debug("done...");
         }
     }
 
@@ -187,7 +209,7 @@ class KafkaWorker implements Context {
 
             if (settings.canMakeCommits()) {
                 console().info("Offset commit control enabled.\n" +
-                        "Settings: {}", settings);
+                      "Settings: {}", settings);
 
                 ccs.configureMaxPool(settings.getMaxPollSize());
 
@@ -201,7 +223,7 @@ class KafkaWorker implements Context {
     void commitOffset(Consumer<?, ?> consumer) {
         requireNonNull(consumer, "consumer");
         if (nonNull(committer)) {
-            if(!committer.commit(consumer)) {
+            if (!committer.commit(consumer)) {
                 console().info("Unsuccessful offset commit!");
             }
         }
@@ -225,15 +247,17 @@ class KafkaWorker implements Context {
     private Map<String, Descriptor> initProto() {
         var protoSpec = specification.getProto();
         if (nonNull(protoSpec)) {
-            protoDecoder = new Decoder();
-            protoDecoder.loadDescriptors(protoSpec);
+            var decoder = new Decoder();
+            this.toJsonWriter = decoder;
+
+            decoder.loadDescriptors(protoSpec);
 
             return specification.getTopics()
                   .stream()
                   .filter(t -> hasAnyValue(t.getValue().getProtoMessage()))
                   .collect(Collectors.toMap(
                         Topic::getName,
-                        t -> protoDecoder.findMessageDescriptor(t.getValue().getProtoMessage())
+                        t -> decoder.findMessageDescriptor(t.getValue().getProtoMessage())
                   ));
         }
         return Collections.emptyMap();

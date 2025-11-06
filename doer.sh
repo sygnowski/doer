@@ -34,4 +34,4 @@ fi
 DOER_LOG_CFG_FILE="-Dlogback.configurationFile=${LOGBACK_CONFIG_FILE_LOCATION}"
 DOER_JVM_OPTS="${DOER_LOG_CFG_FILE} ${DOER_JVM_OPTS:-"-Xmx100M"}"
 
-java ${DOER_JVM_OPTS} -cp "${DOER_CP}" io.github.s7i.doer.Doer "${args[@]}"
+exec java ${DOER_JVM_OPTS} -cp "${DOER_CP}" io.github.s7i.doer.Doer "${args[@]}"

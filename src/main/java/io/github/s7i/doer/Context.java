@@ -1,5 +1,10 @@
 package io.github.s7i.doer;
 
+import static io.github.s7i.doer.Doer.console;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
+
+import io.github.s7i.doer.Globals.ConfigReader;
 import io.github.s7i.doer.domain.output.Output;
 import io.github.s7i.doer.domain.output.OutputBuilder;
 import io.github.s7i.doer.domain.output.OutputFactory;
@@ -8,19 +13,13 @@ import io.github.s7i.doer.pipeline.Pipeline;
 import io.github.s7i.doer.util.ParamFlagExtractor;
 import io.github.s7i.doer.util.PropertyResolver;
 import io.github.s7i.doer.util.QuitWatcher;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Getter;
-
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import static io.github.s7i.doer.Doer.console;
-import static java.util.Objects.nonNull;
-import static java.util.Objects.requireNonNull;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
 
 public interface Context extends ParamFlagExtractor {
 
@@ -30,7 +29,7 @@ public interface Context extends ParamFlagExtractor {
 
         Path workDir;
         @Default
-        Map<String, String> params = Collections.emptyMap();
+        Map<String, String> params = new ConfigReader(Map::of).get();
     }
 
     class Initializer {
@@ -54,21 +53,21 @@ public interface Context extends ParamFlagExtractor {
     }
 
     default void addStopHook(Runnable runnable) {
-        Globals.INSTANCE.stopHooks.add(runnable);
+        Globals.INSTANCE.stopHooks().add(runnable);
     }
 
     default void stopAll() {
         console().info("Init shutdown procedure...");
-        Globals.INSTANCE.stopHooks.forEach(Runnable::run);
+        Globals.INSTANCE.stopHooks().forEach(Runnable::run);
         console().info("Shutdown completed.");
     }
 
     default void stopAllSilent() {
-        Globals.INSTANCE.stopHooks.forEach(Runnable::run);
+        Globals.INSTANCE.stopHooks().forEach(Runnable::run);
     }
 
     default OutputFactory getOutputFactory() {
-        return Globals.INSTANCE.getScope().getOutputFactory();
+        return Globals.INSTANCE.getScope().outputFactory();
     }
 
     default Path getBaseDir() {
@@ -90,7 +89,7 @@ public interface Context extends ParamFlagExtractor {
     }
 
     default Optional<Pipeline> lookupPipeline() {
-        var pipeline = Globals.INSTANCE.pipeline;
+        var pipeline = Globals.INSTANCE.pipeline();
         if (nonNull(pipeline) && pipeline.isEnabled()) {
             return Optional.of(pipeline);
         }

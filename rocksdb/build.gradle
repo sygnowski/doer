@@ -7,15 +7,18 @@ plugins {
 group = "io.github.s7i"
 version = rootProject.file('version').text.trim()
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    // Rocks DB compile only
-    //compileOnly 'org.rocksdb:rocksdbjni:7.6.0'
-    // RocksDB implement
-    implementation 'org.rocksdb:rocksdbjni:7.6.0'
+    implementation project(":doer-core")
+    compileOnly libs.slf4j, libs.cli
+
+    // ROCKSDB=true ./gradlew shadowJar
+    if (Boolean.valueOf(System.getenv("ROCKSDB"))) {
+        println("--- ROCKS DB PACKAGE ---")
+        implementation 'org.rocksdb:rocksdbjni:7.6.0'
+    } else {
+        println("--- ROCKS DB COMPILE ONLY ---")
+        compileOnly 'org.rocksdb:rocksdbjni:7.6.0'
+    }
 
     testImplementation(platform("org.junit:junit-bom:5.9.2"))
     testImplementation('org.junit.jupiter:junit-jupiter:5.9.2')

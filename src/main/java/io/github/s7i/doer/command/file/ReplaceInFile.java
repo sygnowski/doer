@@ -38,6 +38,18 @@ public class ReplaceInFile implements Callable<Integer> {
     @Option(names = "-k")
     private boolean keepShadow;
 
+    @Option(names = "--start-with")
+    private String startWith;
+
+    @Option(names = "--contains")
+    private List<String> contains;
+
+    @Option(names = "--skip")
+    private List<String> skip;
+
+    @Option(names = "--only-once", defaultValue = "true")
+    private boolean onlyOnce;
+
     @Override
     public Integer call() throws Exception {
         if (isNull(replacements)) {
@@ -50,23 +62,35 @@ public class ReplaceInFile implements Callable<Integer> {
         return 0;
     }
 
+    private void lookupFiles(List<Path> list, Path path) {
+        if (Files.isDirectory(path)) {
+            try {
+                Files.list(path).forEach( f -> {
+                    if (Files.isRegularFile(f) && matchCriteria(f)) {
+                        list.add(f);
+                    } else {
+                        lookupFiles(list, f);
+                    }
+                });
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (matchCriteria(path)) {
+            list.add(path);
+        }
+    }
+
     @SneakyThrows
     private Stream<Path> files() {
         List<Path> fileList = new ArrayList<>();
+
         if (nonNull(files)) {
             for (var f : files) {
                 if (!f.exists()) {
                     continue;
                 }
                 var path = f.toPath();
-
-                if (f.isDirectory()) {
-                    Files.list(path)
-                          .filter(this::matchCriteria)
-                          .forEach(fileList::add);
-                } else {
-                    fileList.add(path);
-                }
+                lookupFiles(fileList, path);
             }
         }
         return fileList.stream();
@@ -87,6 +111,8 @@ public class ReplaceInFile implements Callable<Integer> {
                 Files.lines(file)
                       .map(this::replaceLine)
                       .forEach(w::println);
+            } catch (Exception e) {
+                log.error("oops", e);
             }
             if (!keepShadow) {
                 Files.move(shadow, file, StandardCopyOption.REPLACE_EXISTING);
@@ -96,12 +122,35 @@ public class ReplaceInFile implements Callable<Integer> {
         }
     }
 
-    private String replaceLine(String line) {
-        var newLine = line;
+    private String rpl(String src) {
+        var newLine = src;
         for (var e : replacements.entrySet()) {
             newLine = newLine.replaceAll(e.getKey(), e.getValue());
+            if (onlyOnce && !src.equals(newLine)) {
+                break;
+            }
         }
         return newLine;
+    }
 
+    private String replaceLine(String line) {
+
+        var newLine = line;
+
+
+        if (skip != null && skip.stream().anyMatch(line::contains)) {
+            return line;
+        }
+
+
+        if (startWith != null && line.startsWith(startWith)
+              || (contains != null && contains.stream().anyMatch(line::contains))) {
+
+            newLine = rpl(newLine);
+        } else if (startWith == null && contains == null) {
+            newLine = rpl(newLine);
+        }
+
+        return newLine;
     }
 }

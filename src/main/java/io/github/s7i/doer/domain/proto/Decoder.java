@@ -1,4 +1,4 @@
-package io.github.s7i.doer.proto;
+package io.github.s7i.doer.domain.proto;
 
 import static java.util.Objects.nonNull;
 
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Decoder {
+public class Decoder implements ProtoToJsonWriteWithDescriptor {
 
     private List<Descriptor> descriptors;
 
@@ -60,6 +60,7 @@ public class Decoder {
         return toJson(descriptor, data, false);
     }
 
+    @Override
     public String toJson(Descriptor descriptor, byte[] data, boolean safe) {
         try {
             if (nonNull(data) && data.length > 0) {
