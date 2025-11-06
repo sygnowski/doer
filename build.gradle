@@ -28,6 +28,7 @@ dependencies {
     implementation project(":rocksdb")
     implementation project(":meshtastic")
     [ // libs.versions.toml
+            libs.cli,
             libs.avro,
             libs.proto,
             libs.proto.util,
@@ -40,7 +41,6 @@ dependencies {
     }
     implementation 'org.slf4j:slf4j-api:2.0.5',
             'ch.qos.logback:logback-classic:1.5.18',
-            'info.picocli:picocli:4.7.0',
             'io.jaegertracing:jaeger-client:1.8.1',
             'io.opentracing.contrib:opentracing-kafka-client:0.1.15',
             "javax.annotation:javax.annotation-api:1.3.2",
