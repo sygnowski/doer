@@ -13,7 +13,7 @@ dependencies {
             libs.grpc.stub,
             libs.grpc.protobuf
 
-    implementation "io.github.s7i.meshtastic.proto:meshtastic-proto:1.0"
+    implementation "io.github.s7i.meshtastic.proto:meshtastic-proto:2.7.11"
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'

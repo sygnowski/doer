@@ -25,6 +25,7 @@ import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.Printer;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
+import io.github.s7i.meshtastic.proto.Info;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
@@ -39,6 +40,7 @@ import java.util.stream.Stream;
 public enum Proto {
     INSTANCE;
     public static final String GOSN_PRETTY = "gosn.pretty";
+    public static final String VERSION = Info.VERSION;
 
     private final Printer printer = JsonFormat.printer().usingTypeRegistry(TypeRegistry.newBuilder()
           .add(MeshProtos.getDescriptor().getMessageTypes())
