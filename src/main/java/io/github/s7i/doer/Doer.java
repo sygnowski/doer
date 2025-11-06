@@ -1,5 +1,7 @@
 package io.github.s7i.doer;
 
+import static io.github.s7i.doer.Constrains.CONSOLE;
+
 import io.github.s7i.doer.command.util.CommandManifest;
 import io.github.s7i.doer.domain.ServiceEntrypoint;
 import io.github.s7i.doer.domain.grpc.GrpcServer;
@@ -9,15 +11,11 @@ import io.github.s7i.doer.util.Utils;
 import java.io.IOException;
 import java.util.Arrays;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 @Command(name = "doer", description = "let's do big things...")
 public class Doer implements Runnable, Banner {
-
-    public static final String DOER_CONSOLE = "doer.console";
-    static final Logger CONSOLE = LoggerFactory.getLogger(DOER_CONSOLE);
     public static final String FLAGS = "doer.flags";
     public static final String FLAG_USE_TRACING = "trace";
     public static final String FLAG_SEND_AND_FORGET = "send-and-forget";
