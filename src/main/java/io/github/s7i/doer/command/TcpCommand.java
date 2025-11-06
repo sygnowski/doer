@@ -9,8 +9,9 @@ import io.github.s7i.doer.util.Utils;
 import io.github.s7i.meshtastic.MeshtasticStream;
 import io.github.s7i.meshtastic.Proto;
 import io.github.s7i.meshtastic.TcpInterface;
+import io.github.s7i.meshtastic.proxy.BufferProxy;
 import io.github.s7i.meshtastic.proxy.ProxyServer;
-import io.github.s7i.meshtastic.proxy.StreamProxy;
+import io.github.s7i.meshtastic.proxy.StreamProxyImpl;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -165,7 +166,7 @@ public class TcpCommand extends Command {
             var endTrigger = new CountDownLatch(1);
             Runtime.getRuntime().addShutdownHook(new Thread(endTrigger::countDown));
 
-            StreamProxy proxy = null;
+            BufferProxy proxy = null;
             if (options.proxy) {
                 var proxyServer = new ProxyServer("0.0.0.0", port);
                 proxy = proxyServer.proxy();
@@ -173,7 +174,7 @@ public class TcpCommand extends Command {
                 proxyServer.start();
             }
 
-            var meshtastic = new TcpInterface(port, host, proxy);
+            var meshtastic = new TcpInterface(port, host, new StreamProxyImpl(proxy));
 
             meshtastic.setOnStop(endTrigger::countDown);
 

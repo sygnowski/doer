@@ -5,15 +5,13 @@ import static io.github.s7i.meshtastic.MeshtasticStream.MAX_TO_FROM_RADIO_SIZE;
 
 import java.nio.ByteBuffer;
 
-public abstract class AbstractProxy implements StreamProxy {
+public class StreamProxyImpl implements StreamProxy {
 
     private final ByteFlow byteFlow;
 
-    protected AbstractProxy() {
-        this.byteFlow = initByteFlow();
+    public StreamProxyImpl(ByteFlow byteFlow) {
+        this.byteFlow = byteFlow;
     }
-
-    protected abstract ByteFlow initByteFlow();
 
     private final ByteBuffer txBuff = ByteBuffer.allocate(MAX_TO_FROM_RADIO_SIZE + HEADER_LEN);
 

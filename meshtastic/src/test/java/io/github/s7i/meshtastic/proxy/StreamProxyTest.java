@@ -11,9 +11,9 @@ class StreamProxyTest {
     @Test
     void testRxAndFlush() throws IOException {
 
-
         var buff = ByteBuffer.allocate(10);
-        var prox = new BufferProxy();
+        var bufferProxy= new BufferProxy();
+        StreamProxy prox = new StreamProxyImpl(bufferProxy);
 
         prox.rx(10);
         prox.rx(11);
@@ -23,7 +23,6 @@ class StreamProxyTest {
 
         prox.rxFlush();
 
-
         prox.rx(20);
         prox.rx(21);
         prox.rx(22);
@@ -32,7 +31,7 @@ class StreamProxyTest {
 
         prox.rxFlush();
 
-        prox.doTx(buff::put);
+        bufferProxy.doTx(buff::put);
 
         var result = buff.array();
         assertArrayEquals(new byte[]{

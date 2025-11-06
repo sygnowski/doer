@@ -58,7 +58,7 @@ public class ProxyServer {
         }
     }
 
-    public StreamProxy proxy() {
+    public BufferProxy proxy() {
         proxy = new BufferProxy();
         return proxy;
     }

@@ -3,6 +3,7 @@ package io.github.s7i.meshtastic.proxy;
 import static io.github.s7i.meshtastic.proxy.BufferConfig.BUFFER_SMALL;
 import static io.github.s7i.meshtastic.proxy.BufferConfig.BUFF_RX;
 import static io.github.s7i.meshtastic.proxy.BufferConfig.BUFF_TX;
+import static io.github.s7i.meshtastic.proxy.StreamProxyImpl.extractRemaining;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantLock;
@@ -10,7 +11,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BufferProxy extends AbstractProxy implements ByteFlow {
+public class BufferProxy implements ByteFlow {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(BufferProxy.class);
 
@@ -20,11 +21,6 @@ public class BufferProxy extends AbstractProxy implements ByteFlow {
 
     private final ByteBuffer tx = ByteBuffer.allocate(Integer.getInteger("buff.tx", BUFF_TX));
     private final ByteBuffer rx = ByteBuffer.allocate(Integer.getInteger("buff.rx", BUFF_RX));
-
-    @Override
-    protected ByteFlow initByteFlow() {
-        return this;
-    }
 
     public void waitForDataForTx() {
         synchronized (txLock) {
