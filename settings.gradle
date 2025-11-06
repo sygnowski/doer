@@ -30,6 +30,14 @@ dependencyResolutionManagement {
             url = uri("http://dwarf.syg:5815/repository/maven-releases/")
             allowInsecureProtocol = true
         }
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/sygnowski/doer")
+            credentials {
+                username = System.getenv("GH_USERNAME")
+                password = System.getenv("GH_TOKEN")
+            }
+        }
         mavenCentral()
     }
 }
@@ -39,3 +47,4 @@ rootProject.name = 'doer'
 include 'proto-doer'
 include 'rocksdb'
 include 'meshtastic'
+include 'doer-core'

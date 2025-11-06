@@ -1,17 +1,19 @@
 package io.github.s7i.doer;
 
+import static io.github.s7i.doer.Constrains.CONSOLE;
+
 public interface ConsoleLog {
 
     default void info(String message) {
-        Doer.CONSOLE.info(message);
+        CONSOLE.info(message);
     }
 
     default void info(String message, Object one) {
-        Doer.CONSOLE.info(message, one);
+        CONSOLE.info(message, one);
     }
 
     default void info(String message, Object one, Object two) {
-        Doer.CONSOLE.info(message, one, two);
+        CONSOLE.info(message, one, two);
     }
 
 //    default void info(String message, Object... args) {

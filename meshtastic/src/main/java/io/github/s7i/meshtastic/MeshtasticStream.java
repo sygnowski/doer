@@ -5,6 +5,7 @@ import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
 import com.geeksville.mesh.MeshProtos.Heartbeat;
 import com.geeksville.mesh.MeshProtos.ToRadio;
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.github.s7i.meshtastic.proxy.StreamProxy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,6 +15,7 @@ import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,8 @@ public class MeshtasticStream {
     public static final int HEADER_LEN = 4;
     public static final int NODELESS_WANT_CONFIG_ID = 69420;
     public static final int MAX_TO_FROM_RADIO_SIZE = 512;
+    public static final int LIMIT = 10;
+    public static final String SP_DROP_TX = "drop.tx";
 
     private final InputStream is;
     private final OutputStream os;
@@ -39,11 +43,15 @@ public class MeshtasticStream {
     private final Thread[] threads;
     private final Options options;
     private int queueFree = Integer.MAX_VALUE;
+    private StreamProxy proxy;
+    private final ReentrantLock sendLock = new ReentrantLock();
+    private final Boolean dropTx = Boolean.getBoolean(SP_DROP_TX);
 
 
     public MeshtasticStream(InputStream is, OutputStream os) {
         this(is, os, Options.fromSystem());
     }
+
 
     public MeshtasticStream(InputStream is, OutputStream os, Options options) {
         this.options = options;
@@ -60,6 +68,11 @@ public class MeshtasticStream {
         };
     }
 
+    public void setProxy(StreamProxy proxy) {
+        this.proxy = proxy;
+    }
+
+
     public Options getOptions() {
         return options;
     }
@@ -68,19 +81,22 @@ public class MeshtasticStream {
         fromRadioHandler.set(fromRadioConsumer);
     }
 
-    public MeshtasticStream onStop(Runnable onStop) {
+    public void onStop(Runnable onStop) {
         onRxStop.set(onStop);
-        return this;
     }
 
     public void send(ToRadio toSend) {
         if (queueFree <= 0) {
-            throw new RuntimeException("too may to send");
+            throw new RuntimeException("too many to send");
         }
         sendToRadio(toSend.toByteArray());
     }
 
     private void sendToRadio(byte[] data) {
+        if (dropTx) {
+            LOGGER.debug("dropping tx data");
+            return;
+        }
         var len = data.length;
 
         var header = ByteBuffer.allocate(HEADER_LEN)
@@ -90,11 +106,18 @@ public class MeshtasticStream {
               .put((byte) (len & 0xFF));
 
         try {
-            os.write(header.array());
-            os.write(data);
-            os.flush();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            sendLock.lockInterruptibly();
+            try {
+                os.write(header.array());
+                os.write(data);
+                os.flush();
+            } catch (IOException e) {
+                LOGGER.error("while sending to radio", e);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            sendLock.unlock();
         }
     }
 
@@ -119,10 +142,17 @@ public class MeshtasticStream {
     void handleRadioRx() {
         FromRadioReader reader = new FromRadioReader();
         LOGGER.debug("starting rx");
+        int generalErr = 0;
         int errorCount = 0;
-        while (errorCount < options.socketTimeoutRetry() && !Thread.currentThread().isInterrupted()) {
+        while (!Thread.currentThread().isInterrupted()) {
+            sendDataFromProxy();
+
             try {
                 int c = is.read();
+
+                if (proxy != null) {
+                    proxy.rx(c);
+                }
 
                 errorCount = 0;
 
@@ -133,11 +163,18 @@ public class MeshtasticStream {
                     break;
                 }
             } catch (SocketTimeoutException e) {
-                errorCount++;
-
-                nap();
+                if (++errorCount < options.socketTimeoutRetry()) {
+                    nap();
+                } else {
+                    break;
+                }
             } catch (IOException e) {
-                LOGGER.error("while reding from socket", e);
+                if (++generalErr > options.errorRetry()) {
+                    LOGGER.error("while reding from socket", e);
+                    break;
+                } else {
+                    nap(generalErr);
+                }
             }
         }
         LOGGER.debug("stopping rx");
@@ -148,9 +185,37 @@ public class MeshtasticStream {
         }
     }
 
-    private void nap() {
+    private void sendDataFromProxy() {
+        if (dropTx) {
+            LOGGER.debug("dropping tx data");
+            return;
+        }
         try {
-            TimeUnit.MILLISECONDS.sleep(options.delayMillis());
+            if (proxy != null) {
+                var toTx = proxy.toTx();
+                if (toTx.length > 0) {
+                    sendLock.lock();
+                    try {
+                        os.write(toTx);
+                        os.flush();
+                    } finally {
+                        sendLock.unlock();
+                    }
+                    LOGGER.debug("sent to radio from proxy, len: {}", toTx.length);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("sending data from proxy", e);
+        }
+    }
+
+    private void nap() {
+        nap(1L);
+    }
+
+    private void nap(long factor) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(Math.min(factor, LIMIT) * options.delayMillis());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
@@ -242,6 +307,10 @@ public class MeshtasticStream {
             rxPacket.reset();
             reset();
             hasPacket = false;
+
+            if (proxy != null) {
+                proxy.rxFlush();
+            }
         }
 
 

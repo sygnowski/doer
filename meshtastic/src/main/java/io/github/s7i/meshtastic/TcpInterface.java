@@ -3,6 +3,7 @@ package io.github.s7i.meshtastic;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.ToRadio;
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.github.s7i.meshtastic.proxy.StreamProxy;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -21,16 +22,27 @@ public class TcpInterface implements MeshtasticInterface {
 
     private final int port;
     private final String host;
+    private final StreamProxy proxy;
     private Socket socket;
     private MeshtasticStream stream;
     private InputStream is;
     private OutputStream os;
     private volatile Consumer<byte[]> handler;
     private volatile Runnable onStop;
+    private boolean withNodes = true;
 
     public TcpInterface(int port, String host) {
+        this(port, host, null);
+    }
+
+    public TcpInterface(int port, String host, StreamProxy proxy) {
         this.port = port;
         this.host = host;
+        this.proxy = proxy;
+    }
+
+    public void setWithNodes(boolean withNodes) {
+        this.withNodes = withNodes;
     }
 
     @Override
@@ -48,9 +60,10 @@ public class TcpInterface implements MeshtasticInterface {
             os = new BufferedOutputStream(socket.getOutputStream());
 
             stream = new MeshtasticStream(is, os);
+            stream.setProxy(proxy);
             stream.setHandler(this::onRx);
             stream.onStop(this::onStop);
-            stream.startReadFromRadio(true);
+            stream.startReadFromRadio(withNodes);
 
         } catch (Exception e) {
             throw new RuntimeException(e);

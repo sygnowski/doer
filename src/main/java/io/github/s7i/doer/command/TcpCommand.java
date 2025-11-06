@@ -5,7 +5,13 @@ import static java.util.Objects.requireNonNull;
 import io.github.s7i.doer.DoerException;
 import io.github.s7i.doer.domain.kafka.KafkaConfig;
 import io.github.s7i.doer.domain.kafka.KafkaFactory;
+import io.github.s7i.doer.util.Utils;
+import io.github.s7i.meshtastic.MeshtasticStream;
+import io.github.s7i.meshtastic.Proto;
 import io.github.s7i.meshtastic.TcpInterface;
+import io.github.s7i.meshtastic.proxy.BufferProxy;
+import io.github.s7i.meshtastic.proxy.ProxyServer;
+import io.github.s7i.meshtastic.proxy.StreamProxyImpl;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -52,6 +58,15 @@ public class TcpCommand extends Command {
         @Option(names = "--kafka-rx-topic", defaultValue = "meshtastic-to-radio")
         String kafkaToRadioTopic;
 
+        @Option(names = {"-p", "--proxy"})
+        boolean proxy;
+
+        @Option(names = {"--no-kafka"})
+        boolean noKafka;
+
+        @Option(names = {"--json"})
+        boolean meshJson;
+
         @Override
         public String getKafkaPropFile() {
             log.debug("using config file: {}", kafkaConfig);
@@ -72,7 +87,7 @@ public class TcpCommand extends Command {
     String[] args;
 
 
-    private class KafkaSender {
+    private class KafkaConnect {
 
         private final Producer<String, byte[]> producer = initKafkaProducer();
         private Thread cthx;
@@ -141,30 +156,57 @@ public class TcpCommand extends Command {
     @Override
     public void onExecuteCommand() {
         try {
-            var sender = new KafkaSender();
-            String host = args[0];
+            var kafkaConnect = options.noKafka || !Utils.hasAnyValue(options.kafkaConfig)
+                  ? null
+                  : new KafkaConnect();
 
+            String host = args[0];
             int port = Integer.parseInt(args[1]);
 
             var endTrigger = new CountDownLatch(1);
             Runtime.getRuntime().addShutdownHook(new Thread(endTrigger::countDown));
 
-            var meshtastic = new TcpInterface(port, host);
+            TcpInterface meshtastic;
+            BufferProxy proxy;
+
+            if (options.proxy) {
+                var proxyServer = new ProxyServer("0.0.0.0", port);
+                proxy = proxyServer.proxy();
+
+                proxyServer.start();
+                meshtastic = new TcpInterface(port, host, new StreamProxyImpl(proxy));
+            } else {
+                meshtastic = new TcpInterface(port, host);
+            }
 
             meshtastic.setOnStop(endTrigger::countDown);
 
-            meshtastic.handleFromRadio(data -> {
-                try {
-                    sender.send(data);
-                } catch (Exception e) {
-                    log.error("while send", e);
-                }
-            });
+            if (kafkaConnect != null) {
+                meshtastic.handleFromRadio(data -> {
+                    try {
+                        kafkaConnect.send(data);
+                    } catch (Exception e) {
+                        log.error("while send", e);
+                    }
+                });
+            } else if (options.meshJson) {
+                System.setProperty(MeshtasticStream.SP_DROP_TX, "true");
+                System.setProperty(Proto.GOSN_PRETTY, "true");
+
+                meshtastic.handleFromRadio(data ->
+                      System.out.println(Proto.INSTANCE.asJsonTextFromRadio(data)));
+            }
+
             meshtastic.connect();
-            sender.bind(meshtastic::sendToRadio);
+
+            if (kafkaConnect != null) {
+                kafkaConnect.bind(meshtastic::sendToRadio);
+            }
 
             endTrigger.await();
-            sender.close();
+            if (kafkaConnect != null) {
+                kafkaConnect.close();
+            }
             meshtastic.disconnect();
 
         } catch (Exception e) {

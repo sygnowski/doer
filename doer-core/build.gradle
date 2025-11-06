@@ -1,22 +1,14 @@
 plugins {
     id "java"
     id 'maven-publish'
+    id 'io.freefair.lombok' version '6.2.0'
 }
 
 group = "io.github.s7i"
 version = rootProject.file('version').text.trim()
 
 dependencies {
-    implementation libs.slf4j,
-            libs.proto,
-            libs.proto.util,
-            libs.grpc.stub,
-            libs.grpc.protobuf
-
-    implementation "io.github.s7i.meshtastic.proto:meshtastic-proto:2.7.11"
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+    compileOnly libs.cli, libs.slf4j
 }
 
 

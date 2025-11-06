@@ -10,14 +10,13 @@ version = rootProject.file('version').text.trim()
 
 ext {
     grcpVersion= '1.51.0'
-    proto = '3.21.9'
 }
 
 dependencies {
-    implementation "com.google.protobuf:protobuf-java:${proto}"
-    implementation "com.google.protobuf:protobuf-java-util:${proto}"
-    implementation "io.grpc:grpc-stub:$grcpVersion"
-    implementation "io.grpc:grpc-protobuf:$grcpVersion"
+    implementation libs.proto,
+            libs.proto.util,
+            libs.grpc.stub,
+            libs.grpc.protobuf
     if (JavaVersion.current().isJava9Compatible()) {
         // Workaround for @javax.annotation.Generated
         // see: https://github.com/grpc/grpc-java/issues/3633
@@ -30,14 +29,14 @@ dependencies {
 protobuf {
     protoc {
         // The artifact spec for the Protobuf Compiler
-        artifact = 'com.google.protobuf:protoc:3.0.0'
+        artifact = "com.google.protobuf:protoc:${libs.versions.proto.get()}"
     }
     plugins {
         // Optional: an artifact spec for a protoc plugin, with "grpc" as
         // the identifier, which can be referred to in the "plugins"
         // container of the "generateProtoTasks" closure.
         grpc {
-            artifact = "io.grpc:protoc-gen-grpc-java:$grcpVersion"
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.get()}"
         }
     }
     generateProtoTasks {
