@@ -21,10 +21,10 @@ import com.google.gson.JsonObject;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import com.google.protobuf.TypeRegistry;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.Printer;
+import com.google.protobuf.util.JsonFormat.TypeRegistry;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
@@ -206,7 +206,7 @@ public enum Proto {
             };
             if (unroll != null) {
                 var unrollJson = gson.fromJson(printer.print(unroll), JsonObject.class);
-                unrollJson.keySet().forEach(key -> extJson.add(key, unrollJson.get(key)));
+                unrollJson.entrySet().forEach(key -> extJson.add(key.getKey(), key.getValue()));
             }
         } catch (InvalidProtocolBufferException e) {
             root.addProperty("doer.error", "invalid proto");

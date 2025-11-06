@@ -2,6 +2,7 @@ package io.github.s7i.meshtastic.proxy;
 
 import static io.github.s7i.meshtastic.MeshtasticStream.HEADER_LEN;
 import static io.github.s7i.meshtastic.MeshtasticStream.MAX_TO_FROM_RADIO_SIZE;
+import static java.util.Objects.requireNonNull;
 
 import java.nio.ByteBuffer;
 
@@ -10,7 +11,7 @@ public class StreamProxyImpl implements StreamProxy {
     private final ByteFlow byteFlow;
 
     public StreamProxyImpl(ByteFlow byteFlow) {
-        this.byteFlow = byteFlow;
+        this.byteFlow = requireNonNull(byteFlow, "byteFlow");
     }
 
     private final ByteBuffer txBuff = ByteBuffer.allocate(MAX_TO_FROM_RADIO_SIZE + HEADER_LEN);

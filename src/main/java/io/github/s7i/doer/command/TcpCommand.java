@@ -166,15 +166,18 @@ public class TcpCommand extends Command {
             var endTrigger = new CountDownLatch(1);
             Runtime.getRuntime().addShutdownHook(new Thread(endTrigger::countDown));
 
-            BufferProxy proxy = null;
+            TcpInterface meshtastic;
+            BufferProxy proxy;
+
             if (options.proxy) {
                 var proxyServer = new ProxyServer("0.0.0.0", port);
                 proxy = proxyServer.proxy();
 
                 proxyServer.start();
+                meshtastic = new TcpInterface(port, host, new StreamProxyImpl(proxy));
+            } else {
+                meshtastic = new TcpInterface(port, host);
             }
-
-            var meshtastic = new TcpInterface(port, host, new StreamProxyImpl(proxy));
 
             meshtastic.setOnStop(endTrigger::countDown);
 
