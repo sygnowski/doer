@@ -2,6 +2,7 @@ package io.github.s7i.doer.domain.kafka.dump;
 
 import io.github.s7i.doer.ConsoleLog;
 import io.github.s7i.doer.DoerException;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -10,37 +11,26 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Slf4j
 @RequiredArgsConstructor
 public class OffsetCommitter implements ConsoleLog {
 
     private final OffsetCommitSettings settings;
-    private final Map<TopicPartition, OffsetAndMetadata> commitMap = new HashMap<>();
+    private final CommitDataAggregator aggregator = new CommitDataAggregator();
 
-    void add(ConsumerRecord<?, ?> record) {
-        var tp = new TopicPartition(record.topic(), record.partition());
-        var om = new OffsetAndMetadata(record.offset());
-        commitMap.put(tp, om);
+    public void add(ConsumerRecord<?, ?> record) {
+        aggregator.add(record.topic(), record.partition(), record.offset());
     }
 
     public boolean commit(Consumer<?, ?> consumer) {
-        if (commitMap.isEmpty()) {
-            return true;
-        }
-        var toCommit = new HashMap<>(commitMap);
-        commitMap.clear();
-
+        final var toCommit = aggregator.toCommit();
         switch (settings.getKind()) {
             case ASYNC:
-                log.debug("async commit of {}", commitMap);
+                log.debug("async commit of {}", toCommit);
                 consumer.commitAsync(toCommit, this::offsetCommitCallback);
                 break;
             case SYNC:
                 var duration = settings.getSyncCommitDeadline();
-                log.debug("sync commit of {} with timeout: {}", commitMap, duration);
                 try {
                     consumer.commitSync(toCommit, duration);
                 } catch (KafkaException k) {
